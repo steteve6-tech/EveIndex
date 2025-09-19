@@ -1,0 +1,51 @@
+package com.certification.repository.common;
+
+import com.certification.entity.common.DeviceRecallRecord;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface DeviceRecallRecordRepository extends JpaRepository<DeviceRecallRecord, Long> {
+
+    Optional<DeviceRecallRecord> findByCfresId(String cfresId);
+
+    List<DeviceRecallRecord> findByRecallStatus(String recallStatus);
+
+    List<DeviceRecallRecord> findByProductCode(String productCode);
+
+    List<DeviceRecallRecord> findByProductDescriptionContaining(String keyword);
+
+    List<DeviceRecallRecord> findByRecallingFirmContaining(String recallingFirm);
+
+    List<DeviceRecallRecord> findByDeviceNameContaining(String deviceName);
+
+    List<DeviceRecallRecord> findByEventDatePosted(LocalDate date);
+
+    List<DeviceRecallRecord> findByEventDatePostedBetween(LocalDate start, LocalDate end);
+
+    @Query("SELECT drr FROM DeviceRecallRecord drr ORDER BY drr.eventDatePosted DESC")
+    List<DeviceRecallRecord> findRecent();
+
+    @Query("SELECT drr FROM DeviceRecallRecord drr WHERE drr.productCode = :productCode ORDER BY drr.eventDatePosted DESC")
+    List<DeviceRecallRecord> findRecentByProductCode(@Param("productCode") String productCode);
+    /**
+     * 根据风险等级查找记录
+     */
+    List<DeviceRecallRecord> findByRiskLevel(com.certification.entity.common.CrawlerData.RiskLevel riskLevel);
+
+    /**
+     * 根据风险等级查找记录（分页）
+     */
+    org.springframework.data.domain.Page<DeviceRecallRecord> findByRiskLevel(com.certification.entity.common.CrawlerData.RiskLevel riskLevel, org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * 统计指定风险等级的记录数量
+     */
+    long countByRiskLevel(com.certification.entity.common.CrawlerData.RiskLevel riskLevel);
+}

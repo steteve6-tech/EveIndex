@@ -1,0 +1,259 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: certification-monitor
+  
+  # 数据库配置
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/common_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&failOverReadOnly=false&maxReconnects=3&initialTimeout=2&connectTimeout=30000&socketTimeout=60000&useServerPrepStmts=true&cachePrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048
+    username: root
+    password: 2020
+    
+    # Druid连接池配置
+    druid:
+      # 初始连接数
+      initial-size: 10
+      # 最小连接池数量
+      min-idle: 5
+      # 最大连接池数量
+      max-active: 50
+      # 配置获取连接等待超时的时间（增加到2分钟）
+      max-wait: 120000
+      # 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒
+      time-between-eviction-runs-millis: 30000
+      # 配置一个连接在池中最小生存的时间，单位是毫秒
+      min-evictable-idle-time-millis: 600000
+      # 配置一个连接在池中最大生存的时间，单位是毫秒
+      max-evictable-idle-time-millis: 1800000
+      # 配置检测连接是否有效
+      validation-query: SELECT 1 FROM DUAL
+      validation-query-timeout: 10
+      test-while-idle: true
+      test-on-borrow: true
+      test-on-return: false
+      # 连接泄漏检测
+      remove-abandoned: true
+      remove-abandoned-timeout: 300
+      log-abandoned: true
+      # 打开PSCache，并且指定每个连接上PSCache的大小
+      pool-prepared-statements: true
+      max-pool-prepared-statement-per-connection-size: 20
+      # 配置监控统计拦截的filters，去掉后监控界面sql无法统计，'wall'用于防火墙
+      filters: stat,wall,slf4j
+      # 通过connectProperties属性来打开mergeSql功能；慢SQL记录
+      connection-properties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=5000
+      # 配置DruidStatFilter
+      web-stat-filter:
+        enabled: true
+        url-pattern: /*
+        exclusions: "*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*"
+      # 配置DruidStatViewServlet
+      stat-view-servlet:
+        enabled: true
+        url-pattern: /druid/*
+        # IP白名单(没有配置或者为空，则允许所有访问)
+        allow: 127.0.0.1
+        # IP黑名单 (存在共同时，deny优先于allow)
+        deny: 
+        # 禁用HTML页面上的"Reset All"功能
+        reset-enable: false
+        # 登录名
+        login-username: admin
+        # 登录密码
+        login-password: 123456
+  
+  # Redis配置
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+
+  # 邮件配置（暂时禁用）
+  mail:
+    host: smtp.qq.com
+    port: 587
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: false
+        show_sql: false
+    open-in-view: false
+
+# 日志配置
+logging:
+  level:
+    com.certification: DEBUG
+    org.springframework.web: INFO
+    org.hibernate.SQL: OFF
+    org.hibernate.type.descriptor.sql.BasicBinder: OFF
+    org.hibernate.type.descriptor.sql: OFF
+    org.hibernate: OFF
+    org.hibernate.engine.jdbc: OFF
+    org.hibernate.engine.jdbc.spi: OFF
+    org.hibernate.engine.jdbc.env.internal: OFF
+    org.hibernate.engine.jdbc.env.spi: OFF
+    org.hibernate.engine.jdbc.internal: OFF
+    org.hibernate.engine.transaction.internal: OFF
+    org.hibernate.engine.transaction.spi: OFF
+    org.hibernate.engine: OFF
+    org.hibernate.persister: OFF
+    org.hibernate.loader: OFF
+    org.hibernate.engine.jdbc.batch: OFF
+    org.hibernate.engine.jdbc.batch.internal: OFF
+    org.hibernate.engine.jdbc.batch.spi: OFF
+    com.alibaba.druid: DEBUG
+    root: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{50} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{50} - %msg%n"
+  file:
+    name: certification-monitor.log
+    path: ./logs/
+# 管理端点配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+  health:
+    mail:
+      enabled: false  # 禁用邮件健康检查
+
+# Knife4j配置
+knife4j:
+  enable: true
+  setting:
+    language: zh-CN
+    enable-swagger-models: true
+    enable-document-manage: true
+    swagger-model-name: 实体类列表
+    enable-version: false
+    enable-reload-cache-parameter: false
+    enable-after-script: true
+    enable-filter-multipart-api-method-type: POST
+    enable-filter-multipart-apis: false
+    enable-request-cache: true
+    enable-host: false
+    enable-host-text: ""
+    enable-home-custom: false
+    home-custom-path: ""
+    enable-search: true
+    enable-footer: false
+    enable-footer-custom: true
+    footer-custom-content: Copyright © 2024 认证监控系统
+    enable-dynamic-parameter: false
+    enable-debug: true
+    enable-open-api: false
+    enable-group: true
+
+# 应用自定义配置
+app:
+  # CORS配置
+  cors:
+    allowed-origins: "http://localhost:3000,http://localhost:3100,http://127.0.0.1:3000,http://127.0.0.1:3100"
+    allowed-methods: "GET,POST,PUT,DELETE,OPTIONS,PATCH"
+    allowed-headers: "*"
+    max-age: 3600
+  
+  # 数据抓取配置
+  scraper:
+    user-agent: "CertificationMonitor/1.0"
+    timeout: 30000
+    retry-count: 3
+  
+  # 缓存配置
+  cache:
+
+# 风险计算配置
+risk:
+  calculation:
+    # 几何衰减系数(0 < decayFactor < 1)，值越小分数增长越快
+    decay-factor: 0.5
+    # 总分上限
+    max-score: 20.0
+    # 相关性判断阈值
+    relevance-threshold: 0.7
+    # 是否启用详细日志
+    enable-detailed-logging: false
+    ttl: 3600 # 1小时
+    max-size: 1000
+  
+  # 风险检测配置
+  risk:
+    high-threshold: 0.7
+    medium-threshold: 0.4
+    low-threshold: 0.2
+  
+  # 通知配置
+  notification:
+    slack:
+      enabled: false
+      webhook-url: ""
+    email:
+      enabled: false
+      smtp-host: ""
+      smtp-port: 587
+      username: ""
+      password: ""
+      from: ""
+      to: []
+  
+  # 可视化配置
+  visualization:
+    # 图表配置
+    chart:
+      width: 800
+      height: 600
+      theme: default
+    # 导出配置
+    export:
+      excel-path: "./exports/"
+      chart-path: "./charts/"
+      max-rows: 10000
+
+# 火山引擎AI配置
+volc:
+  ai:
+    api-key: ${ARK_API_KEY:a3e53f23-f797-4d39-9ad1-faf43521504e}  # 优先从环境变量获取
+    model-id: "bot-20250915145921-rspmk"    # 模型ID
+    api-url: "https://open.volcengineapi.com" # API基础地址
+
+# 火山引擎翻译服务配置
+volcengine:
+  translate:
+    access-key: ${VOLCENGINE_ACCESS_KEY:}  # 从环境变量获取，为空时不设置默认值
+    secret-key: ${VOLCENGINE_SECRET_KEY:}  # 从环境变量获取，为空时不设置默认值
+    region: cn-north-1                     # 服务区域
+    api-url: https://translate.volcengineapi.com  # 翻译API地址

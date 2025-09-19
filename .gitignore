@@ -1,0 +1,64 @@
+# IDE文件
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# 编译产物
+target/
+dist/
+build/
+*.class
+
+# 日志文件
+logs/
+*.log
+
+# 依赖
+node_modules/
+.pnp
+.pnp.js
+
+# 环境变量和配置
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+application-local.yml
+application-dev.yml
+
+# API密钥和敏感信息
+**/secret.properties
+**/secrets.yml
+**/*secret*
+**/*key*
+
+# 临时文件
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Chrome便携版（体积大）
+chrome-portable/
+
+# 爬虫输出数据（可能包含敏感信息）
+crawler_output/
+*.csv
+*.html
+
+# 测试文件
+test-*.html
+*.bat
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+
+# npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
