@@ -1,0 +1,46 @@
+# 认证新闻关键词列表
+# 每行一个关键词，以#开头的行为注释
+# 生成时间: 2025-09-16T10:43:08.536127500
+
+18031
+RED cybersecurity
+China RoHS
+Restriction of Hazardous Substances
+2.4 GHz
+5 GHz
+6 GHz
+Wi-Fi 6E
+Wi-Fi 7
+Class A
+Notified Body
+TELEC
+EESS
+ERAC
+EMC
+Electrical Safety
+RLAN
+e-ComM
+SRD
+ECAS
+EQM
+MoIAT
+announcement
+DoC
+Declaration of Conformity
+NB
+6GHz
+6E
+WLAN
+limit value
+EIRP
+PSD
+IEC 62368-1
+自我聲明
+技術規範
+功率
+型式認證
+電磁相容
+電氣安全
+標籤規範
+標準更新
+限值
