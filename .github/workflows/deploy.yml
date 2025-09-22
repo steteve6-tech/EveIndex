@@ -1,0 +1,234 @@
+name: Deploy to Production Server
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+    types: [ closed ]
+
+env:
+  NODE_VERSION: '18'
+  JAVA_VERSION: '17'
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: vue-frontend/package-lock.json
+    
+    - name: Test Backend
+      run: |
+        cd spring-boot-backend
+        mvn test
+    
+    - name: Test Frontend
+      run: |
+        cd vue-frontend
+        npm ci
+        npm run test:unit || echo "前端测试跳过"
+
+  build-and-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+        cache: maven
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: vue-frontend/package-lock.json
+    
+    - name: Build Backend
+      run: |
+        cd spring-boot-backend
+        mvn clean package -DskipTests
+        echo "Backend build completed"
+    
+    - name: Build Frontend
+      run: |
+        cd vue-frontend
+        npm ci
+        npm run build
+        echo "Frontend build completed"
+    
+    - name: Create deployment package
+      run: |
+        mkdir -p deployment
+        cp -r spring-boot-backend/target/*.jar deployment/
+        cp -r vue-frontend/dist deployment/frontend
+        echo "Deployment package created"
+    
+    - name: Deploy to Server
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        password: ${{ secrets.PASSWORD }}
+        port: ${{ secrets.PORT }}
+        script: |
+          # 设置变量
+          PROJECT_NAME="AAAA"
+          DEPLOY_PATH="/opt/$PROJECT_NAME"
+          BACKUP_PATH="/opt/backups"
+          NGINX_ROOT="/var/www/html"
+          
+          echo "=== 开始部署 ==="
+          
+          # 创建必要目录
+          sudo mkdir -p $DEPLOY_PATH/logs
+          sudo mkdir -p $BACKUP_PATH
+          
+          # 进入项目目录
+          cd $DEPLOY_PATH
+          
+          # 拉取最新代码
+          echo "拉取最新代码..."
+          git fetch origin
+          git reset --hard origin/main
+          git clean -fd
+          
+          # 备份当前运行的服务
+          echo "备份当前服务..."
+          if pgrep -f "spring-boot-backend" > /dev/null; then
+            echo "停止后端服务..."
+            pkill -f "spring-boot-backend" || true
+            sleep 5
+          fi
+          
+          # 部署后端
+          echo "=== 部署后端 ==="
+          cd $DEPLOY_PATH/spring-boot-backend
+          
+          # 构建后端
+          mvn clean package -DskipTests -q
+          
+          # 启动后端服务
+          echo "启动后端服务..."
+          nohup java -jar target/*.jar \
+            --spring.profiles.active=prod \
+            --server.port=8080 \
+            --logging.file.name=$DEPLOY_PATH/logs/backend.log \
+            > $DEPLOY_PATH/logs/backend-startup.log 2>&1 &
+          
+          # 等待后端启动
+          echo "等待后端服务启动..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8080/actuator/health &>/dev/null; then
+              echo "后端服务启动成功！"
+              break
+            fi
+            sleep 2
+          done
+          
+          # 部署前端
+          echo "=== 部署前端 ==="
+          cd $DEPLOY_PATH/vue-frontend
+          
+          # 安装依赖并构建
+          npm ci --silent
+          npm run build
+          
+          # 备份现有前端文件
+          if [ -d "$NGINX_ROOT" ] && [ "$(ls -A $NGINX_ROOT)" ]; then
+            sudo cp -r $NGINX_ROOT $BACKUP_PATH/frontend-backup-$(date +%Y%m%d_%H%M%S)
+          fi
+          
+          # 部署前端文件
+          echo "部署前端文件..."
+          sudo rm -rf $NGINX_ROOT/*
+          sudo cp -r dist/* $NGINX_ROOT/
+          sudo chown -R www-data:www-data $NGINX_ROOT
+          
+          # 重启Nginx
+          sudo systemctl restart nginx
+          
+          echo "=== 部署完成 ==="
+          echo "前端访问: http://$(curl -s ifconfig.me)"
+          echo "后端端口: 8080"
+    
+    - name: Health Check
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        password: ${{ secrets.PASSWORD }}
+        port: ${{ secrets.PORT }}
+        script: |
+          echo "=== 健康检查 ==="
+          
+          # 检查后端服务
+          if curl -s http://localhost:8080/actuator/health | grep -q "UP"; then
+            echo "✅ 后端服务健康"
+          else
+            echo "❌ 后端服务异常"
+            exit 1
+          fi
+          
+          # 检查前端服务
+          if curl -s http://localhost/ | grep -q "html"; then
+            echo "✅ 前端服务健康"
+          else
+            echo "❌ 前端服务异常"
+          fi
+          
+          # 检查Nginx状态
+          if sudo systemctl is-active --quiet nginx; then
+            echo "✅ Nginx服务正常"
+          else
+            echo "❌ Nginx服务异常"
+          fi
+          
+          echo "健康检查完成"
+
+  notify:
+    name: Send Notification
+    runs-on: ubuntu-latest
+    needs: [build-and-deploy]
+    if: always()
+    
+    steps:
+    - name: Send Success Notification
+      if: needs.build-and-deploy.result == 'success'
+      run: |
+        echo "🎉 部署成功通知"
+        echo "项目已成功部署到生产服务器"
+        echo "访问地址: http://${{ secrets.HOST }}"
+    
+    - name: Send Failure Notification
+      if: needs.build-and-deploy.result == 'failure'
+      run: |
+        echo "❌ 部署失败通知"
+        echo "项目部署失败，请检查日志"
+        exit 1

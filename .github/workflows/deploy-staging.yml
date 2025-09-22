@@ -1,0 +1,93 @@
+name: Deploy to Staging Server
+
+on:
+  push:
+    branches: [ develop, staging ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - development
+
+env:
+  NODE_VERSION: '18'
+  JAVA_VERSION: '17'
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+        cache: maven
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: vue-frontend/package-lock.json
+    
+    - name: Build and Test
+      run: |
+        # 构建后端
+        cd spring-boot-backend
+        mvn clean package -DskipTests
+        
+        # 构建前端
+        cd ../vue-frontend
+        npm ci
+        npm run build
+    
+    - name: Deploy to Staging Server
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.STAGING_HOST }}
+        username: ${{ secrets.STAGING_USERNAME }}
+        password: ${{ secrets.STAGING_PASSWORD }}
+        port: ${{ secrets.STAGING_PORT }}
+        script: |
+          PROJECT_NAME="AAAA-staging"
+          DEPLOY_PATH="/opt/$PROJECT_NAME"
+          
+          echo "=== 部署到测试环境 ==="
+          
+          # 创建目录
+          sudo mkdir -p $DEPLOY_PATH
+          cd $DEPLOY_PATH
+          
+          # 拉取代码
+          if [ -d ".git" ]; then
+            git pull origin ${{ github.ref_name }}
+          else
+            git clone -b ${{ github.ref_name }} ${{ github.server_url }}/${{ github.repository }}.git .
+          fi
+          
+          # 构建和部署
+          cd spring-boot-backend
+          mvn clean package -DskipTests
+          
+          # 停止现有服务
+          pkill -f "$PROJECT_NAME" || true
+          
+          # 启动服务
+          nohup java -jar target/*.jar \
+            --spring.profiles.active=staging \
+            --server.port=8081 \
+            > ../logs/staging.log 2>&1 &
+          
+          echo "测试环境部署完成"

@@ -1,0 +1,136 @@
+name: Rollback Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to rollback'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
+      backup_timestamp:
+        description: 'Backup timestamp (YYYYMMDD_HHMMSS) - leave empty for latest'
+        required: false
+        type: string
+
+jobs:
+  rollback:
+    name: Rollback to Previous Version
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+    - name: Rollback Production
+      if: github.event.inputs.environment == 'production'
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        password: ${{ secrets.PASSWORD }}
+        port: ${{ secrets.PORT }}
+        script: |
+          PROJECT_NAME="AAAA"
+          DEPLOY_PATH="/opt/$PROJECT_NAME"
+          BACKUP_PATH="/opt/backups"
+          NGINX_ROOT="/var/www/html"
+          
+          echo "=== 开始回滚生产环境 ==="
+          
+          # 找到最新的备份
+          if [ -n "${{ github.event.inputs.backup_timestamp }}" ]; then
+            BACKUP_DIR="$BACKUP_PATH/$PROJECT_NAME-backup-${{ github.event.inputs.backup_timestamp }}"
+          else
+            BACKUP_DIR=$(ls -dt $BACKUP_PATH/$PROJECT_NAME-backup-* 2>/dev/null | head -1)
+          fi
+          
+          if [ -z "$BACKUP_DIR" ] || [ ! -d "$BACKUP_DIR" ]; then
+            echo "❌ 未找到可用的备份"
+            exit 1
+          fi
+          
+          echo "使用备份: $BACKUP_DIR"
+          
+          # 停止当前服务
+          echo "停止当前服务..."
+          pkill -f "spring-boot-backend" || true
+          sleep 5
+          
+          # 回滚后端
+          echo "回滚后端..."
+          if [ -f "$BACKUP_DIR/spring-boot-backend/target/"*.jar ]; then
+            cp "$BACKUP_DIR/spring-boot-backend/target/"*.jar "$DEPLOY_PATH/spring-boot-backend/target/"
+            
+            # 启动回滚后的服务
+            cd "$DEPLOY_PATH/spring-boot-backend"
+            nohup java -jar target/*.jar \
+              --spring.profiles.active=prod \
+              --server.port=8080 \
+              > "$DEPLOY_PATH/logs/rollback.log" 2>&1 &
+          fi
+          
+          # 回滚前端
+          echo "回滚前端..."
+          FRONTEND_BACKUP="$BACKUP_PATH/frontend-backup-"$(basename "$BACKUP_DIR" | cut -d'-' -f3-4)
+          if [ -d "$FRONTEND_BACKUP" ]; then
+            sudo rm -rf $NGINX_ROOT/*
+            sudo cp -r $FRONTEND_BACKUP/* $NGINX_ROOT/
+            sudo chown -R www-data:www-data $NGINX_ROOT
+            sudo systemctl restart nginx
+          fi
+          
+          echo "=== 回滚完成 ==="
+          
+          # 验证服务
+          sleep 10
+          if curl -s http://localhost:8080/actuator/health | grep -q "UP"; then
+            echo "✅ 回滚成功，服务正常运行"
+          else
+            echo "❌ 回滚后服务异常"
+            exit 1
+          fi
+    
+    - name: Rollback Staging
+      if: github.event.inputs.environment == 'staging'
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.STAGING_HOST }}
+        username: ${{ secrets.STAGING_USERNAME }}
+        password: ${{ secrets.STAGING_PASSWORD }}
+        port: ${{ secrets.STAGING_PORT }}
+        script: |
+          echo "=== 回滚测试环境 ==="
+          PROJECT_NAME="AAAA-staging"
+          DEPLOY_PATH="/opt/$PROJECT_NAME"
+          
+          cd $DEPLOY_PATH
+          
+          # 回滚到上一个commit
+          git log --oneline -10
+          echo "回滚到上一个提交..."
+          git reset --hard HEAD~1
+          
+          # 重新构建和部署
+          cd spring-boot-backend
+          mvn clean package -DskipTests
+          
+          pkill -f "$PROJECT_NAME" || true
+          sleep 3
+          
+          nohup java -jar target/*.jar \
+            --spring.profiles.active=staging \
+            --server.port=8081 \
+            > ../logs/rollback-staging.log 2>&1 &
+          
+          echo "测试环境回滚完成"
+    
+    - name: Send Rollback Notification
+      run: |
+        echo "🔄 回滚完成通知"
+        echo "环境: ${{ github.event.inputs.environment }}"
+        echo "时间: $(date)"
+        if [ -n "${{ github.event.inputs.backup_timestamp }}" ]; then
+          echo "备份时间戳: ${{ github.event.inputs.backup_timestamp }}"
+        fi

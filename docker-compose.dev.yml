@@ -1,0 +1,162 @@
+﻿version: '3.8'
+
+services:
+  # MySQL数据库 (开发环境)
+  mysql-dev:
+    image: mysql:8.0
+    container_name: cert_mysql_dev
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: dev123
+      MYSQL_DATABASE: common_db
+      MYSQL_USER: dev_user
+      MYSQL_PASSWORD: dev123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_dev_data:/var/lib/mysql
+      - ./database:/docker-entrypoint-initdb.d
+    command: 
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    networks:
+      - cert_dev_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pdev123"]
+      timeout: 20s
+      retries: 10
+      interval: 30s
+
+  # Redis缓存 (开发环境)
+  redis-dev:
+    image: redis:7-alpine
+    container_name: cert_redis_dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - cert_dev_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 3s
+      retries: 5
+      interval: 10s
+
+  # Spring Boot后端 (开发模式)
+  backend-dev:
+    build:
+      context: ./spring-boot-backend
+      dockerfile: Dockerfile.dev
+    container_name: cert_backend_dev
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-dev:3306/common_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
+      SPRING_DATASOURCE_USERNAME: dev_user
+      SPRING_DATASOURCE_PASSWORD: dev123
+      SPRING_DATA_REDIS_HOST: redis-dev
+      SPRING_DATA_REDIS_PORT: 6379
+      VOLCENGINE_ACCESS_KEY: ${VOLCENGINE_ACCESS_KEY:-}
+      VOLCENGINE_SECRET_KEY: ${VOLCENGINE_SECRET_KEY:-}
+      # 开发模式JVM参数
+      JAVA_OPTS: >-
+        -Xms256m 
+        -Xmx512m 
+        -XX:+UseG1GC
+        -Dspring.devtools.restart.enabled=true
+        -Dspring.devtools.livereload.enabled=true
+        -Dfile.encoding=UTF-8
+        -Duser.timezone=Asia/Shanghai
+    ports:
+      - "8080:8080"
+      - "35729:35729"  # LiveReload端口
+    volumes:
+      # 挂载源代码目录以支持热重载
+      - ./spring-boot-backend/src:/app/src
+      - ./spring-boot-backend/target:/app/target
+      - ./spring-boot-backend/pom.xml:/app/pom.xml
+      - maven_cache:/root/.m2  # Maven缓存
+    depends_on:
+      mysql-dev:
+        condition: service_healthy
+      redis-dev:
+        condition: service_healthy
+    networks:
+      - cert_dev_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+      interval: 30s
+
+  # Vue前端 (开发模式)
+  frontend-dev:
+    build:
+      context: ./vue-frontend
+      dockerfile: Dockerfile.dev
+    container_name: cert_frontend_dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      CHOKIDAR_USEPOLLING: true  # 支持Windows文件监听
+      WATCHPACK_POLLING: true
+    ports:
+      - "3100:3100"  # Vite开发服务器
+      - "24678:24678"  # Vite HMR端口
+    volumes:
+      # 挂载源代码目录以支持热重载
+      - ./vue-frontend/src:/app/src
+      - ./vue-frontend/public:/app/public
+      - ./vue-frontend/package.json:/app/package.json
+      - ./vue-frontend/package-lock.json:/app/package-lock.json
+      - ./vue-frontend/vite.config.ts:/app/vite.config.ts
+      - ./vue-frontend/tsconfig.json:/app/tsconfig.json
+      - ./vue-frontend/tsconfig.node.json:/app/tsconfig.node.json
+      - ./vue-frontend/index.html:/app/index.html
+      - node_modules_cache:/app/node_modules  # node_modules缓存
+    depends_on:
+      - backend-dev
+    networks:
+      - cert_dev_network
+    stdin_open: true  # 支持交互式输入
+    tty: true
+
+  # phpMyAdmin (开发环境)
+  phpmyadmin-dev:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: cert_phpmyadmin_dev
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql-dev
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: dev123
+    ports:
+      - "8081:80"
+    depends_on:
+      mysql-dev:
+        condition: service_healthy
+    networks:
+      - cert_dev_network
+
+volumes:
+  mysql_dev_data:
+    driver: local
+  redis_dev_data:
+    driver: local
+  maven_cache:
+    driver: local
+  node_modules_cache:
+    driver: local
+
+networks:
+  cert_dev_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
