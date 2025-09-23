@@ -1,4 +1,4 @@
-# 前端构建 Dockerfile for Zeabur
+# 简化版前端构建 Dockerfile for Zeabur
 FROM node:18-alpine AS builder
 
 WORKDIR /app
@@ -6,13 +6,8 @@ WORKDIR /app
 # 复制 package.json 和 package-lock.json
 COPY package*.json ./
 
-# 安装所有依赖（包括开发依赖）
+# 安装所有依赖
 RUN npm ci
-
-# 验证 vue-tsc 是否正确安装
-RUN npm list vue-tsc
-RUN which vue-tsc
-RUN ls -la node_modules/.bin/vue-tsc
 
 # 复制源代码
 COPY . .
@@ -21,7 +16,8 @@ COPY . .
 ENV NODE_ENV=production
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL:-/api}
 
-# 构建应用
+# 使用 npx 运行构建（确保能找到 vue-tsc）
+RUN npx vue-tsc --version
 RUN npm run build
 
 # 验证构建结果
