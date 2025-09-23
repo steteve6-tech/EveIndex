@@ -1,6 +1,3 @@
-# Zeabur 优化的 Dockerfile
-# 使用多阶段构建优化镜像大小和构建速度
-
 FROM maven:3.9.5-eclipse-temurin-17 AS builder
 
 # 设置工作目录
@@ -17,6 +14,9 @@ COPY src ./src
 
 # 构建应用
 RUN mvn clean package -DskipTests -Dmaven.test.skip=true
+
+# 验证构建结果
+RUN ls -la /app/target/ && echo "=== 构建成功 ==="
 
 # 运行阶段
 FROM eclipse-temurin:17-jre-alpine
@@ -54,7 +54,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 # 启动命令 - 针对Zeabur优化
 ENTRYPOINT ["java", \
     "-Djava.security.egd=file:/dev/./urandom", \
-    "-Dspring.profiles.active=docker", \
+    "-Dspring.profiles.active=zeabur", \
     "-XX:+UseContainerSupport", \
     "-XX:MaxRAMPercentage=80.0", \
     "-XX:+UseG1GC", \

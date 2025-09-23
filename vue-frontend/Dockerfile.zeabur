@@ -1,6 +1,4 @@
-# Zeabur 优化的前端 Dockerfile
-# 使用多阶段构建优化镜像大小
-
+# Zeabur 修复版前端 Dockerfile
 FROM node:18-alpine AS builder
 
 # 设置工作目录
@@ -9,34 +7,35 @@ WORKDIR /app
 # 复制package文件
 COPY package*.json ./
 
-# 安装依赖
-RUN npm ci --only=production --silent
+# 安装所有依赖（包括开发依赖）
+RUN npm ci
 
 # 复制源代码
 COPY . .
 
+# 设置环境变量
+ENV NODE_ENV=production
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL:-/api}
+
 # 构建应用
 RUN npm run build
 
-# 生产阶段 - 使用Nginx
+# 验证构建结果
+RUN ls -la /app/dist/ && echo "=== 构建成功 ==="
+
+# 生产阶段
 FROM nginx:alpine
 
-# 复制自定义nginx配置
-COPY nginx.zeabur.conf /etc/nginx/nginx.conf
+RUN apk add --no-cache wget
 
-# 复制构建的文件到nginx目录
+COPY nginx.zeabur.conf /etc/nginx/nginx.conf
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# 创建nginx用户
-RUN addgroup -g 101 -S nginx && \
-    adduser -S -D -H -u 101 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx
+RUN ls -la /usr/share/nginx/html/ && echo "=== 文件复制成功 ==="
 
-# 暴露端口
 EXPOSE 80
 
-# 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
 
-# 启动nginx
 CMD ["nginx", "-g", "daemon off;"]
