@@ -17,7 +17,7 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api/, '/api'), // 保持路径不变
+        rewrite: (path) => path.replace(/^\/api/, '/api'),
       },
       '/country-risk-statistics': {
         target: 'http://localhost:8080',
@@ -95,7 +95,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: false, // 生产环境关闭sourcemap以减小体积
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: {

@@ -1,4 +1,4 @@
-# 前端构建 Dockerfile for Zeabur
+# 前端构建 Dockerfile for Zeabur - 修复版
 FROM node:18-alpine AS builder
 
 WORKDIR /app
@@ -6,18 +6,8 @@ WORKDIR /app
 # 复制 package.json 和 package-lock.json
 COPY package*.json ./
 
-# 安装所有依赖（包括开发依赖）
+# 安装依赖
 RUN npm ci
-
-# 强制重新安装 vite 以确保正确安装
-RUN npm install vite@^7.1.2 --save-dev
-
-# 验证关键依赖是否正确安装
-RUN npm list vite
-RUN npm list vue-tsc
-RUN ls -la node_modules/.bin/
-RUN ls -la node_modules/.bin/vite || echo "vite binary not found"
-RUN npm list @vitejs/plugin-vue
 
 # 复制源代码
 COPY . .
@@ -26,11 +16,11 @@ COPY . .
 ENV NODE_ENV=production
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL:-/api}
 
-# 构建应用 - 直接使用 node_modules 中的 vite
-RUN ./node_modules/.bin/vite build
+# 直接运行 vite build，使用生产配置
+RUN node_modules/.bin/vite build --config vite.config.prod.js
 
 # 验证构建结果
-RUN ls -la /app/dist/ && echo "=== 构建成功 ==="
+RUN ls -la dist/ && echo "=== 构建成功 ==="
 
 # 生产阶段
 FROM nginx:alpine
