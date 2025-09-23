@@ -9,8 +9,9 @@ services:
       repo: your-github-repo  # 替换为你的GitHub仓库地址
       branch: main
       buildPath: ./spring-boot-backend
+    dockerfile: Dockerfile.zeabur
     env:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=zeabur
       - SPRING_DATASOURCE_URL=${MYSQL_URL}
       - SPRING_DATASOURCE_USERNAME=${MYSQL_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
@@ -32,10 +33,14 @@ services:
       repo: your-github-repo  # 替换为你的GitHub仓库地址
       branch: main
       buildPath: ./vue-frontend
+    dockerfile: Dockerfile.zeabur
     env:
-      - VITE_API_BASE_URL=${BACKEND_URL}
+      - VITE_API_BASE_URL=${BACKEND_URL}/api
     ports:
       - 80
+    healthCheck:
+      path: /
+      port: 80
 
   # MySQL数据库
   mysql:
