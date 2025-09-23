@@ -813,7 +813,6 @@ const getColumnLabel = (key: string) => {
     registrationNumber: '注册编号',
     feiNumber: 'FEI编号',
     proprietaryName: '专有名称',
-    deviceClass: '设备类别',
     riskClass: '风险等级',
     statusCode: '状态代码',
     createdDate: '创建日期',
