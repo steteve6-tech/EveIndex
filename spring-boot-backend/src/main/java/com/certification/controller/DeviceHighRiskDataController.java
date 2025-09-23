@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/high-risk-data")
 @RequiredArgsConstructor
 @Tag(name = "高风险数据管理", description = "管理风险等级为HIGH的医疗器械数据")
-public class HighRiskDataController {
+public class DeviceHighRiskDataController {
 
     private final DeviceDataanalysis deviceDataanalysis;
     private final DeviceMatchKeywordsRepository deviceMatchKeywordsRepository;

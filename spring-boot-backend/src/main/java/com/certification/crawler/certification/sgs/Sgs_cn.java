@@ -3,9 +3,7 @@ package com.certification.crawler.certification.sgs;
 import com.certification.crawler.certification.base.BaseCrawler;
 import com.certification.crawler.certification.base.CrawlerResult;
 import com.certification.crawler.common.HttpUtils;
-import com.certification.entity.common.CrawlerData;
 import com.certification.service.DateFormatService;
-import com.certification.service.SystemLogService;
 import com.certification.standards.CrawlerDataService;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
@@ -21,7 +19,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -37,10 +34,7 @@ public class Sgs_cn implements BaseCrawler {
     
     @Autowired
     private CrawlerDataService crawlerDataService;
-    
-    @Autowired
-    private SystemLogService systemLogService;
-    
+
     @Autowired
     private DateFormatService dateFormatService;
 

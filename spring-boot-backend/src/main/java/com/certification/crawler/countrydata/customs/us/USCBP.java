@@ -1,8 +1,8 @@
 package com.certification.crawler.countrydata.customs.us;
 
+import com.certification.crawler.common.HttpUtils;
 import com.certification.crawler.countrydata.customs.base.BaseCustomsCrawler;
 import com.certification.crawler.countrydata.customs.base.CustomsCrawlerResult;
-import com.certification.crawler.common.HttpUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

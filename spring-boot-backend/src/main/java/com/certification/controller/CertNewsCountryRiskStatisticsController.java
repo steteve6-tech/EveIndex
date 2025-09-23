@@ -20,10 +20,10 @@ import java.util.Map;
  * 提供国家风险趋势和统计数据的API接口
  */
 @Slf4j
-@Tag(name = "国家风险统计", description = "国家风险趋势和统计数据接口")
+@Tag(name = "认证新闻国家风险统计", description = "认证新闻国家风险趋势和统计数据管理接口")
 @RestController
 @RequestMapping("/country-risk")
-public class CountryRiskStatisticsController {
+public class CertNewsCountryRiskStatisticsController {
 
     @Autowired
     private CountryRiskStatisticsService countryRiskStatisticsService;

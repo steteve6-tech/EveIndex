@@ -1,7 +1,7 @@
 package com.certification.standards;
 
 import com.certification.crawler.certification.base.CrawlerResult;
-import com.certification.crawler.certification.sgs.SgsCrawler;
+import com.certification.crawler.certification.SgsCrawler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

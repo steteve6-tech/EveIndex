@@ -27,7 +27,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import com.certification.entity.common.CrawlerData.RiskLevel;
+import com.certification.entity.common.CertNewsData.RiskLevel;
 
 /**
  * FDA 510K设备爬取器

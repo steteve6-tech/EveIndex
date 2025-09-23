@@ -1,7 +1,7 @@
 package com.certification.repository.common;
 
 import com.certification.entity.common.EuSafetyGateAlert;
-import com.certification.entity.common.CrawlerData.RiskLevel;
+import com.certification.entity.common.CertNewsData.RiskLevel;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -99,7 +99,7 @@ public class EuSafetyGateAlert {
     @Enumerated(EnumType.STRING)
     @Column(name = "risk_level")
     @Schema(description = "风险等级")
-    private com.certification.entity.common.CrawlerData.RiskLevel riskLevel;
+    private CertNewsData.RiskLevel riskLevel;
 
     @Column(name = "create_time")
     @Schema(description = "创建时间")

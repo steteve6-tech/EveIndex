@@ -166,78 +166,12 @@
               <a-button type="link" size="small" @click="handleViewDetail(record)">
                 查看详情
               </a-button>
-              <a-button 
-                v-if="shouldShowGenerateButton()"
-                type="link" 
-                size="small" 
-                @click="handleGenerateCompetitorInfo(record)"
-              >
-                生成竞品信息
-              </a-button>
             </a-space>
           </template>
         </template>
       </a-table>
     </a-card>
 
-    <!-- 生成竞品信息模态框 -->
-    <a-modal
-      v-model:open="generateModalVisible"
-      :title="`生成竞品信息 - ${currentRecord?.deviceName || currentRecord?.productDescription || ''}`"
-      width="800px"
-      @ok="handleConfirmGenerate"
-      :confirm-loading="generateLoading"
-      ok-text="确认生成"
-      cancel-text="取消"
-    >
-      <div v-if="currentRecord" class="generate-form">
-        <a-alert
-          message="生成说明"
-          description="系统将根据当前高风险数据生成竞品信息，请确认以下信息是否正确，可以进行编辑调整。"
-          type="info"
-          show-icon
-          style="margin-bottom: 24px"
-        />
-        
-        <a-form :model="generateForm" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-          <a-form-item label="设备名称" required>
-            <a-input v-model:value="generateForm.productName" placeholder="请输入设备名称" />
-          </a-form-item>
-          
-          <a-form-item label="申请人名称">
-            <a-input v-model:value="generateForm.applicantName" placeholder="请输入申请人名称" />
-          </a-form-item>
-          
-          <a-form-item label="品牌名称">
-            <a-input v-model:value="generateForm.brandName" placeholder="请输入品牌名称" />
-          </a-form-item>
-          
-          <a-form-item label="设备代码">
-            <a-input v-model:value="generateForm.deviceCode" placeholder="请输入设备代码" />
-          </a-form-item>
-          
-          <a-form-item label="设备等级">
-            <a-select v-model:value="generateForm.deviceClass" placeholder="请选择设备等级">
-              <a-select-option value="Class I">Class I</a-select-option>
-              <a-select-option value="Class II">Class II</a-select-option>
-              <a-select-option value="Class III">Class III</a-select-option>
-            </a-select>
-          </a-form-item>
-          
-          <a-form-item label="设备描述">
-            <a-textarea v-model:value="generateForm.deviceDescription" placeholder="请输入设备描述" :rows="4" />
-          </a-form-item>
-          
-          <a-form-item label="数据来源">
-            <a-input v-model:value="generateForm.dataSource" disabled />
-          </a-form-item>
-          
-          <a-form-item label="原始数据ID">
-            <a-input v-model:value="generateForm.sourceDataId" disabled />
-          </a-form-item>
-        </a-form>
-      </div>
-    </a-modal>
 
     <!-- 详情弹窗 -->
     <a-modal
@@ -311,7 +245,6 @@ import {
   RISK_LEVEL_MAP,
   RISK_LEVEL_COLOR_MAP
 } from '@/api/highRiskData'
-import { generateProductFromHighRiskData, checkProductExists } from '@/api/api/product'
 
 // Props
 interface Props {
@@ -326,7 +259,6 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   'data-loaded': [dataType: string, data: any[], total: number]
   'keyword-click': [record: any, keyword: string]
-  'competitor-generated': [product: any]
 }>()
 
 // 暴露方法给父组件
@@ -341,21 +273,8 @@ const tableData = ref<any[]>([])
 const selectedRowKeys = ref<number[]>([])
 const batchRiskLevel = ref<string>('')
 const detailModalVisible = ref(false)
-const generateModalVisible = ref(false)
-const generateLoading = ref(false)
 const currentRecord = ref<any>({})
 
-// 生成竞品信息表单
-const generateForm = ref({
-  productName: '',
-  applicantName: '',
-  brandName: '',
-  deviceCode: '',
-  deviceClass: 'Class II',
-  deviceDescription: '',
-  dataSource: '',
-  sourceDataId: null as number | null
-})
 
 // 搜索表单
 const searchForm = ref({
@@ -797,219 +716,15 @@ const handleViewDetail = (record: any) => {
   detailModalVisible.value = true
 }
 
-// 判断是否显示生成竞品信息按钮（只在510K和注册记录中显示）
-const shouldShowGenerateButton = () => {
-  return props.dataType === 'device510k' || props.dataType === 'registration'
-}
 
-// 处理生成竞品信息
-const handleGenerateCompetitorInfo = async (record: any) => {
-  currentRecord.value = record
-  
-  // 先检查是否已经生成过竞品信息
-  try {
-    const checkResponse = await checkProductExists(props.dataType, record.id)
-    if (checkResponse.data?.exists) {
-      message.warning('该数据已生成过竞品信息，请勿重复生成')
-      return
-    }
-  } catch (error) {
-    console.error('检查竞品信息是否存在失败:', error)
-  }
-  
-  // 初始化表单数据
-  generateForm.value = {
-    productName: getProductName(record),
-    applicantName: getApplicantName(record),
-    brandName: getBrandName(record),
-    deviceCode: getDeviceCode(record),
-    deviceClass: getDeviceClass(record),
-    deviceDescription: getDeviceDescription(record),
-    dataSource: props.dataType,
-    sourceDataId: record.id
-  }
-  
-  generateModalVisible.value = true
-}
 
-// 确认生成竞品信息
-const handleConfirmGenerate = async () => {
-  if (!generateForm.value.productName?.trim()) {
-    message.warning('请输入设备名称')
-    return
-  }
-  
-  generateLoading.value = true
-  
-  try {
-    const response = await generateProductFromHighRiskData(generateForm.value)
-    
-    if (response.success) {
-      message.success('竞品信息生成成功！')
-      generateModalVisible.value = false
-      
-      // 可以触发一个事件通知父组件
-      emit('competitor-generated', response.data)
-    } else {
-      message.error(response.message || '生成竞品信息失败')
-    }
-  } catch (error: any) {
-    console.error('生成竞品信息失败:', error)
-    message.error('生成竞品信息失败：' + (error.message || '未知错误'))
-  } finally {
-    generateLoading.value = false
-  }
-}
 
-// 根据数据类型和记录获取产品名称
-const getProductName = (record: any): string => {
-  switch (props.dataType) {
-    case 'device510k':
-      return record.deviceName || record.deviceGeneralName || ''
-    case 'recall':
-      return record.productDescription || record.deviceName || ''
-    case 'event':
-      return record.brandName || record.genericName || record.deviceName || ''
-    case 'registration':
-      return record.deviceName || record.proprietaryName || ''
-    case 'guidance':
-      return record.title || ''
-    case 'customs':
-      return record.rulingResult || record.caseNumber || ''
-    default:
-      return ''
-  }
-}
 
-// 根据数据类型和记录获取申请人名称
-const getApplicantName = (record: any): string => {
-  switch (props.dataType) {
-    case 'device510k':
-      return record.applicant || record.contact || ''
-    case 'recall':
-      return record.recallingFirm || ''
-    case 'event':
-      return record.manufacturerName || ''
-    case 'registration':
-      return record.manufacturerName || record.ownerFirmName || ''
-    case 'guidance':
-      return 'FDA' // 指导文档通常是FDA发布的
-    case 'customs':
-      return '海关' // 海关案例
-    default:
-      return ''
-  }
-}
 
-// 根据数据类型和记录获取品牌名称
-const getBrandName = (record: any): string => {
-  switch (props.dataType) {
-    case 'device510k':
-      return record.tradeName || record.brandName || ''
-    case 'recall':
-      return record.brandName || ''
-    case 'event':
-      return record.brandName || ''
-    case 'registration':
-      return record.brandName || record.proprietaryName || ''
-    case 'guidance':
-      return 'FDA指导文档'
-    case 'customs':
-      return '海关案例'
-    default:
-      return ''
-  }
-}
 
-// 根据数据类型和记录获取设备代码
-const getDeviceCode = (record: any): string => {
-  switch (props.dataType) {
-    case 'device510k':
-      return record.kNumber || record.productCode || ''
-    case 'recall':
-      return record.productResNumber || record.cfresId || ''
-    case 'event':
-      return record.reportNumber || ''
-    case 'registration':
-      return record.registrationNumber || record.feiNumber || ''
-    case 'guidance':
-      return record.guidanceNumber || ''
-    case 'customs':
-      return record.caseNumber || record.hsCodeUsed || ''
-    default:
-      return ''
-  }
-}
 
-// 根据数据类型和记录获取设备等级
-const getDeviceClass = (record: any): string => {
-  switch (props.dataType) {
-    case 'device510k':
-      return record.deviceClass || 'Class II'
-    case 'registration':
-      return record.deviceClass || record.riskClass || 'Class II'
-    default:
-      return 'Class II'
-  }
-}
 
-// 根据数据类型和记录获取设备描述
-const getDeviceDescription = (record: any): string => {
-  switch (props.dataType) {
-    case 'device510k':
-      return record.statementOrSummary || record.decisionDescription || record.deviceName || ''
-    case 'recall':
-      return record.reasonForRecall || record.rootCauseDescription || record.productDescription || ''
-    case 'event':
-      return record.eventDescription || record.deviceProblem || ''
-    case 'registration':
-      return record.deviceNames || record.establishmentType || ''
-    case 'guidance':
-      return record.summary || record.title || ''
-    case 'customs':
-      return record.caseDescription || record.rulingResult || ''
-    default:
-      return ''
-  }
-}
 
-// 暂时注释掉生成竞品信息功能
-/*
-const handleGenerateCompetitorInfo = (record: any) => {
-  // 生成竞品信息并确认是否发送到竞品信息
-  const { Modal } = require('ant-design-vue')
-  
-  Modal.confirm({
-    title: '生成竞品信息',
-    content: `确定要为这条数据生成竞品信息并发送到竞品信息模块吗？\n\n数据类型: ${props.dataType}\n记录ID: ${record.id}`,
-    okText: '确定发送',
-    cancelText: '取消',
-    onOk() {
-      // 这里调用生成竞品信息的API
-      generateAndSendCompetitorInfo(record)
-    },
-    onCancel() {
-      console.log('用户取消生成竞品信息')
-    }
-  })
-}
-
-const generateAndSendCompetitorInfo = async (record: any) => {
-  try {
-    // 这里应该调用后端API生成竞品信息
-    message.info('正在生成竞品信息...')
-    
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    message.success('竞品信息生成成功并已发送到竞品信息模块！')
-    
-  } catch (error: any) {
-    console.error('生成竞品信息失败:', error)
-    message.error('生成竞品信息失败：' + error.message)
-  }
-}
-*/
 
 const getColumnLabel = (key: string) => {
   const labelMap: Record<string, string> = {

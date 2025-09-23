@@ -1,7 +1,7 @@
 package com.certification.analysis;
 
-import com.certification.entity.common.CrawlerData;
-import com.certification.entity.common.CrawlerData.RiskLevel;
+import com.certification.entity.common.CertNewsData;
+import com.certification.entity.common.CertNewsData.RiskLevel;
 import com.certification.entity.common.CertNewsDailyCountryRiskStats;
 import com.certification.repository.CrawlerDataRepository;
 import com.certification.repository.DailyCountryRiskStatsRepository;
@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.certification.entity.common.CrawlerData.RiskLevel.MEDIUM;
+import static com.certification.entity.common.CertNewsData.RiskLevel.MEDIUM;
 
 /**
  * 认证新闻分析服务
@@ -68,7 +68,7 @@ public class CertNewsanalysis {
         
         try {
             // 获取所有中风险且未删除的数据
-            List<CrawlerData> mediumRiskData = crawlerDataRepository.findByRiskLevelAndDeleted(MEDIUM, 0);
+            List<CertNewsData> mediumRiskData = crawlerDataRepository.findByRiskLevelAndDeleted(MEDIUM, 0);
             log.info("📊 找到 {} 条中风险数据需要处理", mediumRiskData.size());
             
             if (mediumRiskData.isEmpty()) {
@@ -88,11 +88,11 @@ public class CertNewsanalysis {
             int batchSize = 100;
             for (int i = 0; i < mediumRiskData.size(); i += batchSize) {
                 int endIndex = Math.min(i + batchSize, mediumRiskData.size());
-                List<CrawlerData> batch = mediumRiskData.subList(i, endIndex);
+                List<CertNewsData> batch = mediumRiskData.subList(i, endIndex);
                 
                 log.info("🔄 处理第 {}-{}/{} 条数据", i + 1, endIndex, mediumRiskData.size());
                 
-                for (CrawlerData data : batch) {
+                for (CertNewsData data : batch) {
                     try {
                         // 构建搜索文本（包含标题、内容、摘要、产品、类型）
                         String searchText = buildEnhancedSearchText(data);
@@ -131,7 +131,7 @@ public class CertNewsanalysis {
                             data.setRelated(true);
                             
                             // 升级为高风险
-                            data.setRiskLevel(CrawlerData.RiskLevel.HIGH);
+                            data.setRiskLevel(CertNewsData.RiskLevel.HIGH);
                             data.setRiskDescription("根据关键词匹配自动升级为高风险");
                             
                             // 保存更新
@@ -219,7 +219,7 @@ public class CertNewsanalysis {
         
         try {
             // 获取指定数据源的所有未删除数据
-            List<CrawlerData> allData = crawlerDataRepository.findBySourceNameAndDeleted(sourceName, 0);
+            List<CertNewsData> allData = crawlerDataRepository.findBySourceNameAndDeleted(sourceName, 0);
             log.info("找到数据源 {} 的 {} 条数据需要处理", sourceName, allData.size());
             
             int processedCount = 0;
@@ -228,7 +228,7 @@ public class CertNewsanalysis {
             int unchangedCount = 0;
             int riskProcessedCount = 0;
             
-            for (CrawlerData data : allData) {
+            for (CertNewsData data : allData) {
                 // 检查标题、内容、摘要是否包含关键词
                 String searchText = buildSearchText(data);
                 
@@ -430,7 +430,7 @@ public class CertNewsanalysis {
      * 构建搜索文本
      * 合并标题、内容、摘要、产品字段用于关键词匹配
      */
-    private String buildSearchText(CrawlerData data) {
+    private String buildSearchText(CertNewsData data) {
         StringBuilder searchText = new StringBuilder();
         
         if (data.getTitle() != null) {
@@ -500,7 +500,7 @@ public class CertNewsanalysis {
                 return false;
             }
             
-            CrawlerData data = optionalData.get();
+            CertNewsData data = optionalData.get();
             
             // 更新相关状态
             data.setRelated(isRelated);
@@ -536,7 +536,7 @@ public class CertNewsanalysis {
                 return false;
             }
             
-            CrawlerData data = optionalData.get();
+            CertNewsData data = optionalData.get();
             
             // 更新风险等级
             data.setRiskLevel(riskLevel);
@@ -594,12 +594,12 @@ public class CertNewsanalysis {
             }
             
             // 获取所有数据（不限制时间范围）
-            List<CrawlerData> allData = crawlerDataRepository.findByDeletedFalse();
+            List<CertNewsData> allData = crawlerDataRepository.findByDeletedFalse();
             
             log.info("今天({})共有 {} 条数据需要统计", today, allData.size());
             
             // 统计实际数据，将数据分配到对应的国家
-            for (CrawlerData data : allData) {
+            for (CertNewsData data : allData) {
                 String country = data.getCountry();
                 if (country == null || country.trim().isEmpty()) {
                     country = "未确定";
@@ -854,7 +854,7 @@ public class CertNewsanalysis {
      * 构建增强版搜索文本（包含更多字段和文本清理）
      * 合并标题、内容、摘要、产品、类型字段用于关键词匹配
      */
-    private String buildEnhancedSearchText(CrawlerData data) {
+    private String buildEnhancedSearchText(CertNewsData data) {
         StringBuilder searchText = new StringBuilder();
         
         // 优先级高：标题

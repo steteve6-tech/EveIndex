@@ -214,12 +214,12 @@
                  </template>
                  关键词管理
                </a-button>
-               <a-button @click="handleAutoUpdateCountry" :loading="countryUpdating" type="primary">
-                 <template #icon>
-                   <GlobalOutlined />
-                 </template>
-                 自动更新国家
-               </a-button>
+<!--               <a-button @click="handleAutoUpdateCountry" :loading="countryUpdating" type="primary">-->
+<!--                 <template #icon>-->
+<!--                   <GlobalOutlined />-->
+<!--                 </template>-->
+<!--                 自动更新国家-->
+<!--               </a-button>-->
 <!--               <a-button @click="handleViewCountryDistribution" type="default">-->
 <!--                 <template #icon>-->
 <!--                   <BarChartOutlined />-->

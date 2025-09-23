@@ -111,12 +111,12 @@
             <span>数据分析</span>
           </a-menu-item>
 
-          <a-menu-item key="/competitor-info">
-            <template #icon>
-              <TrophyOutlined />
-            </template>
-            <span>竞品信息</span>
-          </a-menu-item>
+<!--          <a-menu-item key="/competitor-info">-->
+<!--            <template #icon>-->
+<!--              <TrophyOutlined />-->
+<!--            </template>-->
+<!--            <span>竞品信息</span>-->
+<!--          </a-menu-item>-->
 
           <a-menu-item key="/crawler-management">
             <template #icon>

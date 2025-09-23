@@ -1,6 +1,6 @@
 package com.certification.service;
 
-import com.certification.entity.common.CrawlerData;
+import com.certification.entity.common.CertNewsData;
 import com.certification.repository.CrawlerDataRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +20,7 @@ public class AIAnalysisService {
     /**
      * 分析单条数据
      */
-    public Map<String, Object> analyzeSingleData(CrawlerData data, String analysisType) {
+    public Map<String, Object> analyzeSingleData(CertNewsData data, String analysisType) {
         log.info("AI分析单条数据: {} - 类型: {}", data.getId(), analysisType);
         
         Map<String, Object> result = new HashMap<>();
@@ -69,7 +69,7 @@ public class AIAnalysisService {
         
         for (String dataId : dataIds) {
             try {
-                CrawlerData data = crawlerDataRepository.findById(dataId).orElse(null);
+                CertNewsData data = crawlerDataRepository.findById(dataId).orElse(null);
                 if (data != null) {
                     Map<String, Object> singleResult = analyzeSingleData(data, analysisType);
                     analysisResults.add(singleResult);
@@ -103,13 +103,13 @@ public class AIAnalysisService {
         log.info("AI分析筛选数据 - 类型: {} - 最大数量: {}", analysisType, maxCount);
         
         // 获取当前筛选条件下的数据
-        List<CrawlerData> filteredData = crawlerDataRepository.findAll();
+        List<CertNewsData> filteredData = crawlerDataRepository.findAll();
         if (filteredData.size() > maxCount) {
             filteredData = filteredData.subList(0, maxCount);
         }
         
         List<String> dataIds = filteredData.stream()
-                .map(CrawlerData::getId)
+                .map(CertNewsData::getId)
                 .collect(Collectors.toList());
         
         return analyzeBatchData(dataIds, analysisType);
@@ -157,7 +157,7 @@ public class AIAnalysisService {
     /**
      * 相关性分析
      */
-    private Map<String, Object> analyzeRelevance(CrawlerData data) {
+    private Map<String, Object> analyzeRelevance(CertNewsData data) {
         Map<String, Object> result = new HashMap<>();
         
         // 模拟AI相关性分析
@@ -195,7 +195,7 @@ public class AIAnalysisService {
     /**
      * 内容摘要
      */
-    private Map<String, Object> analyzeSummary(CrawlerData data) {
+    private Map<String, Object> analyzeSummary(CertNewsData data) {
         Map<String, Object> result = new HashMap<>();
         
         String content = data.getContent();
@@ -217,7 +217,7 @@ public class AIAnalysisService {
     /**
      * 分类分析
      */
-    private Map<String, Object> analyzeClassification(CrawlerData data) {
+    private Map<String, Object> analyzeClassification(CertNewsData data) {
         Map<String, Object> result = new HashMap<>();
         
         String content = (data.getTitle() + " " + data.getContent()).toLowerCase();
@@ -262,7 +262,7 @@ public class AIAnalysisService {
     /**
      * 情感分析
      */
-    private Map<String, Object> analyzeSentiment(CrawlerData data) {
+    private Map<String, Object> analyzeSentiment(CertNewsData data) {
         Map<String, Object> result = new HashMap<>();
         
         String content = (data.getTitle() + " " + data.getContent()).toLowerCase();
@@ -301,7 +301,7 @@ public class AIAnalysisService {
     /**
      * 关键词提取
      */
-    private Map<String, Object> analyzeKeywords(CrawlerData data) {
+    private Map<String, Object> analyzeKeywords(CertNewsData data) {
         Map<String, Object> result = new HashMap<>();
         
         String content = (data.getTitle() + " " + data.getContent()).toLowerCase();

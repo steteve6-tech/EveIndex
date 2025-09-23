@@ -1,6 +1,7 @@
 package com.certification.controller;
 
 import com.certification.service.DailyCountryRiskStatsService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -17,10 +18,11 @@ import java.util.stream.Collectors;
  * 每日国家高风险数据统计控制器
  */
 @Slf4j
+@Tag(name = "认证新闻每日风险统计", description = "认证新闻每日国家高风险数据统计管理接口")
 @RestController
 @RequestMapping("/api/daily-country-risk-stats")
 @CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3100", "http://127.0.0.1:3000", "http://127.0.0.1:3100"})
-public class DailyCountryRiskStatsController {
+public class CertNewsDailyRiskStatsController {
 
     @Autowired
     private DailyCountryRiskStatsService dailyCountryRiskStatsService;

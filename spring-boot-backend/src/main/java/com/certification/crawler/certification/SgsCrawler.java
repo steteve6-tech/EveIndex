@@ -1,11 +1,11 @@
-package com.certification.crawler.certification.sgs;
+package com.certification.crawler.certification;
 
 import com.certification.crawler.certification.base.BaseCrawler;
 import com.certification.crawler.certification.base.CrawlerResult;
 import com.certification.crawler.common.HttpUtils;
-import com.certification.entity.common.CrawlerData;
+import com.certification.entity.common.CertNewsData;
 import com.certification.service.DateFormatService;
-import com.certification.service.SystemLogService;
+// import com.certification.service.SystemLogService; // 已删除
 import com.certification.standards.CrawlerDataService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,8 +36,8 @@ public class SgsCrawler implements BaseCrawler {
     @Autowired
     private CrawlerDataService crawlerDataService;
     
-    @Autowired
-    private SystemLogService systemLogService;
+    // @Autowired
+    // private SystemLogService systemLogService; // 已删除
     
     @Autowired
     private DateFormatService dateFormatService;
@@ -773,11 +773,7 @@ public class SgsCrawler implements BaseCrawler {
         
         try {
             // 记录开始日志
-            systemLogService.logInfo(
-                "SGS爬虫开始执行",
-                String.format("开始执行SGS爬虫，计划爬取 %d 条数据", count),
-                "SgsCrawler"
-            );
+            log.info("开始执行SGS爬虫，计划爬取 {} 条数据", count);
             
             // 记录爬取前的数据数量
             long beforeCount = crawlerDataService.getCountBySourceName("SGS");
@@ -786,28 +782,24 @@ public class SgsCrawler implements BaseCrawler {
             List<CrawlerResult> crawlerResults = crawlLatest(count);
 
             // 转换为CrawlerData实体
-            List<CrawlerData> crawlerDataList = convertToCrawlerData(crawlerResults);
+            List<CertNewsData> certNewsDataList = convertToCrawlerData(crawlerResults);
 
             // 使用安全的批量保存（自动去重），每30条数据一批
-            List<CrawlerData> savedDataList = crawlerDataService.safeSaveCrawlerDataList(crawlerDataList, 30);
+            List<CertNewsData> savedDataList = crawlerDataService.safeSaveCrawlerDataList(certNewsDataList, 30);
 
             // 记录爬取后的数据数量
             long afterCount = crawlerDataService.getCountBySourceName("SGS");
             long newDataCount = afterCount - beforeCount;
             
             // 记录数据变更日志
-            for (CrawlerData data : savedDataList) {
-                systemLogService.logInfo(
-                    "爬虫数据创建",
-                    String.format("SGS爬虫创建新数据: ID=%s, 标题=%s, URL=%s", 
-                        data.getId(), data.getTitle(), data.getUrl()),
-                    "SgsCrawler"
-                );
+            for (CertNewsData data : savedDataList) {
+                log.info("SGS爬虫创建新数据: ID={}, 标题={}, URL={}", 
+                    data.getId(), data.getTitle(), data.getUrl());
             }
             
             // 统计各状态的数据数量
             Map<String, Long> statusCounts = new HashMap<>();
-            for (CrawlerData data : savedDataList) {
+            for (CertNewsData data : savedDataList) {
                 String status = data.getStatus().name();
                 statusCounts.put(status, statusCounts.getOrDefault(status, 0L) + 1);
             }
@@ -815,12 +807,8 @@ public class SgsCrawler implements BaseCrawler {
             long executionTime = System.currentTimeMillis() - startTime;
             
             // 记录成功日志
-            systemLogService.logInfo(
-                "SGS爬虫执行完成",
-                String.format("SGS爬虫执行完成，爬取 %d 条数据，新增 %d 条，耗时 %d ms",
-                    crawlerResults.size(), newDataCount, executionTime),
-                "SgsCrawler"
-            );
+            log.info("SGS爬虫执行完成，爬取 {} 条数据，新增 {} 条，耗时 {} ms",
+                crawlerResults.size(), newDataCount, executionTime);
             
             // 构建返回结果
             result.put("success", true);
@@ -840,12 +828,7 @@ public class SgsCrawler implements BaseCrawler {
             long executionTime = System.currentTimeMillis() - startTime;
             
             // 记录错误日志
-            systemLogService.logError(
-                "SGS爬虫执行失败",
-                String.format("SGS爬虫执行失败: %s", e.getMessage()),
-                "SgsCrawler",
-                e
-            );
+            log.error("SGS爬虫执行失败: {}", e.getMessage(), e);
             
             result.put("success", false);
             result.put("error", "SGS爬虫执行失败: " + e.getMessage());
@@ -868,21 +851,13 @@ public class SgsCrawler implements BaseCrawler {
         
         try {
             // 记录开始日志
-            systemLogService.logInfo(
-                "SGS爬虫开始执行（关键词搜索）",
-                String.format("开始执行SGS爬虫，关键词: %s，计划爬取 %d 条数据", keyword, count),
-                "SgsCrawler"
-            );
+            log.info("开始执行SGS爬虫，关键词: {}，计划爬取 {} 条数据", keyword, count);
             
             // 检查爬虫可用性（但不强制要求）
             boolean isAvailable = isAvailable();
             if (!isAvailable) {
                 System.out.println("警告: SGS爬虫可用性检查失败，但将继续尝试爬取...");
-                systemLogService.logInfo(
-                    "SGS爬虫可用性检查",
-                    "SGS爬虫可用性检查失败，但将继续尝试爬取",
-                    "SgsCrawler"
-                );
+                log.info("SGS爬虫可用性检查失败，但将继续尝试爬取");
             }
             
             // 记录爬取前的数据数量
@@ -892,10 +867,10 @@ public class SgsCrawler implements BaseCrawler {
             List<CrawlerResult> crawlerResults = crawl(keyword, count);
 
             // 转换为CrawlerData实体
-            List<CrawlerData> crawlerDataList = convertToCrawlerData(crawlerResults);
+            List<CertNewsData> certNewsDataList = convertToCrawlerData(crawlerResults);
 
             // 检查是否全部重复
-            if (crawlerDataList.isEmpty()) {
+            if (certNewsDataList.isEmpty()) {
                 result.put("success", true);
                 result.put("message", "没有爬取到任何数据");
                 result.put("crawledCount", 0);
@@ -906,24 +881,20 @@ public class SgsCrawler implements BaseCrawler {
                 result.put("executionTime", System.currentTimeMillis() - startTime);
                 result.put("timestamp", LocalDateTime.now().toString());
                 
-                systemLogService.logInfo(
-                    "SGS爬虫执行完成（无数据）",
-                    String.format("SGS爬虫执行完成，关键词: %s，没有爬取到任何数据", keyword),
-                    "SgsCrawler"
-                );
+                log.info("SGS爬虫执行完成，关键词: {}，没有爬取到任何数据", keyword);
                 return result;
             }
 
             // 获取去重统计信息
-            Map<String, Object> duplicateStats = crawlerDataService.getDuplicateUrlStats(crawlerDataList);
+            Map<String, Object> duplicateStats = crawlerDataService.getDuplicateUrlStats(certNewsDataList);
             long duplicateCount = duplicateStats.get("duplicateCount") == null ? 0L : ((Number)duplicateStats.get("duplicateCount")).longValue();
             
             // 检查是否全部重复
-            boolean allDuplicates = duplicateCount == crawlerDataList.size();
+            boolean allDuplicates = duplicateCount == certNewsDataList.size();
             if (allDuplicates) {
                 result.put("success", true);
                 result.put("message", "爬取的数据全部与数据库重复，停止爬取");
-                result.put("crawledCount", crawlerDataList.size());
+                result.put("crawledCount", certNewsDataList.size());
                 result.put("savedCount", 0);
                 result.put("duplicateCount", duplicateCount);
                 result.put("allDuplicates", true);
@@ -931,34 +902,26 @@ public class SgsCrawler implements BaseCrawler {
                 result.put("executionTime", System.currentTimeMillis() - startTime);
                 result.put("timestamp", LocalDateTime.now().toString());
                 
-                systemLogService.logInfo(
-                    "SGS爬虫执行完成（全部重复）",
-                    String.format("SGS爬虫执行完成，关键词: %s，爬取 %d 条数据全部重复，停止爬取", keyword, crawlerDataList.size()),
-                    "SgsCrawler"
-                );
+                log.info("SGS爬虫执行完成，关键词: {}，爬取 {} 条数据全部重复，停止爬取", keyword, certNewsDataList.size());
                 return result;
             }
             
             // 使用安全的批量保存（自动去重），每30条数据一批
-            List<CrawlerData> savedDataList = crawlerDataService.safeSaveCrawlerDataList(crawlerDataList, 30);
+            List<CertNewsData> savedDataList = crawlerDataService.safeSaveCrawlerDataList(certNewsDataList, 30);
             
             // 记录爬取后的数据数量
             long afterCount = crawlerDataService.getCountBySourceName("SGS");
             long newDataCount = afterCount - beforeCount;
             
             // 记录数据变更日志
-            for (CrawlerData data : savedDataList) {
-                systemLogService.logInfo(
-                    "爬虫数据创建（关键词搜索）",
-                    String.format("SGS爬虫创建新数据: ID=%s, 标题=%s, URL=%s, 关键词=%s", 
-                        data.getId(), data.getTitle(), data.getUrl(), keyword),
-                    "SgsCrawler"
-                );
+            for (CertNewsData data : savedDataList) {
+                log.info("SGS爬虫创建新数据: ID={}, 标题={}, URL={}, 关键词={}", 
+                    data.getId(), data.getTitle(), data.getUrl(), keyword);
             }
             
             // 统计各状态的数据数量
             Map<String, Long> statusCounts = new HashMap<>();
-            for (CrawlerData data : savedDataList) {
+            for (CertNewsData data : savedDataList) {
                 String status = data.getStatus().name();
                 statusCounts.put(status, statusCounts.getOrDefault(status, 0L) + 1);
             }
@@ -966,12 +929,8 @@ public class SgsCrawler implements BaseCrawler {
             long executionTime = System.currentTimeMillis() - startTime;
             
             // 记录成功日志
-            systemLogService.logInfo(
-                "SGS爬虫执行完成（关键词搜索）",
-                String.format("SGS爬虫执行完成，关键词: %s，爬取 %d 条数据，新增 %d 条，重复 %d 条，耗时 %d ms", 
-                    keyword, crawlerResults.size(), newDataCount, duplicateCount, executionTime),
-                "SgsCrawler"
-            );
+            log.info("SGS爬虫执行完成，关键词: {}，爬取 {} 条数据，新增 {} 条，重复 {} 条，耗时 {} ms", 
+                keyword, crawlerResults.size(), newDataCount, duplicateCount, executionTime);
             
             // 构建返回结果
             result.put("success", true);
@@ -993,12 +952,7 @@ public class SgsCrawler implements BaseCrawler {
             long executionTime = System.currentTimeMillis() - startTime;
             
             // 记录错误日志
-            systemLogService.logError(
-                "SGS爬虫执行失败（关键词搜索）",
-                String.format("SGS爬虫执行失败，关键词: %s，错误: %s", keyword, e.getMessage()),
-                "SgsCrawler",
-                e
-            );
+            log.error("SGS爬虫执行失败，关键词: {}，错误: {}", keyword, e.getMessage(), e);
             
             result.put("success", false);
             result.put("error", "SGS爬虫执行失败: " + e.getMessage());
@@ -1024,7 +978,7 @@ public class SgsCrawler implements BaseCrawler {
         
         try {
             // 记录开始日志
-            systemLogService.logInfo(
+            log.info(
                 "SGS爬虫开始执行（过滤条件）",
                 String.format("开始执行SGS爬虫，关键词: %s，新闻类型: %s，日期范围: %s，主题: %s，计划爬取 %d 条数据", 
                     keyword, newsType, dateRange, topics, count),
@@ -1035,11 +989,7 @@ public class SgsCrawler implements BaseCrawler {
             boolean isAvailable = isAvailable();
             if (!isAvailable) {
                 System.out.println("警告: SGS爬虫可用性检查失败，但将继续尝试爬取...");
-                systemLogService.logInfo(
-                    "SGS爬虫可用性检查",
-                    "SGS爬虫可用性检查失败，但将继续尝试爬取",
-                    "SgsCrawler"
-                );
+                log.info("SGS爬虫可用性检查失败，但将继续尝试爬取");
             }
             
             // 记录爬取前的数据数量
@@ -1049,10 +999,10 @@ public class SgsCrawler implements BaseCrawler {
             List<CrawlerResult> crawlerResults = crawlWithFilters(keyword, count, newsType, dateRange, topics);
 
             // 转换为CrawlerData实体
-            List<CrawlerData> crawlerDataList = convertToCrawlerData(crawlerResults);
+            List<CertNewsData> certNewsDataList = convertToCrawlerData(crawlerResults);
 
             // 检查是否全部重复
-            if (crawlerDataList.isEmpty()) {
+            if (certNewsDataList.isEmpty()) {
                 result.put("success", true);
                 result.put("message", "没有爬取到任何数据");
                 result.put("crawledCount", 0);
@@ -1063,24 +1013,20 @@ public class SgsCrawler implements BaseCrawler {
                 result.put("executionTime", System.currentTimeMillis() - startTime);
                 result.put("timestamp", LocalDateTime.now().toString());
                 
-                systemLogService.logInfo(
-                    "SGS爬虫执行完成（无数据）",
-                    String.format("SGS爬虫执行完成，关键词: %s，没有爬取到任何数据", keyword),
-                    "SgsCrawler"
-                );
+                log.info("SGS爬虫执行完成，关键词: {}，没有爬取到任何数据", keyword);
                 return result;
             }
 
             // 获取去重统计信息
-            Map<String, Object> duplicateStats = crawlerDataService.getDuplicateUrlStats(crawlerDataList);
+            Map<String, Object> duplicateStats = crawlerDataService.getDuplicateUrlStats(certNewsDataList);
             long duplicateCount = duplicateStats.get("duplicateCount") == null ? 0L : ((Number)duplicateStats.get("duplicateCount")).longValue();
             
             // 检查是否全部重复
-            boolean allDuplicates = duplicateCount == crawlerDataList.size();
+            boolean allDuplicates = duplicateCount == certNewsDataList.size();
             if (allDuplicates) {
                 result.put("success", true);
                 result.put("message", "爬取的数据全部与数据库重复，停止爬取");
-                result.put("crawledCount", crawlerDataList.size());
+                result.put("crawledCount", certNewsDataList.size());
                 result.put("savedCount", 0);
                 result.put("duplicateCount", duplicateCount);
                 result.put("allDuplicates", true);
@@ -1088,34 +1034,26 @@ public class SgsCrawler implements BaseCrawler {
                 result.put("executionTime", System.currentTimeMillis() - startTime);
                 result.put("timestamp", LocalDateTime.now().toString());
                 
-                systemLogService.logInfo(
-                    "SGS爬虫执行完成（全部重复）",
-                    String.format("SGS爬虫执行完成，关键词: %s，爬取 %d 条数据全部重复，停止爬取", keyword, crawlerDataList.size()),
-                    "SgsCrawler"
-                );
+                log.info("SGS爬虫执行完成，关键词: {}，爬取 {} 条数据全部重复，停止爬取", keyword, certNewsDataList.size());
                 return result;
             }
             
             // 使用安全的批量保存（自动去重），每30条数据一批
-            List<CrawlerData> savedDataList = crawlerDataService.safeSaveCrawlerDataList(crawlerDataList, 30);
+            List<CertNewsData> savedDataList = crawlerDataService.safeSaveCrawlerDataList(certNewsDataList, 30);
             
             // 记录爬取后的数据数量
             long afterCount = crawlerDataService.getCountBySourceName("SGS");
             long newDataCount = afterCount - beforeCount;
             
             // 记录数据变更日志
-            for (CrawlerData data : savedDataList) {
-                systemLogService.logInfo(
-                    "爬虫数据创建（过滤条件）",
-                    String.format("SGS爬虫创建新数据: ID=%s, 标题=%s, URL=%s, 关键词=%s", 
-                        data.getId(), data.getTitle(), data.getUrl(), keyword),
-                    "SgsCrawler"
-                );
+            for (CertNewsData data : savedDataList) {
+                log.info("SGS爬虫创建新数据: ID={}, 标题={}, URL={}, 关键词={}", 
+                    data.getId(), data.getTitle(), data.getUrl(), keyword);
             }
             
             // 统计各状态的数据数量
             Map<String, Long> statusCounts = new HashMap<>();
-            for (CrawlerData data : savedDataList) {
+            for (CertNewsData data : savedDataList) {
                 String status = data.getStatus().name();
                 statusCounts.put(status, statusCounts.getOrDefault(status, 0L) + 1);
             }
@@ -1123,12 +1061,8 @@ public class SgsCrawler implements BaseCrawler {
             long executionTime = System.currentTimeMillis() - startTime;
             
             // 记录成功日志
-            systemLogService.logInfo(
-                "SGS爬虫执行完成（过滤条件）",
-                String.format("SGS爬虫执行完成，关键词: %s，爬取 %d 条数据，新增 %d 条，重复 %d 条，耗时 %d ms", 
-                    keyword, crawlerResults.size(), newDataCount, duplicateCount, executionTime),
-                "SgsCrawler"
-            );
+            log.info("SGS爬虫执行完成，关键词: {}，爬取 {} 条数据，新增 {} 条，重复 {} 条，耗时 {} ms", 
+                keyword, crawlerResults.size(), newDataCount, duplicateCount, executionTime);
             
             // 构建返回结果
             result.put("success", true);
@@ -1153,12 +1087,7 @@ public class SgsCrawler implements BaseCrawler {
             long executionTime = System.currentTimeMillis() - startTime;
             
             // 记录错误日志
-            systemLogService.logError(
-                "SGS爬虫执行失败（过滤条件）",
-                String.format("SGS爬虫执行失败，关键词: %s，错误: %s", keyword, e.getMessage()),
-                "SgsCrawler",
-                e
-            );
+            log.error("SGS爬虫执行失败，关键词: {}，错误: {}", keyword, e.getMessage(), e);
             
             result.put("success", false);
             result.put("error", "SGS爬虫执行失败: " + e.getMessage());
@@ -1174,20 +1103,20 @@ public class SgsCrawler implements BaseCrawler {
      * @param crawlerResults 爬虫结果列表
      * @return CrawlerData实体列表
      */
-    private List<CrawlerData> convertToCrawlerData(List<CrawlerResult> crawlerResults) {
-        List<CrawlerData> crawlerDataList = new ArrayList<>();
+    private List<CertNewsData> convertToCrawlerData(List<CrawlerResult> crawlerResults) {
+        List<CertNewsData> certNewsDataList = new ArrayList<>();
         
         for (CrawlerResult result : crawlerResults) {
-            CrawlerData crawlerData = new CrawlerData();
+            CertNewsData certNewsData = new CertNewsData();
             // 设置ID为随机UUID
-            crawlerData.setId(UUID.randomUUID().toString());
+            certNewsData.setId(UUID.randomUUID().toString());
             
             // 设置基本信息
-            crawlerData.setSourceName(result.getSource());
-            crawlerData.setTitle(result.getTitle());
-            crawlerData.setUrl(result.getUrl());
-            crawlerData.setSummary(result.getContent());
-            crawlerData.setContent(result.getContent());
+            certNewsData.setSourceName(result.getSource());
+            certNewsData.setTitle(result.getTitle());
+            certNewsData.setUrl(result.getUrl());
+            certNewsData.setSummary(result.getContent());
+            certNewsData.setContent(result.getContent());
             // 统一日期格式
             String rawDate = result.getDate();
             String standardizedDate = dateFormatService.standardizeDate(rawDate);
@@ -1195,25 +1124,25 @@ public class SgsCrawler implements BaseCrawler {
                 log.warn("SGS爬虫无法解析日期格式: {}", rawDate);
                 standardizedDate = dateFormatService.getCurrentDateString();
             }
-            crawlerData.setPublishDate(standardizedDate);
-            crawlerData.setCrawlTime(result.getCrawlTime());
-            crawlerData.setType(result.getType());
-            crawlerData.setCountry(result.getCountry());
+            certNewsData.setPublishDate(standardizedDate);
+            certNewsData.setCrawlTime(result.getCrawlTime());
+            certNewsData.setType(result.getType());
+            certNewsData.setCountry(result.getCountry());
             
             // 设置状态
-            crawlerData.setStatus(CrawlerData.DataStatus.NEW);
-            crawlerData.setIsProcessed(false);
+            certNewsData.setStatus(CertNewsData.DataStatus.NEW);
+            certNewsData.setIsProcessed(false);
             
             // 设置风险等级为MEDIUM
-            crawlerData.setRiskLevel(CrawlerData.RiskLevel.MEDIUM);
+            certNewsData.setRiskLevel(CertNewsData.RiskLevel.MEDIUM);
             
             // 设置备注
-            crawlerData.setRemarks("通过SGS爬虫自动抓取");
+            certNewsData.setRemarks("通过SGS爬虫自动抓取");
             
-            crawlerDataList.add(crawlerData);
+            certNewsDataList.add(certNewsData);
         }
         
-        return crawlerDataList;
+        return certNewsDataList;
     }
     
     /**
@@ -1231,10 +1160,10 @@ public class SgsCrawler implements BaseCrawler {
             
             // 获取数据库统计
             long totalCount = crawlerDataService.getCountBySourceName("SGS");
-            long newCount = crawlerDataService.getCountByStatus(CrawlerData.DataStatus.NEW);
-            long processedCount = crawlerDataService.getCountByStatus(CrawlerData.DataStatus.PROCESSED);
-            long errorCount = crawlerDataService.getCountByStatus(CrawlerData.DataStatus.ERROR);
-            long duplicateCount = crawlerDataService.getCountByStatus(CrawlerData.DataStatus.DUPLICATE);
+            long newCount = crawlerDataService.getCountByStatus(CertNewsData.DataStatus.NEW);
+            long processedCount = crawlerDataService.getCountByStatus(CertNewsData.DataStatus.PROCESSED);
+            long errorCount = crawlerDataService.getCountByStatus(CertNewsData.DataStatus.ERROR);
+            long duplicateCount = crawlerDataService.getCountByStatus(CertNewsData.DataStatus.DUPLICATE);
             
             result.put("databaseStats", Map.of(
                 "totalCount", totalCount,

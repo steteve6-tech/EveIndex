@@ -1,6 +1,6 @@
 package com.certification.controller;
 
-import com.certification.entity.common.CrawlerData;
+import com.certification.entity.common.CertNewsData;
 import com.certification.standards.CrawlerDataService;
 import com.certification.analysis.CertNewsanalysis;
 import com.certification.repository.CrawlerDataRepository;
@@ -34,10 +34,10 @@ import java.util.Optional;
  * 提供爬虫数据的查询和管理接口
  */
 @Slf4j
-@Tag(name = "爬虫数据管理", description = "爬虫数据的查询、统计和管理接口")
+@Tag(name = "认证新闻数据管理", description = "认证新闻数据的查询、统计和管理接口")
 @RestController
 @RequestMapping("/crawler-data")
-public class CrawlerDataController {
+public class CertNewsDataController {
     
     @Autowired
     private CrawlerDataService crawlerDataService;
@@ -97,7 +97,7 @@ public class CrawlerDataController {
             Pageable pageable = PageRequest.of(page, size, sort);
             
             // 执行查询
-            Page<CrawlerData> dataPage = crawlerDataService.searchCrawlerData(
+            Page<CertNewsData> dataPage = crawlerDataService.searchCrawlerData(
                 processedKeyword, processedCountry, related, processedSourceName, processedType, processedStartDate, processedEndDate, riskLevel, processedMatchedKeyword, pageable
             );
             
@@ -149,7 +149,7 @@ public class CrawlerDataController {
         
         try {
             // 查找数据
-            Optional<CrawlerData> optionalData = crawlerDataRepository.findById(id);
+            Optional<CertNewsData> optionalData = crawlerDataRepository.findById(id);
             if (optionalData.isEmpty()) {
                 result.put("success", false);
                 result.put("error", "数据不存在");
@@ -157,11 +157,11 @@ public class CrawlerDataController {
                 return ResponseEntity.status(404).body(result);
             }
             
-            CrawlerData crawlerData = optionalData.get();
+            CertNewsData certNewsData = optionalData.get();
             
             // 更新相关性状态
-            crawlerData.setRelated(related);
-            crawlerDataRepository.save(crawlerData);
+            certNewsData.setRelated(related);
+            crawlerDataRepository.save(certNewsData);
             
             result.put("success", true);
             result.put("message", "相关性更新成功");
@@ -195,7 +195,7 @@ public class CrawlerDataController {
         
         try {
             // 查找数据
-            Optional<CrawlerData> optionalData = crawlerDataRepository.findById(id);
+            Optional<CertNewsData> optionalData = crawlerDataRepository.findById(id);
             if (optionalData.isEmpty()) {
                 result.put("success", false);
                 result.put("error", "数据不存在");
@@ -203,15 +203,15 @@ public class CrawlerDataController {
                 return ResponseEntity.status(404).body(result);
             }
             
-            CrawlerData crawlerData = optionalData.get();
+            CertNewsData certNewsData = optionalData.get();
             
             // 验证风险等级参数
-            CrawlerData.RiskLevel riskLevelEnum;
+            CertNewsData.RiskLevel riskLevelEnum;
             try {
                 if ("null".equals(riskLevel) || riskLevel == null) {
                     riskLevelEnum = null;
                 } else {
-                    riskLevelEnum = CrawlerData.RiskLevel.valueOf(riskLevel.toUpperCase());
+                    riskLevelEnum = CertNewsData.RiskLevel.valueOf(riskLevel.toUpperCase());
                 }
             } catch (IllegalArgumentException e) {
                 result.put("success", false);
@@ -221,8 +221,8 @@ public class CrawlerDataController {
             }
             
             // 更新风险等级状态
-            crawlerData.setRiskLevel(riskLevelEnum);
-            crawlerDataRepository.save(crawlerData);
+            certNewsData.setRiskLevel(riskLevelEnum);
+            crawlerDataRepository.save(certNewsData);
             
             result.put("success", true);
             result.put("message", "风险等级更新成功");
@@ -262,18 +262,18 @@ public class CrawlerDataController {
             for (String id : ids) {
                 try {
                     // 查找数据
-                    Optional<CrawlerData> optionalData = crawlerDataRepository.findById(id);
+                    Optional<CertNewsData> optionalData = crawlerDataRepository.findById(id);
                     if (optionalData.isEmpty()) {
                         failCount++;
                         failedIds.add(id);
                         continue;
                     }
                     
-                    CrawlerData crawlerData = optionalData.get();
+                    CertNewsData certNewsData = optionalData.get();
                     
                     // 更新相关性状态
-                    crawlerData.setRelated(related);
-                    crawlerDataRepository.save(crawlerData);
+                    certNewsData.setRelated(related);
+                    crawlerDataRepository.save(certNewsData);
                     successCount++;
                     
                 } catch (Exception e) {
@@ -319,12 +319,12 @@ public class CrawlerDataController {
         
         try {
             // 验证风险等级参数
-            CrawlerData.RiskLevel riskLevelEnum;
+            CertNewsData.RiskLevel riskLevelEnum;
             try {
                 if ("null".equals(riskLevel) || riskLevel == null) {
                     riskLevelEnum = null;
                 } else {
-                    riskLevelEnum = CrawlerData.RiskLevel.valueOf(riskLevel.toUpperCase());
+                    riskLevelEnum = CertNewsData.RiskLevel.valueOf(riskLevel.toUpperCase());
                 }
             } catch (IllegalArgumentException e) {
                 result.put("success", false);
@@ -340,18 +340,18 @@ public class CrawlerDataController {
             for (String id : ids) {
                 try {
                     // 查找数据
-                    Optional<CrawlerData> optionalData = crawlerDataRepository.findById(id);
+                    Optional<CertNewsData> optionalData = crawlerDataRepository.findById(id);
                     if (optionalData.isEmpty()) {
                         failCount++;
                         failedIds.add(id);
                         continue;
                     }
                     
-                    CrawlerData crawlerData = optionalData.get();
+                    CertNewsData certNewsData = optionalData.get();
                     
                     // 更新风险等级状态
-                    crawlerData.setRiskLevel(riskLevelEnum);
-                    crawlerDataRepository.save(crawlerData);
+                    certNewsData.setRiskLevel(riskLevelEnum);
+                    crawlerDataRepository.save(certNewsData);
                     successCount++;
                     
                 } catch (Exception e) {
@@ -408,7 +408,7 @@ public class CrawlerDataController {
             
             // 使用批量更新方法，更高效
             int updatedCount = crawlerDataRepository.batchUpdateAllRiskLevel(
-                CrawlerData.RiskLevel.MEDIUM, 
+                CertNewsData.RiskLevel.MEDIUM,
                 LocalDateTime.now()
             );
             
@@ -441,13 +441,13 @@ public class CrawlerDataController {
     })
     @PutMapping("/update")
     public ResponseEntity<Map<String, Object>> updateCrawlerData(
-            @Parameter(description = "爬虫数据更新请求") @RequestBody CrawlerData crawlerData) {
+            @Parameter(description = "爬虫数据更新请求") @RequestBody CertNewsData certNewsData) {
         
         Map<String, Object> result = new HashMap<>();
         
         try {
             // 查找数据
-            Optional<CrawlerData> optionalData = crawlerDataRepository.findById(crawlerData.getId());
+            Optional<CertNewsData> optionalData = crawlerDataRepository.findById(certNewsData.getId());
             if (optionalData.isEmpty()) {
                 result.put("success", false);
                 result.put("error", "数据不存在");
@@ -455,44 +455,44 @@ public class CrawlerDataController {
                 return ResponseEntity.status(404).body(result);
             }
             
-            CrawlerData existingData = optionalData.get();
+            CertNewsData existingData = optionalData.get();
             
             // 更新字段（只更新非null的字段）
-            if (crawlerData.getTitle() != null) {
-                existingData.setTitle(crawlerData.getTitle());
+            if (certNewsData.getTitle() != null) {
+                existingData.setTitle(certNewsData.getTitle());
             }
-            if (crawlerData.getCountry() != null) {
-                existingData.setCountry(crawlerData.getCountry());
+            if (certNewsData.getCountry() != null) {
+                existingData.setCountry(certNewsData.getCountry());
             }
-            if (crawlerData.getSourceName() != null) {
-                existingData.setSourceName(crawlerData.getSourceName());
+            if (certNewsData.getSourceName() != null) {
+                existingData.setSourceName(certNewsData.getSourceName());
             }
-            if (crawlerData.getType() != null) {
-                existingData.setType(crawlerData.getType());
+            if (certNewsData.getType() != null) {
+                existingData.setType(certNewsData.getType());
             }
-            if (crawlerData.getSummary() != null) {
-                existingData.setSummary(crawlerData.getSummary());
+            if (certNewsData.getSummary() != null) {
+                existingData.setSummary(certNewsData.getSummary());
             }
-            if (crawlerData.getContent() != null) {
-                existingData.setContent(crawlerData.getContent());
+            if (certNewsData.getContent() != null) {
+                existingData.setContent(certNewsData.getContent());
             }
-            if (crawlerData.getUrl() != null) {
-                existingData.setUrl(crawlerData.getUrl());
+            if (certNewsData.getUrl() != null) {
+                existingData.setUrl(certNewsData.getUrl());
             }
-            if (crawlerData.getPublishDate() != null) {
-                existingData.setPublishDate(crawlerData.getPublishDate());
+            if (certNewsData.getPublishDate() != null) {
+                existingData.setPublishDate(certNewsData.getPublishDate());
             }
-            if (crawlerData.getRelated() != null) {
-                existingData.setRelated(crawlerData.getRelated());
+            if (certNewsData.getRelated() != null) {
+                existingData.setRelated(certNewsData.getRelated());
             }
-            if (crawlerData.getRiskLevel() != null) {
-                existingData.setRiskLevel(crawlerData.getRiskLevel());
+            if (certNewsData.getRiskLevel() != null) {
+                existingData.setRiskLevel(certNewsData.getRiskLevel());
             }
-            if (crawlerData.getRiskDescription() != null) {
-                existingData.setRiskDescription(crawlerData.getRiskDescription());
+            if (certNewsData.getRiskDescription() != null) {
+                existingData.setRiskDescription(certNewsData.getRiskDescription());
             }
-            if (crawlerData.getRemarks() != null) {
-                existingData.setRemarks(crawlerData.getRemarks());
+            if (certNewsData.getRemarks() != null) {
+                existingData.setRemarks(certNewsData.getRemarks());
             }
             
             // 保存更新
@@ -529,10 +529,10 @@ public class CrawlerDataController {
         try {
             // 统计各风险等级的数量
             long totalCount = crawlerDataRepository.countByDeleted(0);
-            long highRiskCount = crawlerDataRepository.countByRiskLevelAndDeleted(CrawlerData.RiskLevel.HIGH, 0);
-            long mediumRiskCount = crawlerDataRepository.countByRiskLevelAndDeleted(CrawlerData.RiskLevel.MEDIUM, 0);
-            long lowRiskCount = crawlerDataRepository.countByRiskLevelAndDeleted(CrawlerData.RiskLevel.LOW, 0);
-            long noneRiskCount = crawlerDataRepository.countByRiskLevelAndDeleted(CrawlerData.RiskLevel.NONE, 0);
+            long highRiskCount = crawlerDataRepository.countByRiskLevelAndDeleted(CertNewsData.RiskLevel.HIGH, 0);
+            long mediumRiskCount = crawlerDataRepository.countByRiskLevelAndDeleted(CertNewsData.RiskLevel.MEDIUM, 0);
+            long lowRiskCount = crawlerDataRepository.countByRiskLevelAndDeleted(CertNewsData.RiskLevel.LOW, 0);
+            long noneRiskCount = crawlerDataRepository.countByRiskLevelAndDeleted(CertNewsData.RiskLevel.NONE, 0);
             long undeterminedCount = crawlerDataRepository.countByRiskLevelIsNullAndDeleted(0);
             
             Map<String, Object> statistics = new HashMap<>();
@@ -630,7 +630,7 @@ public class CrawlerDataController {
         
         try {
             // 查找数据
-            Optional<CrawlerData> optionalData = crawlerDataRepository.findById(id);
+            Optional<CertNewsData> optionalData = crawlerDataRepository.findById(id);
             if (optionalData.isEmpty()) {
                 result.put("success", false);
                 result.put("error", "数据不存在");
@@ -676,7 +676,7 @@ public class CrawlerDataController {
             Pageable pageable = PageRequest.of(0, 10, sort);
             
             // 执行查询，所有参数都为null
-            Page<CrawlerData> dataPage = crawlerDataService.searchCrawlerData(
+            Page<CertNewsData> dataPage = crawlerDataService.searchCrawlerData(
                 null, null, null, null, null, null, null, null, null, pageable
             );
             
@@ -790,7 +790,7 @@ public class CrawlerDataController {
         
         try {
             Pageable pageable = PageRequest.of(page, size);
-            Page<CrawlerData> dataPage = crawlerDataService.findByProduct(product, pageable);
+            Page<CertNewsData> dataPage = crawlerDataService.findByProduct(product, pageable);
             
             result.put("success", true);
             result.put("data", dataPage.getContent());
@@ -830,7 +830,7 @@ public class CrawlerDataController {
         
         try {
             Pageable pageable = PageRequest.of(page, size);
-            Page<CrawlerData> dataPage = crawlerDataService.findByProductContaining(product, pageable);
+            Page<CertNewsData> dataPage = crawlerDataService.findByProductContaining(product, pageable);
             
             result.put("success", true);
             result.put("data", dataPage.getContent());
@@ -871,7 +871,7 @@ public class CrawlerDataController {
         
         try {
             Pageable pageable = PageRequest.of(page, size);
-            Page<CrawlerData> dataPage = crawlerDataService.findBySourceNameAndProduct(sourceName, product, pageable);
+            Page<CertNewsData> dataPage = crawlerDataService.findBySourceNameAndProduct(sourceName, product, pageable);
             
             result.put("success", true);
             result.put("data", dataPage.getContent());
@@ -913,7 +913,7 @@ public class CrawlerDataController {
         
         try {
             Pageable pageable = PageRequest.of(page, size);
-            Page<CrawlerData> dataPage = crawlerDataService.findByProductAndKeyword(product, keyword, pageable);
+            Page<CertNewsData> dataPage = crawlerDataService.findByProductAndKeyword(product, keyword, pageable);
             
             result.put("success", true);
             result.put("data", dataPage.getContent());
@@ -1306,42 +1306,42 @@ public class CrawlerDataController {
             for (Map<String, Object> item : results) {
                 try {
                     // 创建CrawlerData实体
-                    CrawlerData crawlerData = new CrawlerData();
+                    CertNewsData certNewsData = new CertNewsData();
                     
                     // 设置基本信息
-                    crawlerData.setTitle((String) item.get("title"));
-                    crawlerData.setContent((String) item.get("content"));
-                    crawlerData.setUrl((String) item.get("url"));
-                    crawlerData.setSourceName((String) item.get("source"));
-                    crawlerData.setCountry((String) item.get("country"));
-                    crawlerData.setType("爬虫数据");
+                    certNewsData.setTitle((String) item.get("title"));
+                    certNewsData.setContent((String) item.get("content"));
+                    certNewsData.setUrl((String) item.get("url"));
+                    certNewsData.setSourceName((String) item.get("source"));
+                    certNewsData.setCountry((String) item.get("country"));
+                    certNewsData.setType("爬虫数据");
                     
                     // 设置发布时间
                     String publishTimeStr = (String) item.get("publishTime");
                     if (publishTimeStr != null) {
-                        crawlerData.setPublishDate(publishTimeStr);
+                        certNewsData.setPublishDate(publishTimeStr);
                     } else {
-                        crawlerData.setPublishDate(java.time.LocalDate.now().toString());
+                        certNewsData.setPublishDate(java.time.LocalDate.now().toString());
                     }
                     
                     // 设置爬取时间
-                    crawlerData.setCrawlTime(LocalDateTime.now());
+                    certNewsData.setCrawlTime(LocalDateTime.now());
                     
                     // 设置默认值
-                    crawlerData.setRelated(false); // 默认为不相关，需要后续手动或自动处理
-                    crawlerData.setRiskLevel(CrawlerData.RiskLevel.NONE); // 默认无风险
-                    crawlerData.setDeleted(0); // 0表示未删除
+                    certNewsData.setRelated(false); // 默认为不相关，需要后续手动或自动处理
+                    certNewsData.setRiskLevel(CertNewsData.RiskLevel.NONE); // 默认无风险
+                    certNewsData.setDeleted(0); // 0表示未删除
                     
                     // 生成摘要（取内容的前200个字符）
-                    String content = crawlerData.getContent();
+                    String content = certNewsData.getContent();
                     if (content != null && content.length() > 200) {
-                        crawlerData.setSummary(content.substring(0, 200) + "...");
+                        certNewsData.setSummary(content.substring(0, 200) + "...");
                     } else {
-                        crawlerData.setSummary(content);
+                        certNewsData.setSummary(content);
                     }
                     
                     // 保存到数据库
-                    crawlerDataRepository.save(crawlerData);
+                    crawlerDataRepository.save(certNewsData);
                     savedCount++;
                     
                 } catch (Exception e) {

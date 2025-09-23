@@ -1,6 +1,6 @@
 package com.certification.dto;
 
-import com.certification.entity.common.CrawlerData;
+import com.certification.entity.common.CertNewsData;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -15,7 +15,7 @@ import java.util.Map;
 public class CrawlerDataSearchResult {
 
     @Schema(description = "爬虫数据列表")
-    private List<CrawlerData> crawlerDataList;
+    private List<CertNewsData> certNewsDataList;
 
     @Schema(description = "总数")
     private Long total;

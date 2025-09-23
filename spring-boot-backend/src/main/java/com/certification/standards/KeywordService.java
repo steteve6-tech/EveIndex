@@ -1,7 +1,7 @@
 package com.certification.standards;
 
 import com.certification.entity.common.Keyword;
-import com.certification.entity.common.CrawlerData;
+import com.certification.entity.common.CertNewsData;
 import com.certification.repository.KeywordRepository;
 import com.certification.repository.CrawlerDataRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -1498,7 +1498,7 @@ public class KeywordService {
             log.info("获取到 {} 个启用的关键词", keywords.size());
             
             // 获取所有爬虫数据
-            List<CrawlerData> allData = crawlerDataRepository.findAll();
+            List<CertNewsData> allData = crawlerDataRepository.findAll();
             log.info("获取到 {} 条爬虫数据", allData.size());
             
             // 为每个关键词计算匹配数量
@@ -1506,7 +1506,7 @@ public class KeywordService {
                 int count = 0;
                 String lowerKeyword = keyword.toLowerCase();
                 
-                for (CrawlerData data : allData) {
+                for (CertNewsData data : allData) {
                     if (containsKeyword(data, lowerKeyword)) {
                         count++;
                     }
@@ -1575,7 +1575,7 @@ public class KeywordService {
     /**
      * 检查数据是否包含关键词
      */
-    private boolean containsKeyword(CrawlerData data, String keyword) {
+    private boolean containsKeyword(CertNewsData data, String keyword) {
         if (data == null || keyword == null || keyword.trim().isEmpty()) {
             return false;
         }

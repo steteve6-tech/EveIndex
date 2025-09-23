@@ -1,7 +1,7 @@
 package com.certification.crawler.countrydata.us;
 
-import com.certification.crawler.generalArchitecture.us.CustomsCaseCrawler;
-import com.certification.crawler.generalArchitecture.us.GuidanceCrawler;
+// import com.certification.crawler.generalArchitecture.us.CustomsCaseCrawler; // 已删除
+// import com.certification.crawler.generalArchitecture.us.GuidanceCrawler; // 已删除
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -39,13 +39,13 @@ public class unicrawl {
     @Autowired
     private US_registration dRegistrationCrawler;
     
-    @Autowired
-    private CustomsCaseCrawler customsCaseCrawler;
+    // @Autowired
+    // private CustomsCaseCrawler customsCaseCrawler; // 已删除
     
-    @Autowired
-    private GuidanceCrawler guidanceCrawler;
+    // @Autowired
+    // private GuidanceCrawler guidanceCrawler; // 已删除
     
-    private final ExecutorService executorService = Executors.newFixedThreadPool(6);
+    private final ExecutorService executorService = Executors.newFixedThreadPool(4); // 调整为4，因为删除了2个爬虫
     
     /**
      * 从关键词文件读取搜索关键词
@@ -371,95 +371,37 @@ public class unicrawl {
     }
     
     /**
-     * 爬取CustomsCase数据（新版本）
+     * 爬取CustomsCase数据（已删除）
      */
     private Map<String, Object> crawlCustomsCase(List<String> keywords, String dateFrom, String dateTo, int maxPages) {
-        log.info("开始爬取CustomsCase数据");
+        log.info("CustomsCase爬虫已删除，返回空结果");
         Map<String, Object> result = new HashMap<>();
         
-        try {
-            int totalSaved = 0;
-            int totalSkipped = 0;
-            int totalErrors = 0;
-            
-            for (String keyword : keywords) {
-                try {
-                    log.info("CustomsCase爬虫使用关键词: {}，日期范围: {} - {}", keyword, dateFrom, dateTo);
-                    
-                    // 调用CustomsCase爬虫的方法
-                    // 将关键词作为搜索词，设置最大记录数，批次大小固定为10
-                    List<?> results = customsCaseCrawler.crawlByKeyword(keyword, 100, 10);
-                    
-                    totalSaved += results != null ? results.size() : 0;
-                    
-                } catch (Exception e) {
-                    log.error("CustomsCase爬虫处理关键词 {} 失败: {}", keyword, e.getMessage());
-                    totalErrors++;
-                }
-            }
-            
-            result.put("CustomsCase", Map.of(
-                "saved", totalSaved,
-                "skipped", totalSkipped,
-                "errors", totalErrors,
-                "keywords", keywords.size()
-            ));
-            
-        } catch (Exception e) {
-            log.error("CustomsCase爬虫执行失败: {}", e.getMessage(), e);
-            result.put("CustomsCase", Map.of(
-                "saved", 0,
-                "skipped", 0,
-                "errors", 1,
-                "error", e.getMessage()
-            ));
-        }
+        result.put("CustomsCase", Map.of(
+            "saved", 0,
+            "skipped", 0,
+            "errors", 0,
+            "keywords", keywords.size(),
+            "status", "deleted"
+        ));
         
         return result;
     }
     
     /**
-     * 爬取Guidance数据（新版本）
+     * 爬取Guidance数据（已删除）
      */
     private Map<String, Object> crawlGuidance(List<String> keywords, String dateFrom, String dateTo, int maxPages) {
-        log.info("开始爬取Guidance数据");
+        log.info("Guidance爬虫已删除，返回空结果");
         Map<String, Object> result = new HashMap<>();
         
-        try {
-            int totalSaved = 0;
-            int totalSkipped = 0;
-            int totalErrors = 0;
-            
-            // Guidance爬虫不支持关键词搜索，只爬取一次所有数据
-            try {
-                log.info("Guidance爬虫开始爬取所有数据");
-                
-                // 调用Guidance爬虫的方法，设置最大记录数
-                guidanceCrawler.crawlWithLimit(100);
-                
-                totalSaved = 100; // 假设爬取了100条记录
-                
-            } catch (Exception e) {
-                log.error("Guidance爬虫执行失败: {}", e.getMessage());
-                totalErrors++;
-            }
-            
-            result.put("Guidance", Map.of(
-                "saved", totalSaved,
-                "skipped", totalSkipped,
-                "errors", totalErrors,
-                "keywords", 1 // Guidance只执行一次
-            ));
-            
-        } catch (Exception e) {
-            log.error("Guidance爬虫执行失败: {}", e.getMessage(), e);
-            result.put("Guidance", Map.of(
-                "saved", 0,
-                "skipped", 0,
-                "errors", 1,
-                "error", e.getMessage()
-            ));
-        }
+        result.put("Guidance", Map.of(
+            "saved", 0,
+            "skipped", 0,
+            "errors", 0,
+            "keywords", 1,
+            "status", "deleted"
+        ));
         
         return result;
     }
@@ -502,12 +444,14 @@ public class unicrawl {
             status.put("D_event", Map.of("available", dEventCrawler != null, "status", "ready"));
             status.put("D_recall", Map.of("available", dRecallCrawler != null, "status", "ready"));
             status.put("US_registration", Map.of("available", dRegistrationCrawler != null, "status", "ready"));
-            status.put("CustomsCase", Map.of("available", customsCaseCrawler != null, "status", "ready"));
-            status.put("Guidance", Map.of("available", guidanceCrawler != null, "status", "ready"));
+            // status.put("CustomsCase", Map.of("available", customsCaseCrawler != null, "status", "ready")); // 已删除
+            // status.put("Guidance", Map.of("available", guidanceCrawler != null, "status", "ready")); // 已删除
+            status.put("CustomsCase", Map.of("available", false, "status", "deleted"));
+            status.put("Guidance", Map.of("available", false, "status", "deleted"));
             
             status.put("executorService", Map.of(
                 "active", !executorService.isShutdown(),
-                "threadPoolSize", 6
+                "threadPoolSize", 4 // 更新为4，因为删除了2个爬虫
             ));
             
         } catch (Exception e) {

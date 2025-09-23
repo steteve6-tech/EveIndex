@@ -9,7 +9,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import com.certification.entity.common.CrawlerData.RiskLevel;
+import com.certification.entity.common.CertNewsData.RiskLevel;
 
 /**
  * 设备510K记录实体类

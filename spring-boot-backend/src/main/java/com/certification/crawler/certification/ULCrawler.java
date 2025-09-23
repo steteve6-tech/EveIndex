@@ -1,9 +1,9 @@
-package com.certification.crawler.certification.ul;
+package com.certification.crawler.certification;
 
 import com.certification.crawler.certification.base.BaseCrawler;
 import com.certification.crawler.certification.base.CrawlerResult;
 import com.certification.crawler.common.HttpUtils;
-import com.certification.entity.common.CrawlerData;
+import com.certification.entity.common.CertNewsData;
 import com.certification.service.DateFormatService;
 import com.certification.standards.CrawlerDataService;
 import lombok.extern.slf4j.Slf4j;
@@ -74,7 +74,7 @@ public class ULCrawler implements BaseCrawler {
      */
     public List<CrawlerResult> crawlWithBatchSave(String keyword, int totalCount, int batchSize, int startIndex) throws Exception {
         List<CrawlerResult> result = new ArrayList<>();
-        List<CrawlerData> crawlerDataList = new ArrayList<>();
+        List<CertNewsData> certNewsDataList = new ArrayList<>();
         String url = config.getBaseUrl() + "/gma/";
         
         Document doc = httpUtils.getDocument(url, config.getUserAgent(), config.getTimeout());
@@ -156,7 +156,7 @@ public class ULCrawler implements BaseCrawler {
             }
             
             // 创建CrawlerData对象并添加到列表
-            CrawlerData crawlerData = new CrawlerData()
+            CertNewsData certNewsData = new CertNewsData()
                 .setSourceName("UL Solutions")
                 .setTitle(title)
                 .setUrl(link)
@@ -168,17 +168,17 @@ public class ULCrawler implements BaseCrawler {
                 .setContent(detailedContent)
                 .setPublishDate(publishDate)
                 .setCrawlTime(LocalDateTime.now())
-                .setStatus(CrawlerData.DataStatus.NEW)
+                .setStatus(CertNewsData.DataStatus.NEW)
                 .setIsProcessed(false);
-            crawlerDataList.add(crawlerData);
+            certNewsDataList.add(certNewsData);
             
             // 每batchSize条数据批量保存一次
-            if (crawlerDataList.size() >= batchSize) {
+            if (certNewsDataList.size() >= batchSize) {
                 try {
-                    crawlerDataService.saveCrawlerDataList(crawlerDataList);
-                    savedCount += crawlerDataList.size();
-                    System.out.println("批量保存 " + crawlerDataList.size() + " 条爬虫数据到数据库，当前已保存: " + savedCount + " 条");
-                    crawlerDataList.clear(); // 清空列表，准备下一批
+                    crawlerDataService.saveCrawlerDataList(certNewsDataList);
+                    savedCount += certNewsDataList.size();
+                    System.out.println("批量保存 " + certNewsDataList.size() + " 条爬虫数据到数据库，当前已保存: " + savedCount + " 条");
+                    certNewsDataList.clear(); // 清空列表，准备下一批
                 } catch (Exception e) {
                     System.err.println("批量保存爬虫数据到数据库失败: " + e.getMessage());
                 }
@@ -271,7 +271,7 @@ public class ULCrawler implements BaseCrawler {
             }
             
             // 创建CrawlerData对象并添加到列表
-            CrawlerData crawlerData = new CrawlerData()
+            CertNewsData certNewsData = new CertNewsData()
                 .setSourceName("UL Solutions")
                 .setTitle(title)
                 .setUrl(link)
@@ -285,17 +285,17 @@ public class ULCrawler implements BaseCrawler {
                 .setReleaseDate(releaseDateList)  // 设置发布日期列表（JSON格式）
                 .setExecutionDate(executionDateList)  // 设置解析日期列表（JSON格式）
                 .setCrawlTime(LocalDateTime.now())
-                .setStatus(CrawlerData.DataStatus.NEW)
+                .setStatus(CertNewsData.DataStatus.NEW)
                 .setIsProcessed(false);
-            crawlerDataList.add(crawlerData);
+            certNewsDataList.add(certNewsData);
             
             // 每batchSize条数据批量保存一次
-            if (crawlerDataList.size() >= batchSize) {
+            if (certNewsDataList.size() >= batchSize) {
                 try {
-                    crawlerDataService.saveCrawlerDataList(crawlerDataList);
-                    savedCount += crawlerDataList.size();
-                    System.out.println("批量保存 " + crawlerDataList.size() + " 条爬虫数据到数据库，当前已保存: " + savedCount + " 条");
-                    crawlerDataList.clear(); // 清空列表，准备下一批
+                    crawlerDataService.saveCrawlerDataList(certNewsDataList);
+                    savedCount += certNewsDataList.size();
+                    System.out.println("批量保存 " + certNewsDataList.size() + " 条爬虫数据到数据库，当前已保存: " + savedCount + " 条");
+                    certNewsDataList.clear(); // 清空列表，准备下一批
                 } catch (Exception e) {
                     System.err.println("批量保存爬虫数据到数据库失败: " + e.getMessage());
                 }
@@ -389,7 +389,7 @@ public class ULCrawler implements BaseCrawler {
                 }
                 
                 // 创建CrawlerData对象并添加到列表
-                CrawlerData crawlerData = new CrawlerData()
+                CertNewsData certNewsData = new CertNewsData()
                     .setSourceName("UL Solutions")
                     .setTitle(title)
                     .setUrl(link)
@@ -403,17 +403,17 @@ public class ULCrawler implements BaseCrawler {
                     .setReleaseDate(releaseDateList)  // 设置发布日期列表（JSON格式）
                     .setExecutionDate(executionDateList)  // 设置解析日期列表（JSON格式）
                     .setCrawlTime(LocalDateTime.now())
-                    .setStatus(CrawlerData.DataStatus.NEW)
+                    .setStatus(CertNewsData.DataStatus.NEW)
                     .setIsProcessed(false);
-                crawlerDataList.add(crawlerData);
+                certNewsDataList.add(certNewsData);
                 
                 // 每batchSize条数据批量保存一次
-                if (crawlerDataList.size() >= batchSize) {
+                if (certNewsDataList.size() >= batchSize) {
                     try {
-                        crawlerDataService.saveCrawlerDataList(crawlerDataList);
-                        savedCount += crawlerDataList.size();
-                        System.out.println("批量保存 " + crawlerDataList.size() + " 条爬虫数据到数据库，当前已保存: " + savedCount + " 条");
-                        crawlerDataList.clear(); // 清空列表，准备下一批
+                        crawlerDataService.saveCrawlerDataList(certNewsDataList);
+                        savedCount += certNewsDataList.size();
+                        System.out.println("批量保存 " + certNewsDataList.size() + " 条爬虫数据到数据库，当前已保存: " + savedCount + " 条");
+                        certNewsDataList.clear(); // 清空列表，准备下一批
                     } catch (Exception e) {
                         System.err.println("批量保存爬虫数据到数据库失败: " + e.getMessage());
                     }
@@ -424,11 +424,11 @@ public class ULCrawler implements BaseCrawler {
         }
         
         // 保存剩余的数据
-        if (!crawlerDataList.isEmpty()) {
+        if (!certNewsDataList.isEmpty()) {
             try {
-                crawlerDataService.saveCrawlerDataList(crawlerDataList);
-                savedCount += crawlerDataList.size();
-                System.out.println("保存剩余 " + crawlerDataList.size() + " 条爬虫数据到数据库，总共保存: " + savedCount + " 条");
+                crawlerDataService.saveCrawlerDataList(certNewsDataList);
+                savedCount += certNewsDataList.size();
+                System.out.println("保存剩余 " + certNewsDataList.size() + " 条爬虫数据到数据库，总共保存: " + savedCount + " 条");
             } catch (Exception e) {
                 System.err.println("保存剩余爬虫数据到数据库失败: " + e.getMessage());
             }
@@ -1120,10 +1120,10 @@ public class ULCrawler implements BaseCrawler {
             List<CrawlerResult> crawlerResults = crawl("", count);
 
             // 转换为CrawlerData实体
-            List<CrawlerData> crawlerDataList = convertToCrawlerData(crawlerResults);
+            List<CertNewsData> certNewsDataList = convertToCrawlerData(crawlerResults);
 
             // 检查是否全部重复
-            if (crawlerDataList.isEmpty()) {
+            if (certNewsDataList.isEmpty()) {
                 result.put("success", true);
                 result.put("message", "没有爬取到任何数据");
                 result.put("crawledCount", 0);
@@ -1139,15 +1139,15 @@ public class ULCrawler implements BaseCrawler {
             }
 
             // 获取去重统计信息
-            Map<String, Object> duplicateStats = crawlerDataService.getDuplicateUrlStats(crawlerDataList);
+            Map<String, Object> duplicateStats = crawlerDataService.getDuplicateUrlStats(certNewsDataList);
             long duplicateCount = duplicateStats.get("duplicateCount") == null ? 0L : ((Number)duplicateStats.get("duplicateCount")).longValue();
             
             // 检查是否全部重复
-            boolean allDuplicates = duplicateCount == crawlerDataList.size();
+            boolean allDuplicates = duplicateCount == certNewsDataList.size();
             if (allDuplicates) {
                 result.put("success", true);
                 result.put("message", "爬取的数据全部与数据库重复，停止爬取");
-                result.put("crawledCount", crawlerDataList.size());
+                result.put("crawledCount", certNewsDataList.size());
                 result.put("savedCount", 0);
                 result.put("duplicateCount", duplicateCount);
                 result.put("allDuplicates", true);
@@ -1155,12 +1155,12 @@ public class ULCrawler implements BaseCrawler {
                 result.put("executionTime", System.currentTimeMillis() - startTime);
                 result.put("timestamp", LocalDateTime.now().toString());
                 
-                log.info("UL爬虫执行完成，爬取 {} 条数据全部重复，停止爬取", crawlerDataList.size());
+                log.info("UL爬虫执行完成，爬取 {} 条数据全部重复，停止爬取", certNewsDataList.size());
                 return result;
             }
             
             // 使用安全的批量保存（自动去重），每30条数据一批
-            List<CrawlerData> savedDataList = crawlerDataService.safeSaveCrawlerDataList(crawlerDataList, 30);
+            List<CertNewsData> savedDataList = crawlerDataService.safeSaveCrawlerDataList(certNewsDataList, 30);
             
             // 记录爬取后的数据数量
             long afterCount = crawlerDataService.getCountBySourceName("UL Solutions");
@@ -1168,7 +1168,7 @@ public class ULCrawler implements BaseCrawler {
             
             // 统计各状态的数据数量
             Map<String, Long> statusCounts = new HashMap<>();
-            for (CrawlerData data : savedDataList) {
+            for (CertNewsData data : savedDataList) {
                 String status = data.getStatus().name();
                 statusCounts.put(status, statusCounts.getOrDefault(status, 0L) + 1);
             }
@@ -1228,10 +1228,10 @@ public class ULCrawler implements BaseCrawler {
             List<CrawlerResult> crawlerResults = crawl(keyword, count);
 
             // 转换为CrawlerData实体
-            List<CrawlerData> crawlerDataList = convertToCrawlerData(crawlerResults);
+            List<CertNewsData> certNewsDataList = convertToCrawlerData(crawlerResults);
 
             // 检查是否全部重复
-            if (crawlerDataList.isEmpty()) {
+            if (certNewsDataList.isEmpty()) {
                 result.put("success", true);
                 result.put("message", "没有爬取到任何数据");
                 result.put("crawledCount", 0);
@@ -1247,15 +1247,15 @@ public class ULCrawler implements BaseCrawler {
             }
 
             // 获取去重统计信息
-            Map<String, Object> duplicateStats = crawlerDataService.getDuplicateUrlStats(crawlerDataList);
+            Map<String, Object> duplicateStats = crawlerDataService.getDuplicateUrlStats(certNewsDataList);
             long duplicateCount = duplicateStats.get("duplicateCount") == null ? 0L : ((Number)duplicateStats.get("duplicateCount")).longValue();
             
             // 检查是否全部重复
-            boolean allDuplicates = duplicateCount == crawlerDataList.size();
+            boolean allDuplicates = duplicateCount == certNewsDataList.size();
             if (allDuplicates) {
                 result.put("success", true);
                 result.put("message", "爬取的数据全部与数据库重复，停止爬取");
-                result.put("crawledCount", crawlerDataList.size());
+                result.put("crawledCount", certNewsDataList.size());
                 result.put("savedCount", 0);
                 result.put("duplicateCount", duplicateCount);
                 result.put("allDuplicates", true);
@@ -1263,12 +1263,12 @@ public class ULCrawler implements BaseCrawler {
                 result.put("executionTime", System.currentTimeMillis() - startTime);
                 result.put("timestamp", LocalDateTime.now().toString());
                 
-                log.info("UL爬虫执行完成，关键词: {}，爬取 {} 条数据全部重复，停止爬取", keyword, crawlerDataList.size());
+                log.info("UL爬虫执行完成，关键词: {}，爬取 {} 条数据全部重复，停止爬取", keyword, certNewsDataList.size());
                 return result;
             }
             
             // 使用安全的批量保存（自动去重），每30条数据一批
-            List<CrawlerData> savedDataList = crawlerDataService.safeSaveCrawlerDataList(crawlerDataList, 30);
+            List<CertNewsData> savedDataList = crawlerDataService.safeSaveCrawlerDataList(certNewsDataList, 30);
             
             // 记录爬取后的数据数量
             long afterCount = crawlerDataService.getCountBySourceName("UL Solutions");
@@ -1276,7 +1276,7 @@ public class ULCrawler implements BaseCrawler {
             
             // 统计各状态的数据数量
             Map<String, Long> statusCounts = new HashMap<>();
-            for (CrawlerData data : savedDataList) {
+            for (CertNewsData data : savedDataList) {
                 String status = data.getStatus().name();
                 statusCounts.put(status, statusCounts.getOrDefault(status, 0L) + 1);
             }
@@ -1321,11 +1321,11 @@ public class ULCrawler implements BaseCrawler {
      * @param crawlerResults 爬虫结果列表
      * @return CrawlerData列表
      */
-    private List<CrawlerData> convertToCrawlerData(List<CrawlerResult> crawlerResults) {
-        List<CrawlerData> crawlerDataList = new ArrayList<>();
+    private List<CertNewsData> convertToCrawlerData(List<CrawlerResult> crawlerResults) {
+        List<CertNewsData> certNewsDataList = new ArrayList<>();
         
         for (CrawlerResult result : crawlerResults) {
-            CrawlerData crawlerData = new CrawlerData()
+            CertNewsData certNewsData = new CertNewsData()
                 .setSourceName("UL Solutions")
                 .setTitle(result.getTitle())
                 .setUrl(result.getUrl())
@@ -1334,14 +1334,14 @@ public class ULCrawler implements BaseCrawler {
                 .setType(result.getType())
                 .setContent(result.getContent())
                 .setCrawlTime(LocalDateTime.now())
-                .setStatus(CrawlerData.DataStatus.NEW)
+                .setStatus(CertNewsData.DataStatus.NEW)
                 .setIsProcessed(false)
-                .setRiskLevel(CrawlerData.RiskLevel.MEDIUM); // 设置风险等级为MEDIUM
+                .setRiskLevel(CertNewsData.RiskLevel.MEDIUM); // 设置风险等级为MEDIUM
             
-            crawlerDataList.add(crawlerData);
+            certNewsDataList.add(certNewsData);
         }
         
-        return crawlerDataList;
+        return certNewsDataList;
     }
 
 }

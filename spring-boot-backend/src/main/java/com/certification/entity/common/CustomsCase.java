@@ -11,7 +11,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import com.certification.entity.common.CrawlerData.RiskLevel;
+import com.certification.entity.common.CertNewsData.RiskLevel;
 
 /**
  * 海关过往判例实体类

@@ -1,5 +1,6 @@
 package com.certification.crawler.countrydata.us;
 
+import com.certification.entity.common.CertNewsData;
 import com.certification.entity.common.Device510K;
 import com.certification.repository.common.Device510KRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -412,7 +413,7 @@ public class D_510K {
         record.setDataStatus((String) data.get("dataStatus"));
         
         // 设置默认值
-        record.setRiskLevel(com.certification.entity.common.CrawlerData.RiskLevel.MEDIUM);
+        record.setRiskLevel(CertNewsData.RiskLevel.MEDIUM);
         
         // 设置品牌名称（如果提供的话）
         record.setTradeName(tradeName);

@@ -2,9 +2,9 @@ package com.certification.crawler.certification;
 
 import com.certification.crawler.certification.base.BaseCrawler;
 import com.certification.crawler.certification.base.CrawlerResult;
-import com.certification.entity.common.CrawlerData;
+import com.certification.entity.common.CertNewsData;
 import com.certification.service.DateFormatService;
-import com.certification.service.SystemLogService;
+// import com.certification.service.SystemLogService; // 已删除
 import com.certification.standards.CrawlerDataService;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
@@ -38,12 +38,12 @@ public class BeiceCrawler implements BaseCrawler {
     
     @Autowired
     private CrawlerDataService crawlerDataService;
-    
-    @Autowired
-    private SystemLogService systemLogService;
-    
+
     @Autowired
     private DateFormatService dateFormatService;
+
+    // @Autowired
+    // private SystemLogService systemLogService; // 已删除
     
     // 基础URL
     private static final String BASE_URL = "https://www.ntek.org.cn";
@@ -1131,17 +1131,13 @@ public class BeiceCrawler implements BaseCrawler {
         
         try {
             // 记录开始日志
-            systemLogService.logInfo(
-                "北测爬虫开始执行",
-                String.format("开始执行北测爬虫，计划爬取 %d 条数据", count),
-                "BeiceCrawler"
-            );
+            log.info("开始执行北测爬虫，计划爬取 {} 条数据", count);
             
             // 记录爬取前的数据数量
             long beforeCount = crawlerDataService.getCountBySourceName("北测");
             
             // 执行分页爬取，每页保存到数据库
-            List<CrawlerData> allSavedDataList = new ArrayList<>();
+            List<CertNewsData> allSavedDataList = new ArrayList<>();
             List<CrawlerResult> allCrawlerResults = new ArrayList<>();
             int page = 1;
             int consecutiveFailures = 0;
@@ -1205,22 +1201,18 @@ public class BeiceCrawler implements BaseCrawler {
                         log.info("第 {} 页爬取完成，准备保存 {} 条数据到数据库", page, pageResults.size());
                         
                         // 转换为CrawlerData实体
-                        List<CrawlerData> pageDataList = convertToCrawlerData(pageResults);
+                        List<CertNewsData> pageDataList = convertToCrawlerData(pageResults);
                         
                         // 立即保存当前页数据
-                        List<CrawlerData> pageSavedList = crawlerDataService.safeSaveCrawlerDataList(pageDataList, 30);
+                        List<CertNewsData> pageSavedList = crawlerDataService.safeSaveCrawlerDataList(pageDataList, 30);
                         allSavedDataList.addAll(pageSavedList);
                         
                         log.info("第 {} 页数据保存完成，保存了 {} 条新数据", page, pageSavedList.size());
                         
                         // 记录当前页的数据保存日志
-                        for (CrawlerData data : pageSavedList) {
-                            systemLogService.logInfo(
-                                "爬虫数据创建（分页保存）",
-                                String.format("北测爬虫第%d页创建新数据: ID=%s, 标题=%s, 国家=%s", 
-                                    page, data.getId(), data.getTitle(), data.getCountry()),
-                                "BeiceCrawler"
-                            );
+                        for (CertNewsData data : pageSavedList) {
+                            log.info("北测爬虫第{}页创建新数据: ID={}, 标题={}, 国家={}", 
+                                page, data.getId(), data.getTitle(), data.getCountry());
                         }
                     }
                     
@@ -1240,7 +1232,7 @@ public class BeiceCrawler implements BaseCrawler {
             log.info("北测新闻爬虫完成，共爬取 {} 条数据，保存 {} 条数据", allCrawlerResults.size(), allSavedDataList.size());
             
             // 使用已保存的数据列表进行统计
-            List<CrawlerData> savedDataList = allSavedDataList;
+            List<CertNewsData> savedDataList = allSavedDataList;
 
             // 记录爬取后的数据数量
             long afterCount = crawlerDataService.getCountBySourceName("北测");
@@ -1248,7 +1240,7 @@ public class BeiceCrawler implements BaseCrawler {
             
             // 统计各状态的数据数量
             Map<String, Long> statusCounts = new HashMap<>();
-            for (CrawlerData data : savedDataList) {
+            for (CertNewsData data : savedDataList) {
                 String status = data.getStatus().name();
                 statusCounts.put(status, statusCounts.getOrDefault(status, 0L) + 1);
             }
@@ -1256,7 +1248,7 @@ public class BeiceCrawler implements BaseCrawler {
             long executionTime = System.currentTimeMillis() - startTime;
             
             // 记录成功日志
-            systemLogService.logInfo(
+            log.info(
                 "北测爬虫执行完成",
                 String.format("北测爬虫执行完成，爬取 %d 条数据，新增 %d 条，耗时 %d ms",
                     allCrawlerResults.size(), newDataCount, executionTime),
@@ -1281,7 +1273,7 @@ public class BeiceCrawler implements BaseCrawler {
             long executionTime = System.currentTimeMillis() - startTime;
             
             // 记录错误日志
-            systemLogService.logError(
+            log.error(
                 "北测爬虫执行失败",
                 String.format("北测爬虫执行失败: %s", e.getMessage()),
                 "BeiceCrawler",
@@ -1302,20 +1294,20 @@ public class BeiceCrawler implements BaseCrawler {
      * @param crawlerResults 爬虫结果列表
      * @return CrawlerData实体列表
      */
-    private List<CrawlerData> convertToCrawlerData(List<CrawlerResult> crawlerResults) {
-        List<CrawlerData> crawlerDataList = new ArrayList<>();
+    private List<CertNewsData> convertToCrawlerData(List<CrawlerResult> crawlerResults) {
+        List<CertNewsData> certNewsDataList = new ArrayList<>();
         
         for (CrawlerResult result : crawlerResults) {
-            CrawlerData crawlerData = new CrawlerData();
+            CertNewsData certNewsData = new CertNewsData();
             // 设置ID为随机UUID
-            crawlerData.setId(UUID.randomUUID().toString());
+            certNewsData.setId(UUID.randomUUID().toString());
             
             // 设置基本信息
-            crawlerData.setSourceName(result.getSource());
-            crawlerData.setTitle(result.getTitle());
-            crawlerData.setUrl(result.getUrl());
-            crawlerData.setSummary(result.getContent());
-            crawlerData.setContent(result.getContent());
+            certNewsData.setSourceName(result.getSource());
+            certNewsData.setTitle(result.getTitle());
+            certNewsData.setUrl(result.getUrl());
+            certNewsData.setSummary(result.getContent());
+            certNewsData.setContent(result.getContent());
             
             // 统一日期格式
             String rawDate = result.getDate();
@@ -1324,25 +1316,25 @@ public class BeiceCrawler implements BaseCrawler {
                 log.warn("北测爬虫无法解析日期格式: {}", rawDate);
                 standardizedDate = dateFormatService.getCurrentDateString();
             }
-            crawlerData.setPublishDate(standardizedDate);
-            crawlerData.setCrawlTime(result.getCrawlTime());
-            crawlerData.setType(result.getType());
-            crawlerData.setCountry(result.getCountry());
+            certNewsData.setPublishDate(standardizedDate);
+            certNewsData.setCrawlTime(result.getCrawlTime());
+            certNewsData.setType(result.getType());
+            certNewsData.setCountry(result.getCountry());
             
             // 设置状态
-            crawlerData.setStatus(CrawlerData.DataStatus.NEW);
-            crawlerData.setIsProcessed(false);
+            certNewsData.setStatus(CertNewsData.DataStatus.NEW);
+            certNewsData.setIsProcessed(false);
             
             // 设置风险等级为MEDIUM
-            crawlerData.setRiskLevel(CrawlerData.RiskLevel.MEDIUM);
+            certNewsData.setRiskLevel(CertNewsData.RiskLevel.MEDIUM);
             
             // 设置备注
-            crawlerData.setRemarks("通过北测爬虫自动抓取");
+            certNewsData.setRemarks("通过北测爬虫自动抓取");
             
-            crawlerDataList.add(crawlerData);
+            certNewsDataList.add(certNewsData);
         }
         
-        return crawlerDataList;
+        return certNewsDataList;
     }
     
     /**
@@ -1357,7 +1349,7 @@ public class BeiceCrawler implements BaseCrawler {
         
         try {
             // 记录开始日志
-            systemLogService.logInfo(
+            log.info(
                 "北测爬虫开始执行（关键词搜索）",
                 String.format("开始执行北测爬虫，关键词: %s，计划爬取 %d 条数据", keyword, count),
                 "BeiceCrawler"
@@ -1367,7 +1359,7 @@ public class BeiceCrawler implements BaseCrawler {
             long beforeCount = crawlerDataService.getCountBySourceName("北测");
             
             // 执行分页爬取（带关键词），每页保存到数据库
-            List<CrawlerData> allSavedDataList = new ArrayList<>();
+            List<CertNewsData> allSavedDataList = new ArrayList<>();
             List<CrawlerResult> allCrawlerResults = new ArrayList<>();
             int page = 10;
             int consecutiveFailures = 0;
@@ -1445,17 +1437,17 @@ public class BeiceCrawler implements BaseCrawler {
                         log.info("第 {} 页爬取完成，准备保存 {} 条数据到数据库", page, pageResults.size());
                         
                         // 转换为CrawlerData实体
-                        List<CrawlerData> pageDataList = convertToCrawlerData(pageResults);
+                        List<CertNewsData> pageDataList = convertToCrawlerData(pageResults);
                         
                         // 立即保存当前页数据
-                        List<CrawlerData> pageSavedList = crawlerDataService.safeSaveCrawlerDataList(pageDataList, 30);
+                        List<CertNewsData> pageSavedList = crawlerDataService.safeSaveCrawlerDataList(pageDataList, 30);
                         allSavedDataList.addAll(pageSavedList);
                         
                         log.info("第 {} 页数据保存完成，保存了 {} 条新数据", page, pageSavedList.size());
                         
                         // 记录当前页的数据保存日志
-                        for (CrawlerData data : pageSavedList) {
-                            systemLogService.logInfo(
+                        for (CertNewsData data : pageSavedList) {
+                            log.info(
                                 "爬虫数据创建（关键词分页保存）",
                                 String.format("北测爬虫第%d页创建新数据: ID=%s, 标题=%s, 关键词=%s, 国家=%s", 
                                     page, data.getId(), data.getTitle(), keyword, data.getCountry()),
@@ -1480,10 +1472,10 @@ public class BeiceCrawler implements BaseCrawler {
             log.info("北测新闻爬虫完成，共爬取 {} 条数据，保存 {} 条数据", allCrawlerResults.size(), allSavedDataList.size());
             
             // 使用已保存的数据列表进行统计
-            List<CrawlerData> crawlerDataList = allSavedDataList;
+            List<CertNewsData> certNewsDataList = allSavedDataList;
 
             // 检查是否全部重复
-            if (crawlerDataList.isEmpty()) {
+            if (certNewsDataList.isEmpty()) {
                 result.put("success", true);
                 result.put("message", "没有爬取到任何数据");
                 result.put("crawledCount", 0);
@@ -1494,7 +1486,7 @@ public class BeiceCrawler implements BaseCrawler {
                 result.put("executionTime", System.currentTimeMillis() - startTime);
                 result.put("timestamp", LocalDateTime.now().toString());
                 
-                systemLogService.logInfo(
+                log.info(
                     "北测爬虫执行完成（无数据）",
                     String.format("北测爬虫执行完成，关键词: %s，没有爬取到任何数据", keyword),
                     "BeiceCrawler"
@@ -1503,15 +1495,15 @@ public class BeiceCrawler implements BaseCrawler {
             }
 
             // 获取去重统计信息
-            Map<String, Object> duplicateStats = crawlerDataService.getDuplicateUrlStats(crawlerDataList);
+            Map<String, Object> duplicateStats = crawlerDataService.getDuplicateUrlStats(certNewsDataList);
             long duplicateCount = duplicateStats.get("duplicateCount") == null ? 0L : ((Number)duplicateStats.get("duplicateCount")).longValue();
             
             // 检查是否全部重复
-            boolean allDuplicates = duplicateCount == crawlerDataList.size();
+            boolean allDuplicates = duplicateCount == certNewsDataList.size();
             if (allDuplicates) {
                 result.put("success", true);
                 result.put("message", "爬取的数据全部与数据库重复，停止爬取");
-                result.put("crawledCount", crawlerDataList.size());
+                result.put("crawledCount", certNewsDataList.size());
                 result.put("savedCount", 0);
                 result.put("duplicateCount", duplicateCount);
                 result.put("allDuplicates", true);
@@ -1519,16 +1511,16 @@ public class BeiceCrawler implements BaseCrawler {
                 result.put("executionTime", System.currentTimeMillis() - startTime);
                 result.put("timestamp", LocalDateTime.now().toString());
                 
-                systemLogService.logInfo(
+                log.info(
                     "北测爬虫执行完成（全部重复）",
-                    String.format("北测爬虫执行完成，关键词: %s，爬取 %d 条数据全部重复，停止爬取", keyword, crawlerDataList.size()),
+                    String.format("北测爬虫执行完成，关键词: %s，爬取 %d 条数据全部重复，停止爬取", keyword, certNewsDataList.size()),
                     "BeiceCrawler"
                 );
                 return result;
             }
             
             // 数据已在每页保存时处理，直接使用已保存的数据
-            List<CrawlerData> savedDataList = allSavedDataList;
+            List<CertNewsData> savedDataList = allSavedDataList;
             
             // 记录爬取后的数据数量
             long afterCount = crawlerDataService.getCountBySourceName("北测");
@@ -1536,7 +1528,7 @@ public class BeiceCrawler implements BaseCrawler {
             
             // 统计各状态的数据数量
             Map<String, Long> statusCounts = new HashMap<>();
-            for (CrawlerData data : savedDataList) {
+            for (CertNewsData data : savedDataList) {
                 String status = data.getStatus().name();
                 statusCounts.put(status, statusCounts.getOrDefault(status, 0L) + 1);
             }
@@ -1544,7 +1536,7 @@ public class BeiceCrawler implements BaseCrawler {
             long executionTime = System.currentTimeMillis() - startTime;
             
             // 记录成功日志
-            systemLogService.logInfo(
+            log.info(
                 "北测爬虫执行完成（关键词搜索）",
                 String.format("北测爬虫执行完成，关键词: %s，爬取 %d 条数据，新增 %d 条，重复 %d 条，耗时 %d ms", 
                     keyword, allCrawlerResults.size(), newDataCount, duplicateCount, executionTime),
@@ -1571,7 +1563,7 @@ public class BeiceCrawler implements BaseCrawler {
             long executionTime = System.currentTimeMillis() - startTime;
             
             // 记录错误日志
-            systemLogService.logError(
+            log.error(
                 "北测爬虫执行失败（关键词搜索）",
                 String.format("北测爬虫执行失败，关键词: %s，错误: %s", keyword, e.getMessage()),
                 "BeiceCrawler",

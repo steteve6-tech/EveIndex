@@ -1,9 +1,7 @@
 package com.certification.crawler.certification;
 
-import com.certification.crawler.certification.sgs.SgsCrawler;
-import com.certification.crawler.certification.ul.ULCrawler;
-import com.certification.entity.common.CrawlerData;
-import com.certification.service.SystemLogService;
+import com.certification.entity.common.CertNewsData;
+// import com.certification.service.SystemLogService; // 已删除
 import com.certification.standards.CrawlerDataService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,9 +32,9 @@ public class NewsUnicrawl {
     
     @Autowired
     private CrawlerDataService crawlerDataService;
-    
-    @Autowired
-    private SystemLogService systemLogService;
+
+    // @Autowired
+    // private SystemLogService systemLogService; // 已删除
     
     // 线程池用于并发执行爬虫
     private final ExecutorService executorService = Executors.newFixedThreadPool(4);
@@ -83,13 +81,6 @@ public class NewsUnicrawl {
         
         try {
             log.info("开始执行所有爬虫，关键词: {}，每个爬虫爬取数量: {}", keyword, countPerCrawler);
-            
-            // 记录开始日志
-            systemLogService.logInfo(
-                "统一爬虫开始执行",
-                String.format("开始执行所有爬虫，关键词: %s，每个爬虫爬取数量: %d", keyword, countPerCrawler),
-                "NewsUnicrawl"
-            );
             
             // 记录爬取前的数据数量
             long beforeCount = crawlerDataService.getTotalCount();
@@ -173,12 +164,8 @@ public class NewsUnicrawl {
             long executionTime = System.currentTimeMillis() - startTime;
             
             // 记录成功日志
-            systemLogService.logInfo(
-                "统一爬虫执行完成",
-                String.format("统一爬虫执行完成，成功: %d，失败: %d，总爬取: %d，总保存: %d，新增: %d，耗时: %d ms",
-                    successCount, failureCount, totalCrawled, totalSaved, newDataCount, executionTime),
-                "NewsUnicrawl"
-            );
+            log.info("统一爬虫执行完成，成功: {}，失败: {}，总爬取: {}，总保存: {}，新增: {}，耗时: {} ms",
+                successCount, failureCount, totalCrawled, totalSaved, newDataCount, executionTime);
             
             // 构建返回结果
             result.put("success", true);
@@ -200,12 +187,7 @@ public class NewsUnicrawl {
             long executionTime = System.currentTimeMillis() - startTime;
             
             // 记录错误日志
-            systemLogService.logError(
-                "统一爬虫执行失败",
-                String.format("统一爬虫执行失败: %s", e.getMessage()),
-                "NewsUnicrawl",
-                e
-            );
+            log.error("统一爬虫执行失败: {}", e.getMessage(), e);
             
             result.put("success", false);
             result.put("error", "统一爬虫执行失败: " + e.getMessage());
@@ -229,13 +211,6 @@ public class NewsUnicrawl {
         
         try {
             log.info("开始执行指定爬虫: {}，关键词: {}，数量: {}", crawlerName, keyword, count);
-            
-            // 记录开始日志
-            systemLogService.logInfo(
-                "指定爬虫开始执行",
-                String.format("开始执行指定爬虫: %s，关键词: %s，数量: %d", crawlerName, keyword, count),
-                "NewsUnicrawl"
-            );
             
             Map<String, Object> crawlerResult;
             
@@ -263,7 +238,7 @@ public class NewsUnicrawl {
             crawlerResult.put("timestamp", LocalDateTime.now().toString());
             
             // 记录成功日志
-            systemLogService.logInfo(
+            log.info(
                 "指定爬虫执行完成",
                 String.format("指定爬虫执行完成: %s，关键词: %s，结果: %s", 
                     crawlerName, keyword, crawlerResult.get("message")),
@@ -276,13 +251,8 @@ public class NewsUnicrawl {
             long executionTime = System.currentTimeMillis() - startTime;
             
             // 记录错误日志
-            systemLogService.logError(
-                "指定爬虫执行失败",
-                String.format("指定爬虫执行失败: %s，爬虫: %s，关键词: %s，错误: %s", 
-                    crawlerName, crawlerName, keyword, e.getMessage()),
-                "NewsUnicrawl",
-                e
-            );
+            log.error("指定爬虫执行失败: {}，爬虫: {}，关键词: {}，错误: {}", 
+                crawlerName, crawlerName, keyword, e.getMessage(), e);
             
             result.put("success", false);
             result.put("crawlerName", crawlerName);
@@ -314,7 +284,7 @@ public class NewsUnicrawl {
                 keyword, count, newsType, dateRange, topics);
             
             // 记录开始日志
-            systemLogService.logInfo(
+            log.info(
                 "SGS爬虫开始执行（过滤条件）",
                 String.format("开始执行SGS爬虫（过滤条件），关键词: %s，数量: %d，新闻类型: %s，日期范围: %s，主题: %s", 
                     keyword, count, newsType, dateRange, topics),
@@ -329,12 +299,8 @@ public class NewsUnicrawl {
             crawlerResult.put("timestamp", LocalDateTime.now().toString());
             
             // 记录成功日志
-            systemLogService.logInfo(
-                "SGS爬虫执行完成（过滤条件）",
-                String.format("SGS爬虫执行完成（过滤条件），关键词: %s，结果: %s", 
-                    keyword, crawlerResult.get("message")),
-                "NewsUnicrawl"
-            );
+            log.info("SGS爬虫执行完成（过滤条件），关键词: {}，结果: {}", 
+                keyword, crawlerResult.get("message"));
             
             return crawlerResult;
             
@@ -342,12 +308,7 @@ public class NewsUnicrawl {
             long executionTime = System.currentTimeMillis() - startTime;
             
             // 记录错误日志
-            systemLogService.logError(
-                "SGS爬虫执行失败（过滤条件）",
-                String.format("SGS爬虫执行失败（过滤条件），关键词: %s，错误: %s", keyword, e.getMessage()),
-                "NewsUnicrawl",
-                e
-            );
+            log.error("SGS爬虫执行失败（过滤条件），关键词: {}，错误: {}", keyword, e.getMessage(), e);
             
             result.put("success", false);
             result.put("crawlerName", "SGS");
@@ -380,10 +341,10 @@ public class NewsUnicrawl {
             long ulCount = crawlerDataService.getCountBySourceName("UL Solutions");
             
             // 获取各状态统计
-            long newCount = crawlerDataService.getCountByStatus(CrawlerData.DataStatus.NEW);
-            long processedCount = crawlerDataService.getCountByStatus(CrawlerData.DataStatus.PROCESSED);
-            long errorCount = crawlerDataService.getCountByStatus(CrawlerData.DataStatus.ERROR);
-            long duplicateCount = crawlerDataService.getCountByStatus(CrawlerData.DataStatus.DUPLICATE);
+            long newCount = crawlerDataService.getCountByStatus(CertNewsData.DataStatus.NEW);
+            long processedCount = crawlerDataService.getCountByStatus(CertNewsData.DataStatus.PROCESSED);
+            long errorCount = crawlerDataService.getCountByStatus(CertNewsData.DataStatus.ERROR);
+            long duplicateCount = crawlerDataService.getCountByStatus(CertNewsData.DataStatus.DUPLICATE);
             
             result.put("success", true);
             result.put("availableCrawlers", availableCrawlers);

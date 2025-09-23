@@ -124,27 +124,27 @@
                 </template>
               </a-statistic>
               <div class="country-detail-stats">
-                <div class="detail-item">
+                <div class="detail-item" v-if="countryData.device510K && countryData.device510K > 0">
                   <span class="label">上市前通告:</span>
                   <span class="value">{{ countryData.device510K }}</span>
                 </div>
-                <div class="detail-item">
+                <div class="detail-item" v-if="countryData.recall && countryData.recall > 0">
                   <span class="label">召回:</span>
                   <span class="value">{{ countryData.recall }}</span>
                 </div>
-                <div class="detail-item">
+                <div class="detail-item" v-if="countryData.event && countryData.event > 0">
                   <span class="label">事件:</span>
                   <span class="value">{{ countryData.event }}</span>
                 </div>
-                <div class="detail-item">
+                <div class="detail-item" v-if="countryData.registration && countryData.registration > 0">
                   <span class="label">注册:</span>
                   <span class="value">{{ countryData.registration }}</span>
                 </div>
-                <div class="detail-item">
+                <div class="detail-item" v-if="countryData.guidance && countryData.guidance > 0">
                   <span class="label">指导:</span>
                   <span class="value">{{ countryData.guidance }}</span>
                 </div>
-                <div class="detail-item">
+                <div class="detail-item" v-if="countryData.customs && countryData.customs > 0">
                   <span class="label">海关:</span>
                   <span class="value">{{ countryData.customs }}</span>
                 </div>
@@ -1856,6 +1856,9 @@ onErrorCaptured((error, _instance, info) => {
   margin-bottom: 16px;
   cursor: pointer;
   position: relative;
+  height: 280px;
+  display: flex;
+  flex-direction: column;
 }
 
 .country-stat-card:hover {
@@ -1876,6 +1879,7 @@ onErrorCaptured((error, _instance, info) => {
   background: rgba(24, 144, 255, 0.1);
   border-radius: 4px;
   padding: 2px 6px;
+  z-index: 1;
 }
 
 .hint-text {
@@ -1887,6 +1891,10 @@ onErrorCaptured((error, _instance, info) => {
 .country-detail-stats {
   margin-top: 16px;
   text-align: left;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .detail-item {

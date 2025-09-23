@@ -1,7 +1,7 @@
 package com.certification.standards;
 
-import com.certification.entity.common.CrawlerData;
-import com.certification.service.SystemLogService;
+import com.certification.entity.common.CertNewsData;
+// import com.certification.service.SystemLogService; // 已删除
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,8 +28,8 @@ public class CrawlerDataKeywordMatcher {
     @Autowired
     private CrawlerDataService crawlerDataService;
 
-    @Autowired
-    private SystemLogService systemLogService;
+    // @Autowired
+    // private SystemLogService systemLogService; // 已删除
 
     /**
      * 执行关键词匹配并更新related字段
@@ -42,26 +42,21 @@ public class CrawlerDataKeywordMatcher {
         
         try {
             log.info("开始执行CrawlerData关键词匹配，批处理大小: {}", batchSize);
-            systemLogService.logInfo(
-                "CrawlerData关键词匹配开始",
-                String.format("开始执行CrawlerData关键词匹配，批处理大小: %d", batchSize),
-                "CrawlerDataKeywordMatcher"
-            );
 
             // 获取所有未处理的CrawlerData记录（使用分页查询）
-            List<CrawlerData> allData = new ArrayList<>();
+            List<CertNewsData> allData = new ArrayList<>();
             int page = 0;
             int pageSize = 1000;
             boolean hasMore = true;
             
             while (hasMore) {
                 Map<String, Object> pageResult = crawlerDataService.findAllWithPagination(page + 1, pageSize);
-                List<CrawlerData> pageData = (List<CrawlerData>) pageResult.get("records");
+                List<CertNewsData> pageData = (List<CertNewsData>) pageResult.get("records");
                 if (pageData.isEmpty()) {
                     hasMore = false;
                 } else {
                     // 过滤未处理的数据
-                    List<CrawlerData> unprocessedData = pageData.stream()
+                    List<CertNewsData> unprocessedData = pageData.stream()
                         .filter(data -> data.getIsProcessed() == null || !data.getIsProcessed())
                         .collect(Collectors.toList());
                     allData.addAll(unprocessedData);
@@ -86,18 +81,18 @@ public class CrawlerDataKeywordMatcher {
             int totalProcessed = 0;
             int totalMatched = 0;
             int totalUnmatched = 0;
-            List<CrawlerData> updatedData = new ArrayList<>();
+            List<CertNewsData> updatedData = new ArrayList<>();
 
             for (int i = 0; i < allData.size(); i += batchSize) {
                 int endIndex = Math.min(i + batchSize, allData.size());
-                List<CrawlerData> batch = allData.subList(i, endIndex);
+                List<CertNewsData> batch = allData.subList(i, endIndex);
                 
                 log.info("处理批次 {}/{}, 数据量: {}", 
                     (i / batchSize) + 1, 
                     (allData.size() + batchSize - 1) / batchSize, 
                     batch.size());
 
-                for (CrawlerData data : batch) {
+                for (CertNewsData data : batch) {
                     boolean isRelated = matcher.isRelated(data);
                     data.setRelated(isRelated);
                     data.setProcessedTime(LocalDateTime.now());
@@ -115,7 +110,7 @@ public class CrawlerDataKeywordMatcher {
 
                 // 批量保存
                 if (!updatedData.isEmpty()) {
-                    for (CrawlerData data : updatedData) {
+                    for (CertNewsData data : updatedData) {
                         crawlerDataService.saveCrawlerData(data);
                     }
                     updatedData.clear();
@@ -123,14 +118,6 @@ public class CrawlerDataKeywordMatcher {
             }
 
             long executionTime = System.currentTimeMillis() - startTime;
-
-            // 记录成功日志
-            systemLogService.logInfo(
-                "CrawlerData关键词匹配完成",
-                String.format("CrawlerData关键词匹配完成，总处理: %d, 匹配: %d, 不匹配: %d, 耗时: %d ms",
-                    totalProcessed, totalMatched, totalUnmatched, executionTime),
-                "CrawlerDataKeywordMatcher"
-            );
 
             // 构建返回结果
             result.put("success", true);
@@ -147,13 +134,7 @@ public class CrawlerDataKeywordMatcher {
         } catch (Exception e) {
             long executionTime = System.currentTimeMillis() - startTime;
             
-            log.error("CrawlerData关键词匹配失败", e);
-            systemLogService.logError(
-                "CrawlerData关键词匹配失败",
-                String.format("CrawlerData关键词匹配失败: %s", e.getMessage()),
-                "CrawlerDataKeywordMatcher",
-                e
-            );
+            log.error("CrawlerData关键词匹配失败: {}", e.getMessage(), e);
             
             result.put("success", false);
             result.put("error", "关键词匹配失败: " + e.getMessage());
@@ -176,26 +157,26 @@ public class CrawlerDataKeywordMatcher {
         
         try {
             log.info("开始执行CrawlerData关键词匹配（数据源: {}），批处理大小: {}", sourceName, batchSize);
-            systemLogService.logInfo(
+            log.info(
                 "CrawlerData关键词匹配开始（指定数据源）",
                 String.format("开始执行CrawlerData关键词匹配，数据源: %s，批处理大小: %d", sourceName, batchSize),
                 "CrawlerDataKeywordMatcher"
             );
 
             // 获取指定数据源的未处理记录（使用分页查询）
-            List<CrawlerData> allData = new ArrayList<>();
+            List<CertNewsData> allData = new ArrayList<>();
             int page = 0;
             int pageSize = 1000;
             boolean hasMore = true;
             
             while (hasMore) {
                 Map<String, Object> pageResult = crawlerDataService.findBySourceNameWithPagination(sourceName, page + 1, pageSize);
-                List<CrawlerData> pageData = (List<CrawlerData>) pageResult.get("records");
+                List<CertNewsData> pageData = (List<CertNewsData>) pageResult.get("records");
                 if (pageData.isEmpty()) {
                     hasMore = false;
                 } else {
                     // 过滤未处理的数据
-                    List<CrawlerData> unprocessedData = pageData.stream()
+                    List<CertNewsData> unprocessedData = pageData.stream()
                         .filter(data -> data.getIsProcessed() == null || !data.getIsProcessed())
                         .collect(Collectors.toList());
                     allData.addAll(unprocessedData);
@@ -220,18 +201,18 @@ public class CrawlerDataKeywordMatcher {
             int totalProcessed = 0;
             int totalMatched = 0;
             int totalUnmatched = 0;
-            List<CrawlerData> updatedData = new ArrayList<>();
+            List<CertNewsData> updatedData = new ArrayList<>();
 
             for (int i = 0; i < allData.size(); i += batchSize) {
                 int endIndex = Math.min(i + batchSize, allData.size());
-                List<CrawlerData> batch = allData.subList(i, endIndex);
+                List<CertNewsData> batch = allData.subList(i, endIndex);
                 
                 log.info("处理批次 {}/{}, 数据量: {}", 
                     (i / batchSize) + 1, 
                     (allData.size() + batchSize - 1) / batchSize, 
                     batch.size());
 
-                for (CrawlerData data : batch) {
+                for (CertNewsData data : batch) {
                     boolean isRelated = matcher.isRelated(data);
                     data.setRelated(isRelated);
                     data.setProcessedTime(LocalDateTime.now());
@@ -249,7 +230,7 @@ public class CrawlerDataKeywordMatcher {
 
                 // 批量保存
                 if (!updatedData.isEmpty()) {
-                    for (CrawlerData data : updatedData) {
+                    for (CertNewsData data : updatedData) {
                         crawlerDataService.saveCrawlerData(data);
                     }
                     updatedData.clear();
@@ -259,7 +240,7 @@ public class CrawlerDataKeywordMatcher {
             long executionTime = System.currentTimeMillis() - startTime;
 
             // 记录成功日志
-            systemLogService.logInfo(
+            log.info(
                 "CrawlerData关键词匹配完成（指定数据源）",
                 String.format("CrawlerData关键词匹配完成，数据源: %s，总处理: %d, 匹配: %d, 不匹配: %d, 耗时: %d ms",
                     sourceName, totalProcessed, totalMatched, totalUnmatched, executionTime),
@@ -282,13 +263,7 @@ public class CrawlerDataKeywordMatcher {
         } catch (Exception e) {
             long executionTime = System.currentTimeMillis() - startTime;
             
-            log.error("CrawlerData关键词匹配失败（数据源: {}）", sourceName, e);
-            systemLogService.logError(
-                "CrawlerData关键词匹配失败（指定数据源）",
-                String.format("CrawlerData关键词匹配失败，数据源: %s，错误: %s", sourceName, e.getMessage()),
-                "CrawlerDataKeywordMatcher",
-                e
-            );
+            log.error("CrawlerData关键词匹配失败（数据源: {}）: {}", sourceName, e.getMessage(), e);
             
             result.put("success", false);
             result.put("error", "关键词匹配失败: " + e.getMessage());
@@ -362,7 +337,7 @@ public class CrawlerDataKeywordMatcher {
          * @param data CrawlerData数据
          * @return 是否相关
          */
-        public boolean isRelated(CrawlerData data) {
+        public boolean isRelated(CertNewsData data) {
             if (data == null) {
                 return false;
             }
@@ -395,7 +370,7 @@ public class CrawlerDataKeywordMatcher {
          * @param data CrawlerData数据
          * @return 搜索文本
          */
-        private String buildSearchText(CrawlerData data) {
+        private String buildSearchText(CertNewsData data) {
             StringBuilder sb = new StringBuilder();
             
             // 添加标题

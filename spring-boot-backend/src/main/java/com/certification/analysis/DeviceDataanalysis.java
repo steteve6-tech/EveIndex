@@ -46,12 +46,12 @@ public class DeviceDataanalysis {
         
         try {
             // 统计各类型高风险数据数量
-            long device510KCount = device510KRepository.countByRiskLevel(CrawlerData.RiskLevel.HIGH);
-            long recallCount = deviceRecallRecordRepository.countByRiskLevel(CrawlerData.RiskLevel.HIGH);
-            long eventCount = deviceEventReportRepository.countByRiskLevel(CrawlerData.RiskLevel.HIGH);
-            long registrationCount = deviceRegistrationRecordRepository.countByRiskLevel(CrawlerData.RiskLevel.HIGH);
-            long guidanceCount = guidanceDocumentRepository.countByRiskLevel(CrawlerData.RiskLevel.HIGH);
-            long customsCount = customsCaseRepository.countByRiskLevel(CrawlerData.RiskLevel.HIGH);
+            long device510KCount = device510KRepository.countByRiskLevel(CertNewsData.RiskLevel.HIGH);
+            long recallCount = deviceRecallRecordRepository.countByRiskLevel(CertNewsData.RiskLevel.HIGH);
+            long eventCount = deviceEventReportRepository.countByRiskLevel(CertNewsData.RiskLevel.HIGH);
+            long registrationCount = deviceRegistrationRecordRepository.countByRiskLevel(CertNewsData.RiskLevel.HIGH);
+            long guidanceCount = guidanceDocumentRepository.countByRiskLevel(CertNewsData.RiskLevel.HIGH);
+            long customsCount = customsCaseRepository.countByRiskLevel(CertNewsData.RiskLevel.HIGH);
             
             // 计算总数
             long totalHighRisk = device510KCount + recallCount + eventCount + 
@@ -178,7 +178,7 @@ public class DeviceDataanalysis {
     @Transactional
     public boolean updateRiskLevel(String dataType, Long id, String newRiskLevel) {
         try {
-            CrawlerData.RiskLevel riskLevel = CrawlerData.RiskLevel.valueOf(newRiskLevel.toUpperCase());
+            CertNewsData.RiskLevel riskLevel = CertNewsData.RiskLevel.valueOf(newRiskLevel.toUpperCase());
             
             switch (dataType.toLowerCase()) {
                 case "device510k":
@@ -215,7 +215,7 @@ public class DeviceDataanalysis {
     @Transactional
     public int batchUpdateRiskLevel(String dataType, List<Long> ids, String newRiskLevel) {
         try {
-            CrawlerData.RiskLevel riskLevel = CrawlerData.RiskLevel.valueOf(newRiskLevel.toUpperCase());
+            CertNewsData.RiskLevel riskLevel = CertNewsData.RiskLevel.valueOf(newRiskLevel.toUpperCase());
             int updatedCount = 0;
             
             switch (dataType.toLowerCase()) {
@@ -410,7 +410,7 @@ public class DeviceDataanalysis {
 
     private Page<Map<String, Object>> getDevice510KHighRiskData(Pageable pageable, String keyword, String country) {
         // 暂时简化实现，先获取所有数据，筛选逻辑在Controller层处理
-        Page<Device510K> page = device510KRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH, pageable);
+        Page<Device510K> page = device510KRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH, pageable);
         return page.map(this::convertDevice510KToMap);
     }
 
@@ -420,7 +420,7 @@ public class DeviceDataanalysis {
 
     private Page<Map<String, Object>> getDeviceRecallHighRiskData(Pageable pageable, String keyword, String country) {
         // 暂时简化实现，先获取所有数据，筛选逻辑在Controller层处理
-        Page<DeviceRecallRecord> page = deviceRecallRecordRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH, pageable);
+        Page<DeviceRecallRecord> page = deviceRecallRecordRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH, pageable);
         return page.map(this::convertDeviceRecallToMap);
     }
 
@@ -430,7 +430,7 @@ public class DeviceDataanalysis {
 
     private Page<Map<String, Object>> getDeviceEventHighRiskData(Pageable pageable, String keyword, String country) {
         // 暂时简化实现，先获取所有数据，筛选逻辑在Controller层处理
-        Page<DeviceEventReport> page = deviceEventReportRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH, pageable);
+        Page<DeviceEventReport> page = deviceEventReportRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH, pageable);
         return page.map(this::convertDeviceEventToMap);
     }
 
@@ -440,7 +440,7 @@ public class DeviceDataanalysis {
 
     private Page<Map<String, Object>> getDeviceRegistrationHighRiskData(Pageable pageable, String keyword, String country) {
         // 暂时简化实现，先获取所有数据，筛选逻辑在Controller层处理
-        Page<DeviceRegistrationRecord> page = deviceRegistrationRecordRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH, pageable);
+        Page<DeviceRegistrationRecord> page = deviceRegistrationRecordRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH, pageable);
         return page.map(this::convertDeviceRegistrationToMap);
     }
 
@@ -450,7 +450,7 @@ public class DeviceDataanalysis {
 
     private Page<Map<String, Object>> getGuidanceDocumentHighRiskData(Pageable pageable, String keyword, String country) {
         // 暂时简化实现，先获取所有数据，筛选逻辑在Controller层处理
-        Page<GuidanceDocument> page = guidanceDocumentRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH, pageable);
+        Page<GuidanceDocument> page = guidanceDocumentRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH, pageable);
         return page.map(this::convertGuidanceDocumentToMap);
     }
 
@@ -460,7 +460,7 @@ public class DeviceDataanalysis {
 
     private Page<Map<String, Object>> getCustomsCaseHighRiskData(Pageable pageable, String keyword, String country) {
         // 暂时简化实现，先获取所有数据，筛选逻辑在Controller层处理
-        Page<CustomsCase> page = customsCaseRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH, pageable);
+        Page<CustomsCase> page = customsCaseRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH, pageable);
         return page.map(this::convertCustomsCaseToMap);
     }
 
@@ -600,7 +600,7 @@ public class DeviceDataanalysis {
     }
 
     // 更新风险等级的具体实现
-    private boolean updateDevice510KRiskLevel(Long id, CrawlerData.RiskLevel riskLevel) {
+    private boolean updateDevice510KRiskLevel(Long id, CertNewsData.RiskLevel riskLevel) {
         return device510KRepository.findById(id)
                 .map(device -> {
                     device.setRiskLevel(riskLevel);
@@ -610,7 +610,7 @@ public class DeviceDataanalysis {
                 .orElse(false);
     }
 
-    private boolean updateDeviceRecallRiskLevel(Long id, CrawlerData.RiskLevel riskLevel) {
+    private boolean updateDeviceRecallRiskLevel(Long id, CertNewsData.RiskLevel riskLevel) {
         return deviceRecallRecordRepository.findById(id)
                 .map(recall -> {
                     recall.setRiskLevel(riskLevel);
@@ -620,7 +620,7 @@ public class DeviceDataanalysis {
                 .orElse(false);
     }
 
-    private boolean updateDeviceEventRiskLevel(Long id, CrawlerData.RiskLevel riskLevel) {
+    private boolean updateDeviceEventRiskLevel(Long id, CertNewsData.RiskLevel riskLevel) {
         return deviceEventReportRepository.findById(id)
                 .map(event -> {
                     event.setRiskLevel(riskLevel);
@@ -630,7 +630,7 @@ public class DeviceDataanalysis {
                 .orElse(false);
     }
 
-    private boolean updateDeviceRegistrationRiskLevel(Long id, CrawlerData.RiskLevel riskLevel) {
+    private boolean updateDeviceRegistrationRiskLevel(Long id, CertNewsData.RiskLevel riskLevel) {
         return deviceRegistrationRecordRepository.findById(id)
                 .map(registration -> {
                     registration.setRiskLevel(riskLevel);
@@ -640,7 +640,7 @@ public class DeviceDataanalysis {
                 .orElse(false);
     }
 
-    private boolean updateGuidanceDocumentRiskLevel(Long id, CrawlerData.RiskLevel riskLevel) {
+    private boolean updateGuidanceDocumentRiskLevel(Long id, CertNewsData.RiskLevel riskLevel) {
         return guidanceDocumentRepository.findById(id)
                 .map(guidance -> {
                     guidance.setRiskLevel(riskLevel);
@@ -650,7 +650,7 @@ public class DeviceDataanalysis {
                 .orElse(false);
     }
 
-    private boolean updateCustomsCaseRiskLevel(Long id, CrawlerData.RiskLevel riskLevel) {
+    private boolean updateCustomsCaseRiskLevel(Long id, CertNewsData.RiskLevel riskLevel) {
         return customsCaseRepository.findById(id)
                 .map(customs -> {
                     customs.setRiskLevel(riskLevel);
@@ -661,42 +661,42 @@ public class DeviceDataanalysis {
     }
 
     // 批量更新风险等级的具体实现
-    private int batchUpdateDevice510KRiskLevel(List<Long> ids, CrawlerData.RiskLevel riskLevel) {
+    private int batchUpdateDevice510KRiskLevel(List<Long> ids, CertNewsData.RiskLevel riskLevel) {
         List<Device510K> devices = device510KRepository.findAllById(ids);
         devices.forEach(device -> device.setRiskLevel(riskLevel));
         device510KRepository.saveAll(devices);
         return devices.size();
     }
 
-    private int batchUpdateDeviceRecallRiskLevel(List<Long> ids, CrawlerData.RiskLevel riskLevel) {
+    private int batchUpdateDeviceRecallRiskLevel(List<Long> ids, CertNewsData.RiskLevel riskLevel) {
         List<DeviceRecallRecord> recalls = deviceRecallRecordRepository.findAllById(ids);
         recalls.forEach(recall -> recall.setRiskLevel(riskLevel));
         deviceRecallRecordRepository.saveAll(recalls);
         return recalls.size();
     }
 
-    private int batchUpdateDeviceEventRiskLevel(List<Long> ids, CrawlerData.RiskLevel riskLevel) {
+    private int batchUpdateDeviceEventRiskLevel(List<Long> ids, CertNewsData.RiskLevel riskLevel) {
         List<DeviceEventReport> events = deviceEventReportRepository.findAllById(ids);
         events.forEach(event -> event.setRiskLevel(riskLevel));
         deviceEventReportRepository.saveAll(events);
         return events.size();
     }
 
-    private int batchUpdateDeviceRegistrationRiskLevel(List<Long> ids, CrawlerData.RiskLevel riskLevel) {
+    private int batchUpdateDeviceRegistrationRiskLevel(List<Long> ids, CertNewsData.RiskLevel riskLevel) {
         List<DeviceRegistrationRecord> registrations = deviceRegistrationRecordRepository.findAllById(ids);
         registrations.forEach(registration -> registration.setRiskLevel(riskLevel));
         deviceRegistrationRecordRepository.saveAll(registrations);
         return registrations.size();
     }
 
-    private int batchUpdateGuidanceDocumentRiskLevel(List<Long> ids, CrawlerData.RiskLevel riskLevel) {
+    private int batchUpdateGuidanceDocumentRiskLevel(List<Long> ids, CertNewsData.RiskLevel riskLevel) {
         List<GuidanceDocument> guidances = guidanceDocumentRepository.findAllById(ids);
         guidances.forEach(guidance -> guidance.setRiskLevel(riskLevel));
         guidanceDocumentRepository.saveAll(guidances);
         return guidances.size();
     }
 
-    private int batchUpdateCustomsCaseRiskLevel(List<Long> ids, CrawlerData.RiskLevel riskLevel) {
+    private int batchUpdateCustomsCaseRiskLevel(List<Long> ids, CertNewsData.RiskLevel riskLevel) {
         List<CustomsCase> customs = customsCaseRepository.findAllById(ids);
         customs.forEach(custom -> custom.setRiskLevel(riskLevel));
         customsCaseRepository.saveAll(customs);
@@ -706,7 +706,7 @@ public class DeviceDataanalysis {
     // 按国家统计高风险数据的私有方法
     private Map<String, Long> getDevice510KHighRiskByCountry() {
         try {
-            return device510KRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH)
+            return device510KRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH)
                 .stream()
                 .collect(Collectors.groupingBy(
                     device -> device.getJdCountry() != null ? device.getJdCountry() : "Unknown",
@@ -720,7 +720,7 @@ public class DeviceDataanalysis {
 
     private Map<String, Long> getDeviceRecallHighRiskByCountry() {
         try {
-            return deviceRecallRecordRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH)
+            return deviceRecallRecordRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH)
                 .stream()
                 .collect(Collectors.groupingBy(
                     recall -> recall.getJdCountry() != null ? recall.getJdCountry() : "Unknown",
@@ -734,7 +734,7 @@ public class DeviceDataanalysis {
 
     private Map<String, Long> getDeviceEventHighRiskByCountry() {
         try {
-            return deviceEventReportRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH)
+            return deviceEventReportRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH)
                 .stream()
                 .collect(Collectors.groupingBy(
                     event -> event.getJdCountry() != null ? event.getJdCountry() : "Unknown",
@@ -748,7 +748,7 @@ public class DeviceDataanalysis {
 
     private Map<String, Long> getDeviceRegistrationHighRiskByCountry() {
         try {
-            return deviceRegistrationRecordRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH)
+            return deviceRegistrationRecordRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH)
                 .stream()
                 .collect(Collectors.groupingBy(
                     registration -> registration.getJdCountry() != null ? registration.getJdCountry() : "Unknown",
@@ -762,7 +762,7 @@ public class DeviceDataanalysis {
 
     private Map<String, Long> getGuidanceDocumentHighRiskByCountry() {
         try {
-            return guidanceDocumentRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH)
+            return guidanceDocumentRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH)
                 .stream()
                 .collect(Collectors.groupingBy(
                     guidance -> guidance.getJdCountry() != null ? guidance.getJdCountry() : "Unknown",
@@ -776,7 +776,7 @@ public class DeviceDataanalysis {
 
     private Map<String, Long> getCustomsCaseHighRiskByCountry() {
         try {
-            return customsCaseRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH)
+            return customsCaseRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH)
                 .stream()
                 .collect(Collectors.groupingBy(
                     customs -> customs.getJdCountry() != null ? customs.getJdCountry() : "Unknown",
@@ -1025,7 +1025,7 @@ public class DeviceDataanalysis {
      * 统计Device510K中包含指定关键词的高风险数据数量（支持国家筛选）
      */
     private long countDevice510KByKeyword(String keyword, String country) {
-        return device510KRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH)
+        return device510KRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH)
             .stream()
             .filter(device -> {
                 // 关键词筛选
@@ -1045,7 +1045,7 @@ public class DeviceDataanalysis {
      * 统计DeviceRecall中包含指定关键词的高风险数据数量（支持国家筛选）
      */
     private long countDeviceRecallByKeyword(String keyword, String country) {
-        return deviceRecallRecordRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH)
+        return deviceRecallRecordRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH)
             .stream()
             .filter(recall -> {
                 // 关键词筛选
@@ -1065,7 +1065,7 @@ public class DeviceDataanalysis {
      * 统计DeviceEvent中包含指定关键词的高风险数据数量（支持国家筛选）
      */
     private long countDeviceEventByKeyword(String keyword, String country) {
-        return deviceEventReportRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH)
+        return deviceEventReportRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH)
             .stream()
             .filter(event -> {
                 // 关键词筛选
@@ -1085,7 +1085,7 @@ public class DeviceDataanalysis {
      * 统计DeviceRegistration中包含指定关键词的高风险数据数量（支持国家筛选）
      */
     private long countDeviceRegistrationByKeyword(String keyword, String country) {
-        return deviceRegistrationRecordRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH)
+        return deviceRegistrationRecordRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH)
             .stream()
             .filter(registration -> {
                 // 关键词筛选
@@ -1105,7 +1105,7 @@ public class DeviceDataanalysis {
      * 统计Guidance中包含指定关键词的高风险数据数量（支持国家筛选）
      */
     private long countGuidanceByKeyword(String keyword, String country) {
-        return guidanceDocumentRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH)
+        return guidanceDocumentRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH)
             .stream()
             .filter(guidance -> {
                 // 关键词筛选
@@ -1125,7 +1125,7 @@ public class DeviceDataanalysis {
      * 统计Customs中包含指定关键词的高风险数据数量（支持国家筛选）
      */
     private long countCustomsByKeyword(String keyword, String country) {
-        return customsCaseRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH)
+        return customsCaseRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH)
             .stream()
             .filter(customs -> {
                 // 关键词筛选
@@ -1178,7 +1178,7 @@ public class DeviceDataanalysis {
 
     // 私有辅助方法 - 收集关键词统计
     private void collectKeywordsFromDevice510K(Map<String, Long> keywordCounts) {
-        device510KRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH)
+        device510KRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH)
             .forEach(device -> {
                 List<String> keywords = parseKeywords(device.getKeywords());
                 keywords.forEach(keyword -> 
@@ -1188,7 +1188,7 @@ public class DeviceDataanalysis {
     }
 
     private void collectKeywordsFromDeviceRecall(Map<String, Long> keywordCounts) {
-        deviceRecallRecordRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH)
+        deviceRecallRecordRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH)
             .forEach(recall -> {
                 List<String> keywords = parseKeywords(recall.getKeywords());
                 keywords.forEach(keyword -> 
@@ -1198,7 +1198,7 @@ public class DeviceDataanalysis {
     }
 
     private void collectKeywordsFromDeviceEvent(Map<String, Long> keywordCounts) {
-        deviceEventReportRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH)
+        deviceEventReportRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH)
             .forEach(event -> {
                 List<String> keywords = parseKeywords(event.getKeywords());
                 keywords.forEach(keyword -> 
@@ -1208,7 +1208,7 @@ public class DeviceDataanalysis {
     }
 
     private void collectKeywordsFromDeviceRegistration(Map<String, Long> keywordCounts) {
-        deviceRegistrationRecordRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH)
+        deviceRegistrationRecordRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH)
             .forEach(registration -> {
                 List<String> keywords = parseKeywords(registration.getKeywords());
                 keywords.forEach(keyword -> 
@@ -1218,7 +1218,7 @@ public class DeviceDataanalysis {
     }
 
     private void collectKeywordsFromGuidanceDocument(Map<String, Long> keywordCounts) {
-        guidanceDocumentRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH)
+        guidanceDocumentRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH)
             .forEach(guidance -> {
                 List<String> keywords = parseKeywords(guidance.getKeywords());
                 keywords.forEach(keyword -> 
@@ -1228,7 +1228,7 @@ public class DeviceDataanalysis {
     }
 
     private void collectKeywordsFromCustomsCase(Map<String, Long> keywordCounts) {
-        customsCaseRepository.findByRiskLevel(CrawlerData.RiskLevel.HIGH)
+        customsCaseRepository.findByRiskLevel(CertNewsData.RiskLevel.HIGH)
             .forEach(customs -> {
                 List<String> keywords = parseKeywords(customs.getKeywords());
                 keywords.forEach(keyword -> 

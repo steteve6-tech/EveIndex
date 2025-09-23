@@ -1,7 +1,7 @@
 package com.certification.controller;
 
 import com.certification.entity.common.*;
-import com.certification.entity.common.CrawlerData.RiskLevel;
+import com.certification.entity.common.CertNewsData.RiskLevel;
 import com.certification.repository.common.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -50,14 +50,15 @@ public class DeviceDataController {
      * 支持搜索多个实体类型：Device510K、DeviceEventReport、DeviceRecallRecord、DeviceRegistrationRecord
      */
     @PostMapping("/search-by-keywords")
-    @Operation(summary = "根据关键词搜索设备数据", description = "支持搜索多个实体类型，返回匹配的设备数据，支持黑名单关键词过滤")
+    @Operation(summary = "根据关键词搜索设备数据", description = "支持搜索多个实体类型，返回匹配的设备数据，支持黑名单关键词过滤和搜索模式选择")
     public ResponseEntity<Map<String, Object>> searchDeviceDataByKeywords(
             @RequestBody Map<String, Object> requestBody,
             @Parameter(description = "页码", example = "0") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "每页大小", example = "10") @RequestParam(defaultValue = "10") int size,
             @Parameter(description = "实体类型列表，用逗号分隔", example = "Device510K,DeviceEventReport") @RequestParam(required = false) String entityTypes,
             @Parameter(description = "风险等级过滤", example = "MEDIUM") @RequestParam(required = false) String riskLevel,
-            @Parameter(description = "国家过滤", example = "US") @RequestParam(required = false) String country) {
+            @Parameter(description = "国家过滤", example = "US") @RequestParam(required = false) String country,
+            @Parameter(description = "搜索模式", example = "fuzzy") @RequestParam(defaultValue = "fuzzy") String searchMode) {
         
         // 从请求体中提取关键词和黑名单关键词
         @SuppressWarnings("unchecked")
@@ -69,8 +70,8 @@ public class DeviceDataController {
             blacklistKeywords = new ArrayList<>();
         }
         
-        log.info("收到关键词搜索请求: keywords={}, blacklistKeywords={}, page={}, size={}, entityTypes={}, riskLevel={}, country={}", 
-                keywords, blacklistKeywords, page, size, entityTypes, riskLevel, country);
+        log.info("收到关键词搜索请求: keywords={}, blacklistKeywords={}, page={}, size={}, entityTypes={}, riskLevel={}, country={}, searchMode={}", 
+                keywords, blacklistKeywords, page, size, entityTypes, riskLevel, country, searchMode);
         
         Map<String, Object> result = new HashMap<>();
         
@@ -99,7 +100,7 @@ public class DeviceDataController {
             
             for (String entityType : entityTypeList) {
                 try {
-                    List<Object> entityResults = searchEntityByKeywords(entityType, keywords, blacklistKeywords, pageable, riskLevel, country);
+                    List<Object> entityResults = searchEntityByKeywords(entityType, keywords, blacklistKeywords, pageable, riskLevel, country, searchMode);
                     searchResults.put(entityType, entityResults);
                     totalResults += entityResults.size();
                     
@@ -132,27 +133,27 @@ public class DeviceDataController {
     /**
      * 搜索指定实体类型的关键词匹配数据
      */
-    private List<Object> searchEntityByKeywords(String entityType, List<String> keywords, List<String> blacklistKeywords, Pageable pageable, String riskLevel, String country) {
+    private List<Object> searchEntityByKeywords(String entityType, List<String> keywords, List<String> blacklistKeywords, Pageable pageable, String riskLevel, String country, String searchMode) {
         List<Object> results = new ArrayList<>();
         
         switch (entityType) {
             case "Device510K":
-                results = searchDevice510KByKeywords(keywords, blacklistKeywords, pageable, riskLevel, country);
+                results = searchDevice510KByKeywords(keywords, blacklistKeywords, pageable, riskLevel, country, searchMode);
                 break;
             case "DeviceEventReport":
-                results = searchDeviceEventReportByKeywords(keywords, blacklistKeywords, pageable, riskLevel, country);
+                results = searchDeviceEventReportByKeywords(keywords, blacklistKeywords, pageable, riskLevel, country, searchMode);
                 break;
             case "DeviceRecallRecord":
-                results = searchDeviceRecallRecordByKeywords(keywords, blacklistKeywords, pageable, riskLevel, country);
+                results = searchDeviceRecallRecordByKeywords(keywords, blacklistKeywords, pageable, riskLevel, country, searchMode);
                 break;
             case "DeviceRegistrationRecord":
-                results = searchDeviceRegistrationRecordByKeywords(keywords, blacklistKeywords, pageable, riskLevel, country);
+                results = searchDeviceRegistrationRecordByKeywords(keywords, blacklistKeywords, pageable, riskLevel, country, searchMode);
                 break;
             case "CustomsCase":
-                results = searchCustomsCaseByKeywords(keywords, blacklistKeywords, pageable, riskLevel, country);
+                results = searchCustomsCaseByKeywords(keywords, blacklistKeywords, pageable, riskLevel, country, searchMode);
                 break;
             case "GuidanceDocument":
-                results = searchGuidanceDocumentByKeywords(keywords, blacklistKeywords, pageable, riskLevel, country);
+                results = searchGuidanceDocumentByKeywords(keywords, blacklistKeywords, pageable, riskLevel, country, searchMode);
                 break;
             default:
                 log.warn("未知的实体类型: {}", entityType);
@@ -164,16 +165,35 @@ public class DeviceDataController {
     /**
      * 搜索Device510K数据
      */
-    private List<Object> searchDevice510KByKeywords(List<String> keywords, List<String> blacklistKeywords, Pageable pageable, String riskLevel, String country) {
+    private List<Object> searchDevice510KByKeywords(List<String> keywords, List<String> blacklistKeywords, Pageable pageable, String riskLevel, String country, String searchMode) {
         List<Object> results = new ArrayList<>();
         Map<Long, Map<String, List<String>>> deviceMatchInfo = new HashMap<>(); // 记录每个510K设备的匹配信息
 
         for (String keyword : keywords) {
             try {
-                // 搜索trade_name、applicant、device_name字段
-                List<Device510K> tradeNameMatches = device510KRepository.findByTradeNameContaining(keyword);
-                List<Device510K> applicantMatches = device510KRepository.findByApplicantContaining(keyword);
-                List<Device510K> deviceNameMatches = device510KRepository.findByDeviceNameContaining(keyword);
+                // 根据搜索模式选择不同的搜索方法
+                List<Device510K> tradeNameMatches;
+                List<Device510K> applicantMatches;
+                List<Device510K> deviceNameMatches;
+                
+                if ("exact".equals(searchMode)) {
+                    // 精确搜索：先获取所有数据，然后在前端过滤
+                    List<Device510K> allDevices = device510KRepository.findAll();
+                    tradeNameMatches = allDevices.stream()
+                        .filter(device -> device.getTradeName() != null && device.getTradeName().equals(keyword))
+                        .toList();
+                    applicantMatches = allDevices.stream()
+                        .filter(device -> device.getApplicant() != null && device.getApplicant().equals(keyword))
+                        .toList();
+                    deviceNameMatches = allDevices.stream()
+                        .filter(device -> device.getDeviceName() != null && device.getDeviceName().equals(keyword))
+                        .toList();
+                } else {
+                    // 模糊搜索：包含匹配（默认）
+                    tradeNameMatches = device510KRepository.findByTradeNameContaining(keyword);
+                    applicantMatches = device510KRepository.findByApplicantContaining(keyword);
+                    deviceNameMatches = device510KRepository.findByDeviceNameContaining(keyword);
+                }
 
                 // 根据风险等级过滤结果
                 if (riskLevel != null && !riskLevel.trim().isEmpty()) {
@@ -231,7 +251,7 @@ public class DeviceDataController {
     /**
      * 搜索DeviceEventReport数据
      */
-    private List<Object> searchDeviceEventReportByKeywords(List<String> keywords, List<String> blacklistKeywords, Pageable pageable, String riskLevel, String country) {
+    private List<Object> searchDeviceEventReportByKeywords(List<String> keywords, List<String> blacklistKeywords, Pageable pageable, String riskLevel, String country, String searchMode) {
         List<Object> results = new ArrayList<>();
         Map<Long, Map<String, List<String>>> eventMatchInfo = new HashMap<>(); // 记录每个事件报告的匹配信息
 
@@ -246,9 +266,17 @@ public class DeviceDataController {
                         String manufacturerName = event.getManufacturerName();
                         String genericName = event.getGenericName();
                         
-                        return (brandName != null && brandName.toLowerCase().contains(keyword.toLowerCase())) ||
-                               (manufacturerName != null && manufacturerName.toLowerCase().contains(keyword.toLowerCase())) ||
-                               (genericName != null && genericName.toLowerCase().contains(keyword.toLowerCase()));
+                        if ("exact".equals(searchMode)) {
+                            // 精确搜索：完全匹配
+                            return (brandName != null && brandName.toLowerCase().equals(keyword.toLowerCase())) ||
+                                   (manufacturerName != null && manufacturerName.toLowerCase().equals(keyword.toLowerCase())) ||
+                                   (genericName != null && genericName.toLowerCase().equals(keyword.toLowerCase()));
+                        } else {
+                            // 模糊搜索：包含匹配（默认）
+                            return (brandName != null && brandName.toLowerCase().contains(keyword.toLowerCase())) ||
+                                   (manufacturerName != null && manufacturerName.toLowerCase().contains(keyword.toLowerCase())) ||
+                                   (genericName != null && genericName.toLowerCase().contains(keyword.toLowerCase()));
+                        }
                     })
                     .toList();
 
@@ -269,14 +297,28 @@ public class DeviceDataController {
                     String manufacturerName = event.getManufacturerName();
                     String genericName = event.getGenericName();
                     
-                    if (brandName != null && brandName.toLowerCase().contains(keyword.toLowerCase())) {
-                        addMatchInfo(eventMatchInfo, event.getId(), "brandName", keyword);
-                    }
-                    if (manufacturerName != null && manufacturerName.toLowerCase().contains(keyword.toLowerCase())) {
-                        addMatchInfo(eventMatchInfo, event.getId(), "manufacturerName", keyword);
-                    }
-                    if (genericName != null && genericName.toLowerCase().contains(keyword.toLowerCase())) {
-                        addMatchInfo(eventMatchInfo, event.getId(), "genericName", keyword);
+                    if ("exact".equals(searchMode)) {
+                        // 精确搜索：完全匹配
+                        if (brandName != null && brandName.toLowerCase().equals(keyword.toLowerCase())) {
+                            addMatchInfo(eventMatchInfo, event.getId(), "brandName", keyword);
+                        }
+                        if (manufacturerName != null && manufacturerName.toLowerCase().equals(keyword.toLowerCase())) {
+                            addMatchInfo(eventMatchInfo, event.getId(), "manufacturerName", keyword);
+                        }
+                        if (genericName != null && genericName.toLowerCase().equals(keyword.toLowerCase())) {
+                            addMatchInfo(eventMatchInfo, event.getId(), "genericName", keyword);
+                        }
+                    } else {
+                        // 模糊搜索：包含匹配（默认）
+                        if (brandName != null && brandName.toLowerCase().contains(keyword.toLowerCase())) {
+                            addMatchInfo(eventMatchInfo, event.getId(), "brandName", keyword);
+                        }
+                        if (manufacturerName != null && manufacturerName.toLowerCase().contains(keyword.toLowerCase())) {
+                            addMatchInfo(eventMatchInfo, event.getId(), "manufacturerName", keyword);
+                        }
+                        if (genericName != null && genericName.toLowerCase().contains(keyword.toLowerCase())) {
+                            addMatchInfo(eventMatchInfo, event.getId(), "genericName", keyword);
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -310,7 +352,7 @@ public class DeviceDataController {
     /**
      * 搜索DeviceRecallRecord数据
      */
-    private List<Object> searchDeviceRecallRecordByKeywords(List<String> keywords, List<String> blacklistKeywords, Pageable pageable, String riskLevel, String country) {
+    private List<Object> searchDeviceRecallRecordByKeywords(List<String> keywords, List<String> blacklistKeywords, Pageable pageable, String riskLevel, String country, String searchMode) {
         List<Object> results = new ArrayList<>();
         Map<Long, Map<String, List<String>>> recallMatchInfo = new HashMap<>(); // 记录每个召回记录的匹配信息
 
@@ -376,7 +418,7 @@ public class DeviceDataController {
     /**
      * 搜索DeviceRegistrationRecord数据
      */
-    private List<Object> searchDeviceRegistrationRecordByKeywords(List<String> keywords, List<String> blacklistKeywords, Pageable pageable, String riskLevel, String country) {
+    private List<Object> searchDeviceRegistrationRecordByKeywords(List<String> keywords, List<String> blacklistKeywords, Pageable pageable, String riskLevel, String country, String searchMode) {
         List<Object> results = new ArrayList<>();
         Map<Long, Map<String, List<String>>> registrationMatchInfo = new HashMap<>(); // 记录每个注册记录的匹配信息
 
@@ -442,7 +484,7 @@ public class DeviceDataController {
     /**
      * 搜索CustomsCase数据
      */
-    private List<Object> searchCustomsCaseByKeywords(List<String> keywords, List<String> blacklistKeywords, Pageable pageable, String riskLevel, String country) {
+    private List<Object> searchCustomsCaseByKeywords(List<String> keywords, List<String> blacklistKeywords, Pageable pageable, String riskLevel, String country, String searchMode) {
         List<Object> results = new ArrayList<>();
         Map<Long, Map<String, List<String>>> caseMatchInfo = new HashMap<>(); // 记录每个海关案例的匹配信息
 
@@ -502,7 +544,7 @@ public class DeviceDataController {
     /**
      * 搜索GuidanceDocument数据
      */
-    private List<Object> searchGuidanceDocumentByKeywords(List<String> keywords, List<String> blacklistKeywords, Pageable pageable, String riskLevel, String country) {
+    private List<Object> searchGuidanceDocumentByKeywords(List<String> keywords, List<String> blacklistKeywords, Pageable pageable, String riskLevel, String country, String searchMode) {
         List<Object> results = new ArrayList<>();
         Map<Long, Map<String, List<String>>> documentMatchInfo = new HashMap<>(); // 记录每个指导文档的匹配信息
 

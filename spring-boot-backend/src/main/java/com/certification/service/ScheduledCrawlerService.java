@@ -1,9 +1,9 @@
 package com.certification.service;
 
 import com.certification.crawler.certification.base.CrawlerResult;
-import com.certification.crawler.certification.sgs.SgsCrawler;
-import com.certification.crawler.certification.ul.ULCrawler;
-import com.certification.entity.common.CrawlerData;
+import com.certification.crawler.certification.SgsCrawler;
+import com.certification.crawler.certification.ULCrawler;
+import com.certification.entity.common.CertNewsData;
 import com.certification.standards.CrawlerDataService;
 import com.certification.standards.KeywordService;
 import lombok.extern.slf4j.Slf4j;
@@ -214,7 +214,7 @@ public class ScheduledCrawlerService {
         try {
             // 获取今天新增的数据
             LocalDateTime today = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
-            List<CrawlerData> todayData = crawlerDataService.findByCrawlTimeBetween(today, LocalDateTime.now());
+            List<CertNewsData> todayData = crawlerDataService.findByCrawlTimeBetween(today, LocalDateTime.now());
             
             log.info("找到今天新增数据: {} 条", todayData.size());
             
@@ -236,7 +236,7 @@ public class ScheduledCrawlerService {
      */
     private LocalDateTime getLastCrawlTime(String crawlerName) {
         try {
-            List<CrawlerData> lastData = crawlerDataService.findLatestDataBySource(crawlerName, 1);
+            List<CertNewsData> lastData = crawlerDataService.findLatestDataBySource(crawlerName, 1);
             if (!lastData.isEmpty()) {
                 return lastData.get(0).getCrawlTime();
             }
@@ -258,7 +258,7 @@ public class ScheduledCrawlerService {
      */
     private boolean isDataExists(CrawlerResult result) {
         try {
-            CrawlerData existingData = crawlerDataService.findByUrl(result.getUrl());
+            CertNewsData existingData = crawlerDataService.findByUrl(result.getUrl());
             return existingData != null;
         } catch (Exception e) {
             log.warn("检查数据是否存在失败: {}", e.getMessage());
@@ -288,17 +288,17 @@ public class ScheduledCrawlerService {
         int savedCount = 0;
         for (CrawlerResult result : results) {
             try {
-                CrawlerData crawlerData = new CrawlerData();
-                crawlerData.setTitle(result.getTitle());
-                crawlerData.setUrl(result.getUrl());
-                crawlerData.setContent(result.getContent());
-                crawlerData.setSourceName(sourceName);
-                crawlerData.setCrawlTime(LocalDateTime.now());
-                crawlerData.setPublishDate(result.getDate());
-                crawlerData.setCountry(result.getCountry());
-                crawlerData.setType(result.getType());
+                CertNewsData certNewsData = new CertNewsData();
+                certNewsData.setTitle(result.getTitle());
+                certNewsData.setUrl(result.getUrl());
+                certNewsData.setContent(result.getContent());
+                certNewsData.setSourceName(sourceName);
+                certNewsData.setCrawlTime(LocalDateTime.now());
+                certNewsData.setPublishDate(result.getDate());
+                certNewsData.setCountry(result.getCountry());
+                certNewsData.setType(result.getType());
                 
-                crawlerDataService.saveCrawlerData(crawlerData);
+                crawlerDataService.saveCrawlerData(certNewsData);
                 savedCount++;
             } catch (Exception e) {
                 log.error("保存爬虫数据失败: {}", e.getMessage(), e);

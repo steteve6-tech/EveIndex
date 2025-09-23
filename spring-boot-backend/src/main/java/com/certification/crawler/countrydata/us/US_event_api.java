@@ -27,7 +27,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import com.certification.util.RiskLevelUtil;
 import com.certification.util.KeywordUtil;
-import com.certification.entity.common.CrawlerData.RiskLevel;
+import com.certification.entity.common.CertNewsData.RiskLevel;
 
 /**
  * FDA设备不良事件数据爬取器

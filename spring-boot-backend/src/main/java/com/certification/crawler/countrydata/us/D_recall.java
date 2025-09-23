@@ -1,5 +1,6 @@
 package com.certification.crawler.countrydata.us;
 
+import com.certification.entity.common.CertNewsData;
 import com.certification.entity.common.DeviceRecallRecord;
 import com.certification.repository.common.DeviceRecallRecordRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -696,16 +697,16 @@ public class D_recall {
         if (recallClass != null) {
             switch (recallClass.toUpperCase()) {
                 case "CLASS I":
-                    record.setRiskLevel(com.certification.entity.common.CrawlerData.RiskLevel.HIGH);
+                    record.setRiskLevel(CertNewsData.RiskLevel.HIGH);
                     break;
                 case "CLASS II":
-                    record.setRiskLevel(com.certification.entity.common.CrawlerData.RiskLevel.MEDIUM);
+                    record.setRiskLevel(CertNewsData.RiskLevel.MEDIUM);
                     break;
                 case "CLASS III":
-                    record.setRiskLevel(com.certification.entity.common.CrawlerData.RiskLevel.LOW);
+                    record.setRiskLevel(CertNewsData.RiskLevel.LOW);
                     break;
                 default:
-                    record.setRiskLevel(com.certification.entity.common.CrawlerData.RiskLevel.MEDIUM);
+                    record.setRiskLevel(CertNewsData.RiskLevel.MEDIUM);
                     break;
             }
         }

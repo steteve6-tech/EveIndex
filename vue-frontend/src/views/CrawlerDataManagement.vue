@@ -156,6 +156,12 @@
                     </template>
                     重置
                   </a-button>
+                  <a-button type="default" @click="handleKeywordManagementClick">
+                    <template #icon>
+                      <PlusOutlined />
+                    </template>
+                    关键词管理
+                  </a-button>
                 </a-space>
               </a-col>
             </a-row>
@@ -573,6 +579,124 @@
       </a-form>
     </a-modal>
 
+    <!-- 关键词管理模态框 -->
+    <a-modal
+      v-model:open="showKeywordManagement"
+      title="关键词管理"
+      width="800px"
+      :footer="null"
+    >
+      <div class="keyword-management">
+        <!-- 操作工具栏 -->
+        <div class="keyword-toolbar">
+          <a-space>
+            <a-button type="primary" @click="handleAddKeywordClick">
+              <template #icon>
+                <PlusOutlined />
+              </template>
+              添加关键词
+            </a-button>
+            <a-select
+              v-model:value="keywordFilterType"
+              placeholder="筛选类型"
+              style="width: 150px"
+              @change="loadAllKeywords"
+            >
+              <a-select-option value="NORMAL">匹配关键词</a-select-option>
+              <a-select-option value="BLACKLIST">黑名单关键词</a-select-option>
+            </a-select>
+            <a-input
+              v-model:value="keywordSearchText"
+              placeholder="搜索关键词"
+              style="width: 200px"
+              @press-enter="loadAllKeywords"
+            >
+              <template #suffix>
+                <a-button type="text" @click="loadAllKeywords" size="small">搜索</a-button>
+              </template>
+            </a-input>
+            <a-button @click="loadAllKeywords" :loading="keywordListLoading">
+              <template #icon>
+                <ReloadOutlined />
+              </template>
+              刷新
+            </a-button>
+          </a-space>
+        </div>
+
+        <!-- 关键词列表表格 -->
+        <a-table
+          :columns="keywordColumns"
+          :data-source="keywordList"
+          :loading="keywordListLoading"
+          :pagination="{ pageSize: 10, showSizeChanger: true, showQuickJumper: true }"
+          row-key="id"
+          style="margin-top: 16px"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.key === 'keywordType'">
+              <a-tag :color="record.keywordType === 'NORMAL' ? 'blue' : 'red'">
+                {{ record.keywordType === 'NORMAL' ? '匹配关键词' : '黑名单关键词' }}
+              </a-tag>
+            </template>
+            <template v-else-if="column.key === 'enabled'">
+              <a-switch
+                v-model:checked="record.enabled"
+                @change="updateKeywordStatus(record)"
+                :loading="record.updating"
+              />
+            </template>
+            <template v-else-if="column.key === 'action'">
+              <a-space>
+                <a-button type="link" size="small" @click="editKeyword(record)">
+                  编辑
+                </a-button>
+                <a-button type="link" size="small" danger @click="deleteKeyword(record)">
+                  删除
+                </a-button>
+              </a-space>
+            </template>
+          </template>
+        </a-table>
+      </div>
+    </a-modal>
+
+    <!-- 添加/编辑关键词模态框 -->
+    <a-modal
+      v-model:open="showAddKeywordModal"
+      :title="editingKeyword ? '编辑关键词' : '添加关键词'"
+      @ok="handleSaveKeyword"
+      :confirm-loading="keywordSaving"
+      width="500px"
+    >
+      <a-form :model="keywordForm" layout="vertical">
+        <a-form-item label="关键词" required>
+          <a-input
+            v-model:value="keywordForm.keyword"
+            placeholder="请输入关键词"
+            :disabled="editingKeyword"
+          />
+        </a-form-item>
+        <a-form-item label="关键词类型" required>
+          <a-select
+            v-model:value="keywordForm.keywordType"
+            placeholder="选择关键词类型"
+            style="width: 100%"
+          >
+            <a-select-option value="NORMAL">匹配关键词</a-select-option>
+            <a-select-option value="BLACKLIST">黑名单关键词</a-select-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item label="启用状态">
+          <a-switch
+            v-model:checked="keywordForm.enabled"
+            checked-children="启用"
+            un-checked-children="禁用"
+          />
+        </a-form-item>
+      </a-form>
+    </a-modal>
+
     <!-- 详情查看模态框 -->
     <a-modal
       v-model:open="showDetailModal"
@@ -764,6 +888,23 @@ const keywordStats = ref<any[]>([])
 const keywordOptions = ref<Array<{value: string, label: string, count: number}>>([])
 const keywordStatsLoading = ref(false)
 
+// 关键词管理相关数据
+const showKeywordManagement = ref(false)
+const showAddKeywordModal = ref(false)
+const keywordList = ref<any[]>([])
+const keywordListLoading = ref(false)
+const keywordSaving = ref(false)
+const editingKeyword = ref<any>(null)
+const keywordFilterType = ref('NORMAL')
+const keywordSearchText = ref('')
+
+// 关键词表单
+const keywordForm = reactive({
+  keyword: '',
+  keywordType: 'NORMAL',
+  enabled: true
+})
+
 
 // 页面标题更新
 const pageTitle = ref('高风险数据管理')
@@ -814,6 +955,40 @@ const columns = [
     title: '操作',
     key: 'action',
     width: 200,
+    fixed: 'right'
+  }
+]
+
+// 关键词表格列配置
+const keywordColumns = [
+  {
+    title: '关键词',
+    dataIndex: 'keyword',
+    key: 'keyword',
+    width: 200
+  },
+  {
+    title: '类型',
+    dataIndex: 'keywordType',
+    key: 'keywordType',
+    width: 120
+  },
+  {
+    title: '启用状态',
+    dataIndex: 'enabled',
+    key: 'enabled',
+    width: 100
+  },
+  {
+    title: '创建时间',
+    dataIndex: 'createdAt',
+    key: 'createdAt',
+    width: 150
+  },
+  {
+    title: '操作',
+    key: 'action',
+    width: 150,
     fixed: 'right'
   }
 ]
@@ -1401,6 +1576,237 @@ const filterOption = (input: string, option: any) => {
   return option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0
 }
 
+// 关键词管理相关方法
+const loadAllKeywords = async () => {
+  keywordListLoading.value = true
+  
+  try {
+    // 这里需要调用关键词API，暂时使用模拟数据
+    // const result = await getKeywords({ type: keywordFilterType.value, search: keywordSearchText.value })
+    
+    // 模拟数据 - 使用Promise确保异步处理
+    await new Promise((resolve, reject) => {
+      setTimeout(() => {
+        try {
+          keywordList.value = [
+            { id: 1, keyword: '测试关键词1', keywordType: 'NORMAL', enabled: true, createdAt: '2024-01-01' },
+            { id: 2, keyword: '测试关键词2', keywordType: 'BLACKLIST', enabled: false, createdAt: '2024-01-02' },
+            { id: 3, keyword: '测试关键词3', keywordType: 'NORMAL', enabled: true, createdAt: '2024-01-03' }
+          ]
+          keywordListLoading.value = false
+          resolve(true)
+        } catch (error) {
+          reject(error)
+        }
+      }, 1000)
+    })
+    
+  } catch (error) {
+    console.error('加载关键词列表失败:', error)
+    message.error('加载关键词列表失败')
+    keywordListLoading.value = false
+  }
+}
+
+const handleKeywordManagementClick = () => {
+  // 立即显示点击反馈
+  message.info({
+    content: '正在打开关键词管理界面...',
+    duration: 1
+  })
+  
+  // 重置筛选条件
+  keywordFilterType.value = 'NORMAL'
+  keywordSearchText.value = ''
+  
+  // 打开关键词管理模态框
+  showKeywordManagement.value = true
+  
+  // 刷新关键词列表
+  loadAllKeywords()
+}
+
+const handleAddKeywordClick = () => {
+  // 立即显示点击反馈
+  message.info({
+    content: '正在打开添加关键词界面...',
+    duration: 1
+  })
+  
+  // 重置表单
+  editingKeyword.value = null
+  keywordForm.keyword = ''
+  keywordForm.keywordType = 'NORMAL'
+  keywordForm.enabled = true
+  
+  // 打开添加模态框
+  showAddKeywordModal.value = true
+}
+
+const editKeyword = (record: any) => {
+  // 立即显示编辑反馈
+  message.info({
+    content: '正在打开编辑界面...',
+    duration: 1
+  })
+  
+  editingKeyword.value = record
+  keywordForm.keyword = record.keyword
+  keywordForm.keywordType = record.keywordType
+  keywordForm.enabled = record.enabled
+  showAddKeywordModal.value = true
+}
+
+const deleteKeyword = async (record: any) => {
+  // 立即显示删除反馈
+  message.loading(`正在删除关键词"${record.keyword}"...`, 0)
+  
+  try {
+    // 这里需要调用删除关键词API
+    // const result = await deleteKeywordAPI(record.id)
+    
+    // 模拟删除 - 使用Promise确保异步处理
+    await new Promise((resolve, reject) => {
+      setTimeout(() => {
+        try {
+          const index = keywordList.value.findIndex(item => item.id === record.id)
+          if (index > -1) {
+            keywordList.value.splice(index, 1)
+            message.destroy() // 关闭loading
+            message.success(`关键词"${record.keyword}"删除成功`)
+            
+            // 刷新关键词统计（用于筛选下拉框）
+            loadKeywordStats()
+          }
+          resolve(true)
+        } catch (error) {
+          reject(error)
+        }
+      }, 1000)
+    })
+    
+  } catch (error) {
+    message.destroy() // 关闭loading
+    console.error('删除关键词失败:', error)
+    message.error('删除关键词失败')
+  }
+}
+
+const updateKeywordStatus = async (record: any) => {
+  record.updating = true
+  
+  const newStatus = record.enabled ? '启用' : '禁用'
+  
+  // 立即显示状态更新反馈
+  message.loading(`正在${newStatus}关键词"${record.keyword}"...`, 0)
+  
+  try {
+    // 这里需要调用更新关键词状态API
+    // const result = await updateKeywordAPI(record.id, { enabled: record.enabled })
+    
+    // 模拟更新 - 使用Promise确保异步处理
+    await new Promise((resolve, reject) => {
+      setTimeout(() => {
+        try {
+          message.destroy() // 关闭loading
+          message.success(`关键词"${record.keyword}"已${newStatus}`)
+          record.updating = false
+          
+          // 刷新关键词统计（用于筛选下拉框）
+          loadKeywordStats()
+          
+          resolve(true)
+        } catch (error) {
+          reject(error)
+        }
+      }, 1000)
+    })
+    
+  } catch (error) {
+    message.destroy() // 关闭loading
+    console.error('更新关键词状态失败:', error)
+    message.error('更新关键词状态失败')
+    record.enabled = !record.enabled // 回滚状态
+    record.updating = false
+  }
+}
+
+const handleSaveKeyword = async () => {
+  if (!keywordForm.keyword.trim()) {
+    message.warning('请输入关键词')
+    return
+  }
+  
+  if (!keywordForm.keywordType) {
+    message.warning('请选择关键词类型')
+    return
+  }
+  
+  keywordSaving.value = true
+  
+  const operationType = editingKeyword.value ? '更新' : '添加'
+  const keywordType = keywordForm.keywordType === 'NORMAL' ? '匹配关键词' : '黑名单关键词'
+  const keywordName = keywordForm.keyword.trim()
+  
+  // 立即显示操作反馈
+  message.loading(`正在${operationType}${keywordType}"${keywordName}"...`, 0)
+  
+  try {
+    // 这里需要调用保存关键词API
+    // const result = editingKeyword.value 
+    //   ? await updateKeywordAPI(editingKeyword.value.id, keywordForm)
+    //   : await createKeywordAPI(keywordForm)
+    
+    // 模拟保存 - 使用Promise确保异步处理
+    await new Promise((resolve, reject) => {
+      setTimeout(() => {
+        try {
+          if (editingKeyword.value) {
+            // 更新现有关键词
+            const index = keywordList.value.findIndex(item => item.id === editingKeyword.value.id)
+            if (index > -1) {
+              keywordList.value[index] = { ...keywordList.value[index], ...keywordForm }
+            }
+            message.destroy() // 关闭loading
+            message.success(`关键词"${keywordName}"更新成功`)
+          } else {
+            // 添加新关键词
+            const newKeyword = {
+              id: Date.now(),
+              ...keywordForm,
+              createdAt: new Date().toISOString().split('T')[0]
+            }
+            keywordList.value.unshift(newKeyword)
+            message.destroy() // 关闭loading
+            message.success(`关键词"${keywordName}"添加成功`)
+          }
+          
+          // 关闭模态框并重置表单
+          showAddKeywordModal.value = false
+          editingKeyword.value = null
+          keywordForm.keyword = ''
+          keywordForm.keywordType = 'NORMAL'
+          keywordForm.enabled = true
+          
+          // 刷新关键词统计（用于筛选下拉框）
+          loadKeywordStats()
+          
+          resolve(true)
+        } catch (error) {
+          reject(error)
+        }
+      }, 1000)
+    })
+    
+  } catch (error) {
+    message.destroy() // 关闭loading
+    console.error('保存关键词失败:', error)
+    message.error('保存关键词失败')
+  } finally {
+    keywordSaving.value = false
+  }
+}
+
 // 组件挂载时初始化
 onMounted(async () => {
   // 初始化国家选项
@@ -1421,6 +1827,9 @@ onMounted(async () => {
   // 加载高风险数据
   console.log('🔍 开始加载高风险数据...')
   loadData()
+  
+  // 初始化关键词管理数据
+  await loadAllKeywords()
 })
 </script>
 
@@ -1517,6 +1926,27 @@ onMounted(async () => {
 }
 
 .keyword-table .ant-tag {
+  margin: 0;
+}
+
+/* 关键词管理样式 */
+.keyword-management {
+  padding: 16px 0;
+}
+
+.keyword-toolbar {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
+}
+
+.keyword-management .ant-table-tbody > tr > td {
+  vertical-align: middle;
+}
+
+.keyword-management .ant-tag {
   margin: 0;
 }
 </style>

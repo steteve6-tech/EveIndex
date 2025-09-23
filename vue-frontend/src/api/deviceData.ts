@@ -125,6 +125,7 @@ export async function searchDeviceDataByKeywords(
   riskLevel?: string,
   country?: string,
   blacklistKeywords?: string[],
+  searchMode?: string,
   options?: { [key: string]: any }
 ) {
   const requestBody = {
@@ -138,6 +139,7 @@ export async function searchDeviceDataByKeywords(
   if (entityTypes && entityTypes.length > 0) params.entityTypes = entityTypes.join(',');
   if (riskLevel) params.riskLevel = riskLevel;
   if (country) params.country = country;
+  if (searchMode) params.searchMode = searchMode;
 
   return request<Record<string, any>>("/device-data/search-by-keywords", {
     method: "POST",

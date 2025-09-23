@@ -46,7 +46,7 @@
                     </a-col>
                     <a-col :span="4">
                       <a-statistic
-                          title="510K"
+                          title="申请记录"
                           :value="stats.device510KCount"
                           :value-style="{ color: '#1890ff' }"
                       >
@@ -162,7 +162,7 @@
                                   placeholder="选择数据类型"
                                   style="width: 100%"
                               >
-                                <a-select-option value="Device510K">510K</a-select-option>
+                                <a-select-option value="Device510K">申请记录</a-select-option>
                                 <a-select-option value="DeviceEventReport">事件报告</a-select-option>
                                 <a-select-option value="DeviceRecallRecord">召回记录</a-select-option>
                                 <a-select-option value="DeviceRegistrationRecord">注册记录</a-select-option>
@@ -179,6 +179,17 @@
                               </a-select>
                             </a-form-item>
                           </a-col>
+                          <a-col :span="6">
+                            <a-form-item label="搜索模式">
+                              <a-select v-model:value="unifiedConfig.searchMode" placeholder="选择搜索模式"
+                                        style="width: 100%">
+                                <a-select-option value="fuzzy">模糊搜索</a-select-option>
+                                <a-select-option value="exact">精确搜索</a-select-option>
+                              </a-select>
+                            </a-form-item>
+                          </a-col>
+                        </a-row>
+                        <a-row :gutter="16">
                           <a-col :span="6">
                             <a-form-item label="设置风险等级">
                               <a-select v-model:value="unifiedConfig.saveRiskLevel" placeholder="保存时设置的风险等级"
@@ -341,7 +352,7 @@
                       <!-- 详细搜索结果 -->
                       <a-card title="详细搜索结果">
                         <a-tabs v-model:activeKey="searchResultActiveTab">
-                          <a-tab-pane key="Device510K" tab="510K" v-if="keywordSearchResults.Device510K">
+                          <a-tab-pane key="Device510K" tab="申请记录" v-if="keywordSearchResults.Device510K">
                             <a-table
                                 :columns="device510KColumns"
                                 :data-source="keywordSearchResults.Device510K"
@@ -543,8 +554,8 @@
               </a-tab-pane>
 
 
-              <!-- 510K设备 -->
-              <a-tab-pane key="510k" tab="510K">
+              <!-- 申请记录 -->
+              <a-tab-pane key="510k" tab="申请记录">
                 <div class="tab-content">
                   <div class="search-section">
                     <a-form layout="inline" :model="device510KSearchForm">
@@ -786,7 +797,7 @@
           <!-- 详细搜索结果 -->
           <a-card title="详细搜索结果">
             <a-tabs v-model:activeKey="searchResultActiveTab">
-              <a-tab-pane key="Device510K" tab="510K" v-if="keywordSearchResults.Device510K">
+              <a-tab-pane key="Device510K" tab="申请记录" v-if="keywordSearchResults.Device510K">
                 <a-table
                     :columns="device510KColumns"
                     :data-source="keywordSearchResults.Device510K"
@@ -985,7 +996,7 @@
                   </template>
                 </a-table>
               </a-tab-pane>
-              <a-tab-pane key="510k" tab="510K">
+              <a-tab-pane key="510k" tab="申请记录">
                 <a-table
                     :columns="analysisDevice510KColumns"
                     :data-source="analysisResults[1]?.data || []"
@@ -1491,6 +1502,7 @@ const unifiedConfig = reactive({
   country: '',
   entityTypes: ['Device510K', 'DeviceEventReport', 'DeviceRecallRecord', 'DeviceRegistrationRecord', 'GuidanceDocument', 'CustomsCase'],
   analysisMode: 'search', // 默认选择统一关键词搜索模式
+  searchMode: 'fuzzy', // 新增：搜索模式，'fuzzy'为模糊搜索，'exact'为精确搜索
   searchRiskLevel: 'MEDIUM', // 搜索时使用的风险等级（固定为中等风险）
   saveRiskLevel: 'HIGH', // 保存时设置的风险等级（默认高风险，用户可调整）
   keywords: [
@@ -1898,13 +1910,7 @@ const searchRecallRecords = async () => {
       ...recallSearchForm
     }
     console.log('搜索参数:', params)
-    const result = await getDeviceRecallRecords(
-        recallPagination.current - 1,
-        recallPagination.pageSize,
-        recallSearchForm.productCode,
-        recallSearchForm.recallStatus,
-        recallSearchForm.countryCode
-    )
+    const result = await getDeviceRecallRecords(params)
     console.log('召回记录API返回:', result)
     if (result && result.success && result.data) {
       recallData.value = result.data
@@ -1930,13 +1936,7 @@ const searchDevice510KRecords = async () => {
       size: device510KPagination.pageSize,
       ...device510KSearchForm
     }
-    const result = await getDevice510KRecords(
-        device510KPagination.current - 1,
-        device510KPagination.pageSize,
-        device510KSearchForm.deviceName,
-        undefined,
-        device510KSearchForm.deviceClass
-    )
+    const result = await getDevice510KRecords(params)
     if (result && result.success && result.data) {
       device510KData.value = result.data
       device510KPagination.total = result.totalElements || 0
@@ -1957,13 +1957,7 @@ const searchEventReports = async () => {
       size: eventPagination.pageSize,
       ...eventSearchForm
     }
-    const result = await getDeviceEventReports(
-        eventPagination.current - 1,
-        eventPagination.pageSize,
-        eventSearchForm.eventType,
-        eventSearchForm.manufacturerName,
-        eventSearchForm.deviceClass
-    )
+    const result = await getDeviceEventReports(params)
     if (result && result.success && result.data) {
       eventData.value = result.data
       eventPagination.total = result.totalElements || 0
@@ -1984,13 +1978,7 @@ const searchRegistrationRecords = async () => {
       size: registrationPagination.pageSize,
       ...registrationSearchForm
     }
-    const result = await getDeviceRegistrationRecords(
-        registrationPagination.current - 1,
-        registrationPagination.pageSize,
-        registrationSearchForm.deviceName,
-        registrationSearchForm.manufacturerName,
-        undefined
-    )
+    const result = await getDeviceRegistrationRecords(params)
     if (result && result.success && result.data) {
       registrationData.value = result.data
       registrationPagination.total = result.totalElements || 0
@@ -2006,12 +1994,12 @@ const searchRegistrationRecords = async () => {
 const searchGuidanceDocuments = async () => {
   guidanceLoading.value = true
   try {
-    const result = await getGuidanceDocuments(
-        guidancePagination.current - 1,
-        guidancePagination.pageSize,
-        guidanceSearchForm.title,
-        guidanceSearchForm.documentType
-    )
+    const params = {
+      page: guidancePagination.current - 1,
+      size: guidancePagination.pageSize,
+      ...guidanceSearchForm
+    }
+    const result = await getGuidanceDocuments(params)
     if (result && result.success && result.data) {
       guidanceData.value = result.data
       guidancePagination.total = result.totalElements || 0
@@ -2091,12 +2079,12 @@ const performKeywordSearch = async () => {
 const searchCustomsCases = async () => {
   customsLoading.value = true
   try {
-    const result = await getCustomsCases(
-        customsPagination.current - 1,
-        customsPagination.pageSize,
-        customsSearchForm.title,
-        customsSearchForm.caseType
-    )
+    const params = {
+      page: customsPagination.current - 1,
+      size: customsPagination.pageSize,
+      ...customsSearchForm
+    }
+    const result = await getCustomsCases(params)
     if (result && result.success && result.data) {
       customsData.value = result.data
       customsPagination.total = result.totalElements || 0
@@ -2192,7 +2180,8 @@ const saveUnifiedKeywords = async () => {
   try {
     console.log('🔄 开始保存关键词配置...', {
       normalKeywords: unifiedConfig.keywords,
-      blacklistKeywords: unifiedConfig.blacklistKeywords
+      blacklistKeywords: unifiedConfig.blacklistKeywords,
+      searchMode: unifiedConfig.searchMode
     })
     
     // 保存到localStorage
@@ -2202,6 +2191,7 @@ const saveUnifiedKeywords = async () => {
       country: unifiedConfig.country,
       entityTypes: unifiedConfig.entityTypes,
       analysisMode: unifiedConfig.analysisMode,
+      searchMode: unifiedConfig.searchMode, // 保存搜索模式
       searchRiskLevel: unifiedConfig.searchRiskLevel,
       saveRiskLevel: unifiedConfig.saveRiskLevel,
       timestamp: new Date().toISOString()
@@ -2213,7 +2203,8 @@ const saveUnifiedKeywords = async () => {
     try {
       const response = await saveUnifiedKeywordConfig({
         normalKeywords: unifiedConfig.keywords,
-        blacklistKeywords: unifiedConfig.blacklistKeywords
+        blacklistKeywords: unifiedConfig.blacklistKeywords,
+        searchMode: unifiedConfig.searchMode
       })
       
       console.log('📡 后端响应:', response)
@@ -2255,6 +2246,9 @@ const loadSavedUnifiedConfig = async () => {
         if (config.blacklistKeywords && Array.isArray(config.blacklistKeywords)) {
           unifiedConfig.blacklistKeywords = config.blacklistKeywords
         }
+        if (config.searchMode) {
+          unifiedConfig.searchMode = config.searchMode
+        }
         console.log('✅ 已从后端加载关键词配置:', config)
         return // 成功从后端加载，直接返回
       } else if (response && (response as any).success && (response as any).data) {
@@ -2265,6 +2259,9 @@ const loadSavedUnifiedConfig = async () => {
         }
         if (config.blacklistKeywords && Array.isArray(config.blacklistKeywords)) {
           unifiedConfig.blacklistKeywords = config.blacklistKeywords
+        }
+        if (config.searchMode) {
+          unifiedConfig.searchMode = config.searchMode
         }
         console.log('✅ 已从后端加载关键词配置（标准格式）:', config)
         return // 成功从后端加载，直接返回
@@ -2293,6 +2290,9 @@ const loadSavedUnifiedConfig = async () => {
       }
       if (config.analysisMode) {
         unifiedConfig.analysisMode = config.analysisMode
+      }
+      if (config.searchMode) {
+        unifiedConfig.searchMode = config.searchMode
       }
       if (config.searchRiskLevel) {
         unifiedConfig.searchRiskLevel = config.searchRiskLevel
@@ -2341,7 +2341,7 @@ const getColumnsByEntityType = (entityType: string) => {
 // 根据实体类型获取显示名称
 const getEntityTypeDisplayName = (entityType: string): string => {
   const displayNames: { [key: string]: string } = {
-    'Device510K': '510K设备',
+    'Device510K': '申请记录',
     'DeviceEventReport': '事件报告',
     'DeviceRecallRecord': '召回记录',
     'DeviceRegistrationRecord': '注册记录',
@@ -2439,6 +2439,109 @@ const checkMatchedKeywords = (record: any, keywords: string[], entityType: strin
   return matchedKeywords
 }
 
+// 根据搜索模式进行关键词匹配
+const matchKeywordsByMode = (text: string, keywords: string[], searchMode: string): string[] => {
+  if (!text || !keywords || keywords.length === 0) {
+    return []
+  }
+
+  const matchedKeywords: string[] = []
+  const searchText = text.toLowerCase()
+
+  for (const keyword of keywords) {
+    const keywordLower = keyword.toLowerCase()
+    let isMatched = false
+
+    if (searchMode === 'exact') {
+      // 精确搜索：完全匹配
+      isMatched = searchText === keywordLower
+    } else {
+      // 模糊搜索：包含匹配
+      isMatched = searchText.includes(keywordLower)
+    }
+
+    if (isMatched) {
+      matchedKeywords.push(keyword)
+    }
+  }
+
+  return matchedKeywords
+}
+
+// 修改现有的关键词匹配函数，支持搜索模式
+const matchKeywordsInRecord = (record: any, keywords: string[], searchFields: string[], searchMode: string): string[] => {
+  const matchedKeywords: string[] = []
+
+  for (const keyword of keywords) {
+    let isMatched = false
+
+    for (const field of searchFields) {
+      const fieldValue = record[field]
+      if (fieldValue && typeof fieldValue === 'string') {
+        if (searchMode === 'exact') {
+          // 精确搜索：完全匹配
+          isMatched = fieldValue.toLowerCase() === keyword.toLowerCase()
+        } else {
+          // 模糊搜索：包含匹配
+          isMatched = fieldValue.toLowerCase().includes(keyword.toLowerCase())
+        }
+
+        if (isMatched) {
+          break
+        }
+      }
+    }
+
+    if (isMatched) {
+      matchedKeywords.push(keyword)
+    }
+  }
+
+  return matchedKeywords
+}
+
+// 应用黑名单过滤
+const applyBlacklistFilter = (data: any[], blacklistKeywords: string[]): any[] => {
+  if (!blacklistKeywords || blacklistKeywords.length === 0) {
+    return data
+  }
+
+  return data.filter(item => {
+    const searchFields = getSearchFieldsByEntityType(item.entityType || '')
+    const searchText = searchFields
+      .map(field => item[field] || '')
+      .join(' ')
+      .toLowerCase()
+
+    return !blacklistKeywords.some(blacklistKeyword => 
+      searchText.includes(blacklistKeyword.toLowerCase())
+    )
+  })
+}
+
+// 自动判断风险等级
+const determineRiskLevel = (item: any, matchedKeywords: string[]): string => {
+  // 根据匹配的关键词数量和内容判断风险等级
+  const highRiskKeywords = ['recall', 'safety', 'adverse', 'death', 'injury']
+  const mediumRiskKeywords = ['warning', 'caution', 'risk', 'harm']
+  
+  const hasHighRiskKeyword = matchedKeywords.some(keyword => 
+    highRiskKeywords.some(riskKeyword => 
+      keyword.toLowerCase().includes(riskKeyword)
+    )
+  )
+  
+  const hasMediumRiskKeyword = matchedKeywords.some(keyword => 
+    mediumRiskKeywords.some(riskKeyword => 
+      keyword.toLowerCase().includes(riskKeyword)
+    )
+  )
+
+  if (hasHighRiskKeyword) return 'HIGH'
+  if (hasMediumRiskKeyword) return 'MEDIUM'
+  return 'LOW'
+}
+
 // 根据实体类型获取搜索字段
 const getSearchFieldsByEntityType = (entityType: string): string[] => {
   const fieldMap: { [key: string]: string[] } = {
@@ -2477,6 +2580,7 @@ const resetUnifiedConfig = () => {
   unifiedConfig.country = ''
   unifiedConfig.entityTypes = ['Device510K', 'DeviceEventReport', 'DeviceRecallRecord', 'DeviceRegistrationRecord', 'GuidanceDocument', 'CustomsCase']
   unifiedConfig.analysisMode = 'search' // 默认选择统一关键词搜索模式
+  unifiedConfig.searchMode = 'fuzzy' // 默认模糊搜索
   unifiedConfig.searchRiskLevel = 'MEDIUM' // 搜索时固定使用中等风险
   unifiedConfig.saveRiskLevel = 'HIGH' // 保存时默认设置为高风险
   unifiedConfig.keywords = [
@@ -2516,7 +2620,7 @@ const startAnalysis = async () => {
         entityType: 'DeviceRecallRecord'
       },
       {
-        name: '510K设备',
+        name: '申请记录',
         api: getDevice510KRecords,
         icon: ExperimentOutlined,
         color: '#1890ff',
@@ -2797,7 +2901,8 @@ const startUnifiedSearch = async () => {
             [entityType],
             unifiedConfig.searchRiskLevel,
             unifiedConfig.country,
-            unifiedConfig.blacklistKeywords
+            unifiedConfig.blacklistKeywords,
+            unifiedConfig.searchMode
         )
 
         // 检查API返回结果是否有效
@@ -2824,33 +2929,69 @@ const startUnifiedSearch = async () => {
         }
 
         if (entityData && Array.isArray(entityData) && entityData.length > 0) {
-          // 为匹配的数据设置中风险等级和关键词
+          // 根据搜索模式进行关键词匹配
+          const searchFields = getSearchFieldsByEntityType(entityType)
           const processedData = entityData.map((item: any) => {
             // 后端返回的数据结构：{ entity: {...}, matchedKeywords: [...], matchedFields: [...], matchDetails: {...} }
             const entity = item.entity || item
-            const matchedKeywords = item.matchedKeywords || []
-            const matchedFields = item.matchedFields || []
+            let matchedKeywords = item.matchedKeywords || []
+            let matchedFields = item.matchedFields || []
             const matchDetails = item.matchDetails || {}
 
-            // 设置风险等级为保存专用的风险等级
-            entity.riskLevel = unifiedConfig.saveRiskLevel
+            // 如果后端没有返回匹配信息，使用前端匹配逻辑
+            if (matchedKeywords.length === 0) {
+              matchedKeywords = matchKeywordsInRecord(
+                entity, 
+                unifiedConfig.keywords, 
+                searchFields, 
+                unifiedConfig.searchMode
+              )
+              
+              matchedFields = searchFields.filter(field => {
+                const fieldValue = entity[field]
+                if (!fieldValue) return false
 
-            // 设置匹配的关键词（使用后端返回的匹配信息）
+                if (unifiedConfig.searchMode === 'exact') {
+                  return unifiedConfig.keywords.some(keyword => 
+                    fieldValue.toLowerCase() === keyword.toLowerCase()
+                  )
+                } else {
+                  return unifiedConfig.keywords.some(keyword => 
+                    fieldValue.toLowerCase().includes(keyword.toLowerCase())
+                  )
+                }
+              })
+            }
+
+            // 设置风险等级
+            if (unifiedConfig.saveRiskLevel === 'AUTO') {
+              // 自动判断风险等级
+              entity.riskLevel = determineRiskLevel(entity, matchedKeywords)
+            } else {
+              entity.riskLevel = unifiedConfig.saveRiskLevel
+            }
+
+            // 设置匹配的关键词
             entity.matchedKeywords = matchedKeywords
             entity.matchedFields = matchedFields
             entity.matchDetails = matchDetails
 
             // 设置关键词列表
-            entity.keywords = matchedKeywords
+            entity.keywords = [...new Set([...(entity.keywords || []), ...matchedKeywords])]
 
             return entity
-          })
+          }).filter((item: any) => item.matchedKeywords && item.matchedKeywords.length > 0)
 
-          results.push({
-            entityType,
-            data: processedData,
-            totalCount: processedData.length
-          })
+          // 应用黑名单过滤
+          const filteredData = applyBlacklistFilter(processedData, unifiedConfig.blacklistKeywords)
+
+          if (filteredData.length > 0) {
+            results.push({
+              entityType,
+              data: filteredData,
+              totalCount: filteredData.length
+            })
+          }
         }
       } catch (error) {
         // 搜索失败，继续下一个实体类型
@@ -2858,8 +2999,9 @@ const startUnifiedSearch = async () => {
     }
 
     unifiedResults.value = results
-
-    message.success(`统一搜索完成，共找到 ${results.reduce((sum, r) => sum + r.totalCount, 0)} 条记录`)
+    const totalCount = results.reduce((sum, r) => sum + r.totalCount, 0)
+    
+    message.success(`搜索完成！共找到 ${totalCount} 条匹配记录（${unifiedConfig.searchMode === 'exact' ? '精确' : '模糊'}搜索）`)
 
   } catch (error) {
     console.error('统一搜索失败:', error)
@@ -3237,7 +3379,7 @@ const formatFieldLabel = (key: string): string => {
     'productCode': '产品代码',
     'recallCountryCode': '国家代码',
     
-    // Device510K 510K设备字段
+    // Device510K 申请记录字段
     'deviceClass': '设备类别',
     'tradeName': '品牌名称',
     'applicant': '申请人',
@@ -3357,7 +3499,7 @@ const isLongField = (key: string): boolean => {
     // DeviceRecallRecord 召回记录长字段
     'productDescription',
     
-    // Device510K 510K设备长字段
+    // Device510K 申请记录长字段
     'openfda',
     
     // DeviceEventReport 事件报告长字段
@@ -3506,7 +3648,7 @@ const getCountryDisplayName = (countryCode: string): string => {
 // 获取数据类型显示名称
 const getDataTypeDisplayName = (dataType: string): string => {
   const typeNames: Record<string, string> = {
-    'Device510K': '510K设备',
+    'Device510K': '申请记录',
     'DeviceEventReport': '事件报告',
     'DeviceRecallRecord': '召回记录',
     'DeviceRegistrationRecord': '注册记录',
@@ -3533,7 +3675,7 @@ const getDataTypeColor = (dataType: string): string => {
 // 根据中文名称获取数据类型颜色
 const getDataTypeColorByChineseName = (chineseName: string): string => {
   const colors: Record<string, string> = {
-    '510K设备': '#1890ff',
+    '申请记录': '#1890ff',
     '事件报告': '#faad14',
     '召回记录': '#ff4d4f',
     '注册记录': '#52c41a',

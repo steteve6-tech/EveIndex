@@ -1,6 +1,6 @@
 package com.certification.service;
 
-import com.certification.entity.common.CrawlerData;
+import com.certification.entity.common.CertNewsData;
 import com.certification.standards.CrawlerDataService;
 import com.certification.standards.KeywordService;
 import lombok.extern.slf4j.Slf4j;
@@ -31,11 +31,11 @@ public class DataProcessingService {
     /**
      * 自动更新国家信息
      */
-    public void autoUpdateCountries(List<CrawlerData> dataList) {
+    public void autoUpdateCountries(List<CertNewsData> dataList) {
         log.info("开始自动更新国家信息，数据量: {}", dataList.size());
         
         int updatedCount = 0;
-        for (CrawlerData data : dataList) {
+        for (CertNewsData data : dataList) {
             try {
                 String detectedCountry = detectCountryFromContent(data);
                 if (detectedCountry != null && !detectedCountry.equals(data.getCountry())) {
@@ -54,11 +54,11 @@ public class DataProcessingService {
     /**
      * 自动处理数据
      */
-    public void autoProcessData(List<CrawlerData> dataList) {
+    public void autoProcessData(List<CertNewsData> dataList) {
         log.info("开始自动处理数据，数据量: {}", dataList.size());
         
         int processedCount = 0;
-        for (CrawlerData data : dataList) {
+        for (CertNewsData data : dataList) {
             try {
                 // 关键词匹配
                 String matchedKeywords = matchKeywords(data);
@@ -70,7 +70,7 @@ public class DataProcessingService {
                 }
                 
                 // 风险等级评估
-                CrawlerData.RiskLevel riskLevel = assessRiskLevel(data);
+                CertNewsData.RiskLevel riskLevel = assessRiskLevel(data);
                 data.setRiskLevel(riskLevel);
                 
                 // 标记为已处理
@@ -91,7 +91,7 @@ public class DataProcessingService {
     /**
      * 从内容中检测国家
      */
-    private String detectCountryFromContent(CrawlerData data) {
+    private String detectCountryFromContent(CertNewsData data) {
         String content = (data.getContent() != null ? data.getContent() : "") + 
                         (data.getTitle() != null ? data.getTitle() : "") + 
                         (data.getSummary() != null ? data.getSummary() : "");
@@ -144,7 +144,7 @@ public class DataProcessingService {
     /**
      * 匹配关键词
      */
-    private String matchKeywords(CrawlerData data) {
+    private String matchKeywords(CertNewsData data) {
         try {
             String content = (data.getContent() != null ? data.getContent() : "") + 
                             (data.getTitle() != null ? data.getTitle() : "") + 
@@ -180,13 +180,13 @@ public class DataProcessingService {
     /**
      * 评估风险等级
      */
-    private CrawlerData.RiskLevel assessRiskLevel(CrawlerData data) {
+    private CertNewsData.RiskLevel assessRiskLevel(CertNewsData data) {
         String content = (data.getContent() != null ? data.getContent() : "") + 
                         (data.getTitle() != null ? data.getTitle() : "") + 
                         (data.getSummary() != null ? data.getSummary() : "");
         
         if (content.isEmpty()) {
-            return CrawlerData.RiskLevel.NONE;
+            return CertNewsData.RiskLevel.NONE;
         }
         
         content = content.toLowerCase();
@@ -207,22 +207,22 @@ public class DataProcessingService {
         // 检查高风险关键词
         for (String keyword : highRiskKeywords) {
             if (content.contains(keyword)) {
-                return CrawlerData.RiskLevel.HIGH;
+                return CertNewsData.RiskLevel.HIGH;
             }
         }
         
         // 检查中风险关键词
         for (String keyword : mediumRiskKeywords) {
             if (content.contains(keyword)) {
-                return CrawlerData.RiskLevel.MEDIUM;
+                return CertNewsData.RiskLevel.MEDIUM;
             }
         }
         
         // 如果有匹配的关键词，至少是低风险
         if (data.getMatchedKeywords() != null && !data.getMatchedKeywords().isEmpty()) {
-            return CrawlerData.RiskLevel.LOW;
+            return CertNewsData.RiskLevel.LOW;
         }
         
-        return CrawlerData.RiskLevel.NONE;
+        return CertNewsData.RiskLevel.NONE;
     }
 }

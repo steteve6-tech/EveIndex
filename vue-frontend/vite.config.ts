@@ -72,6 +72,12 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/keywords/, '/api/keywords'),
       },
+      '/keyword-management': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/keyword-management/, '/api/keyword-management'),
+      },
       '/high-risk-data': {
         target: 'http://localhost:8080',
         changeOrigin: true,

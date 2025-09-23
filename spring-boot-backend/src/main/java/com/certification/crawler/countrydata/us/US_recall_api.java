@@ -33,7 +33,7 @@ import java.util.LinkedHashSet;
 import java.util.regex.Pattern;
 import com.certification.util.RiskLevelUtil;
 import com.certification.util.KeywordUtil;
-import com.certification.entity.common.CrawlerData.RiskLevel;
+import com.certification.entity.common.CertNewsData.RiskLevel;
 
 /**
  * FDA设备召回数据爬取器

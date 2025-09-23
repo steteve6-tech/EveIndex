@@ -1,5 +1,6 @@
 package com.certification.crawler.countrydata.us;
 
+import com.certification.entity.common.CertNewsData;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.Connection;
@@ -659,7 +660,7 @@ public class D_event {
         // 设置默认值
         report.setEventType("Adverse Event");
         report.setDeviceClass("Unknown");
-        report.setRiskLevel(com.certification.entity.common.CrawlerData.RiskLevel.MEDIUM);
+        report.setRiskLevel(CertNewsData.RiskLevel.MEDIUM);
         
         return report;
     }

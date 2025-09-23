@@ -1,5 +1,6 @@
 package com.certification.repository.common;
 
+import com.certification.entity.common.CertNewsData;
 import com.certification.entity.common.DeviceRecallRecord;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,6 +15,8 @@ import java.util.Optional;
 public interface DeviceRecallRecordRepository extends JpaRepository<DeviceRecallRecord, Long> {
 
     Optional<DeviceRecallRecord> findByCfresId(String cfresId);
+
+    boolean existsByCfresId(String cfresId);
 
     List<DeviceRecallRecord> findByRecallStatus(String recallStatus);
 
@@ -37,15 +40,15 @@ public interface DeviceRecallRecordRepository extends JpaRepository<DeviceRecall
     /**
      * 根据风险等级查找记录
      */
-    List<DeviceRecallRecord> findByRiskLevel(com.certification.entity.common.CrawlerData.RiskLevel riskLevel);
+    List<DeviceRecallRecord> findByRiskLevel(CertNewsData.RiskLevel riskLevel);
 
     /**
      * 根据风险等级查找记录（分页）
      */
-    org.springframework.data.domain.Page<DeviceRecallRecord> findByRiskLevel(com.certification.entity.common.CrawlerData.RiskLevel riskLevel, org.springframework.data.domain.Pageable pageable);
+    org.springframework.data.domain.Page<DeviceRecallRecord> findByRiskLevel(CertNewsData.RiskLevel riskLevel, org.springframework.data.domain.Pageable pageable);
 
     /**
      * 统计指定风险等级的记录数量
      */
-    long countByRiskLevel(com.certification.entity.common.CrawlerData.RiskLevel riskLevel);
+    long countByRiskLevel(CertNewsData.RiskLevel riskLevel);
 }

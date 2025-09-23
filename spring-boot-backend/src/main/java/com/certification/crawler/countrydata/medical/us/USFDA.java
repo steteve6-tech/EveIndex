@@ -1,8 +1,8 @@
 package com.certification.crawler.countrydata.medical.us;
 
+import com.certification.crawler.common.HttpUtils;
 import com.certification.crawler.countrydata.medical.base.BaseMedicalCrawler;
 import com.certification.crawler.countrydata.medical.base.MedicalCrawlerResult;
-import com.certification.crawler.common.HttpUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

@@ -1,9 +1,7 @@
 package com.certification.util;
 
-import com.certification.entity.common.CrawlerData.RiskLevel;
+import com.certification.entity.common.CertNewsData.RiskLevel;
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 
 /**
  * 风险等级工具类

@@ -219,11 +219,8 @@
                         </a-button>
                       </div>
                       <div style="max-height: 120px; overflow-y: auto;">
-                        <a-tag v-for="option in keywordOptions.slice(0, 10)" :key="option.value" style="margin: 2px;">
+                        <a-tag v-for="option in keywordOptions" :key="option.value" style="margin: 2px;">
                           {{ option.value }}
-                        </a-tag>
-                        <a-tag v-if="keywordOptions.length > 10" color="default">
-                          ... 还有 {{ keywordOptions.length - 10 }} 个关键词
                         </a-tag>
                       </div>
                     </div>
@@ -324,11 +321,8 @@
                         </a-button>
                       </div>
                       <div style="max-height: 120px; overflow-y: auto;">
-                        <a-tag v-for="option in keywordOptions.slice(0, 10)" :key="option.value" style="margin: 2px;">
+                        <a-tag v-for="option in keywordOptions" :key="option.value" style="margin: 2px;">
                           {{ option.value }}
-                        </a-tag>
-                        <a-tag v-if="keywordOptions.length > 10" color="default">
-                          ... 还有 {{ keywordOptions.length - 10 }} 个关键词
                         </a-tag>
                       </div>
                     </div>
@@ -494,11 +488,8 @@
                         </a-button>
                       </div>
                       <div style="max-height: 120px; overflow-y: auto;">
-                        <a-tag v-for="option in keywordOptions.slice(0, 10)" :key="option.value" style="margin: 2px;">
+                        <a-tag v-for="option in keywordOptions" :key="option.value" style="margin: 2px;">
                           {{ option.value }}
-                        </a-tag>
-                        <a-tag v-if="keywordOptions.length > 10" color="default">
-                          ... 还有 {{ keywordOptions.length - 10 }} 个关键词
                         </a-tag>
                       </div>
                     </div>
@@ -551,11 +542,8 @@
                         </a-button>
                       </div>
                       <div style="max-height: 120px; overflow-y: auto;">
-                        <a-tag v-for="option in keywordOptions.slice(0, 10)" :key="option.value" style="margin: 2px;">
+                        <a-tag v-for="option in keywordOptions" :key="option.value" style="margin: 2px;">
                           {{ option.value }}
-                        </a-tag>
-                        <a-tag v-if="keywordOptions.length > 10" color="default">
-                          ... 还有 {{ keywordOptions.length - 10 }} 个关键词
                         </a-tag>
                       </div>
                     </div>
@@ -685,11 +673,8 @@
                         </a-button>
                       </div>
                       <div style="max-height: 120px; overflow-y: auto;">
-                        <a-tag v-for="option in keywordOptions.slice(0, 10)" :key="option.value" style="margin: 2px;">
+                        <a-tag v-for="option in keywordOptions" :key="option.value" style="margin: 2px;">
                           {{ option.value }}
-                        </a-tag>
-                        <a-tag v-if="keywordOptions.length > 10" color="default">
-                          ... 还有 {{ keywordOptions.length - 10 }} 个关键词
                         </a-tag>
                       </div>
                     </div>
@@ -1311,7 +1296,7 @@
         </a-tab-pane>
 
         <!-- 关键词管理标签页 -->
-        <a-tab-pane key="keywords" tab="关键词管理">
+        <a-tab-pane key="keywords" tab="搜索关键词列表">
           <template #tab>
             <span>
               <SearchOutlined />
@@ -1321,63 +1306,18 @@
 
           <!-- 关键词管理内容 -->
           <div class="keyword-management-section">
-            <!-- 统计信息 -->
+            <!-- 简化的统计信息 -->
             <div class="stats-section">
-              <a-row :gutter="16">
-                <a-col :span="6">
-                  <a-card>
-                    <a-statistic
-                      title="总关键词数"
-                      :value="keywords.length"
-                      :value-style="{ color: '#1890ff' }"
-                    >
-                      <template #prefix>
-                        <FileTextOutlined />
-                      </template>
-                    </a-statistic>
-                  </a-card>
-                </a-col>
-                <a-col :span="6">
-                  <a-card>
-                    <a-statistic
-                      title="平均长度"
-                      :value="averageKeywordLength"
-                      :precision="1"
-                      :value-style="{ color: '#52c41a' }"
-                    >
-                      <template #prefix>
-                        <BarChartOutlined />
-                      </template>
-                    </a-statistic>
-                  </a-card>
-                </a-col>
-                <a-col :span="6">
-                  <a-card>
-                    <a-statistic
-                      title="最长关键词"
-                      :value="maxKeywordLength"
-                      :value-style="{ color: '#fa8c16' }"
-                    >
-                      <template #prefix>
-                        <LineChartOutlined />
-                      </template>
-                    </a-statistic>
-                  </a-card>
-                </a-col>
-                <a-col :span="6">
-                  <a-card>
-                    <a-statistic
-                      title="最短关键词"
-                      :value="minKeywordLength"
-                      :value-style="{ color: '#eb2f96' }"
-                    >
-                      <template #prefix>
-                        <MinusOutlined />
-                      </template>
-                    </a-statistic>
-                  </a-card>
-                </a-col>
-              </a-row>
+              <div class="simple-stats">
+                <span class="stat-item">
+                  <FileTextOutlined />
+                  共 {{ keywords.length }} 个关键词
+                </span>
+                <span class="stat-item">
+                  <BarChartOutlined />
+                  平均长度 {{ averageKeywordLength.toFixed(1) }} 字符
+                </span>
+              </div>
             </div>
 
             <!-- 关键词列表 -->
@@ -1433,37 +1373,27 @@
                     class="keyword-item"
                   >
                     <div class="keyword-content">
-                      <div class="keyword-index">{{ getOriginalKeywordIndex(index) + 1 }}</div>
-                      <div class="keyword-text" :title="keyword">{{ keyword }}</div>
-                      <div class="keyword-stats">
-                        <a-tag size="small" color="blue">{{ keyword.length }} 字符</a-tag>
-                      </div>
+                      <span class="keyword-text">{{ keyword }}</span>
+                      <span class="keyword-length">{{ keyword.length }}字</span>
                     </div>
                     <div class="keyword-actions">
-                      <a-space>
-                        <a-button 
-                          size="small" 
-                          @click="editKeyword(getOriginalKeywordIndex(index), keyword)"
-                          type="primary"
-                          ghost
-                        >
-                          <template #icon>
-                            <EditOutlined />
-                          </template>
-                          编辑
-                        </a-button>
-                        <a-button 
-                          size="small" 
-                          @click="deleteKeyword(getOriginalKeywordIndex(index), keyword)"
-                          danger
-                          ghost
-                        >
-                          <template #icon>
-                            <DeleteOutlined />
-                          </template>
-                          删除
-                        </a-button>
-                      </a-space>
+                      <a-button 
+                        size="small" 
+                        @click="editKeyword(getOriginalKeywordIndex(index), keyword)"
+                        type="text"
+                        class="action-btn"
+                      >
+                        <EditOutlined />
+                      </a-button>
+                      <a-button 
+                        size="small" 
+                        @click="deleteKeyword(getOriginalKeywordIndex(index), keyword)"
+                        type="text"
+                        danger
+                        class="action-btn"
+                      >
+                        <DeleteOutlined />
+                      </a-button>
                     </div>
                   </div>
                 </div>
@@ -1493,14 +1423,7 @@ import {
   LineChartOutlined,
   MinusOutlined
 } from '@ant-design/icons-vue';
-import {
-  getAllKeywords,
-  addKeyword,
-  updateKeyword,
-  deleteKeyword as deleteKeywordApi,
-  batchUpdateKeywords,
-  clearAllKeywords as clearAllKeywordsApi
-} from '@/api/keywordManagement';
+// 移除后端API调用，改为前端本地管理
 
 // 响应式数据
 const testAllLoading = ref(false);
@@ -1521,12 +1444,17 @@ const responseTabActive = ref('formatted');
 // 标签页管理
 const activeTab = ref('crawlers');
 
-// 关键词管理相关
+// 关键词管理相关 - 改为前端本地管理
 const keywordLoading = ref(false);
 const addKeywordLoading = ref(false);
 const editKeywordLoading = ref(false);
 const batchKeywordLoading = ref(false);
-const keywords = ref<string[]>([]);
+// 初始化关键词列表
+const keywords = ref<string[]>([
+  'Skin', 'Analyzer', '3D', 'AI', 'Facial', 'Detector', 'Scanner', 'Spectra', 
+  'Skin Analysis', 'Skin Scanner', 'skin imaging', 'Facial Imaging', 'pigmentation', 
+  'skin elasticity', 'visia', 'PSI', 'PIE', 'ISEMECO', 'OBSERV', 'AURA', 'canfield'
+]);
 const keywordSearchText = ref('');
 const addKeywordModalVisible = ref(false);
 const editKeywordModalVisible = ref(false);
@@ -2298,17 +2226,13 @@ const getStatusText = (status: string) => {
   }
 };
 
-// 关键词管理方法
+// 关键词管理方法 - 改为前端本地管理
 const refreshKeywords = async () => {
   keywordLoading.value = true;
   try {
-    const response = await getAllKeywords();
-    if (response.success) {
-      keywords.value = response.keywords || [];
-      message.success(`成功加载 ${keywords.value.length} 个关键词`);
-    } else {
-      message.error(response.message || '加载关键词失败');
-    }
+    // 模拟加载延迟
+    await new Promise(resolve => setTimeout(resolve, 500));
+    message.success(`成功加载 ${keywords.value.length} 个关键词`);
   } catch (error: any) {
     console.error('加载关键词失败:', error);
     message.error('加载关键词失败: ' + error.message);
@@ -2330,14 +2254,17 @@ const handleAddKeyword = async () => {
   
   addKeywordLoading.value = true;
   try {
-    const response = await addKeyword(newKeyword.value.keyword.trim());
-    if (response.success) {
-      message.success('关键词添加成功');
-      addKeywordModalVisible.value = false;
-      await refreshKeywords();
-    } else {
-      message.error(response.message || '添加关键词失败');
+    // 检查是否已存在
+    if (keywords.value.includes(newKeyword.value.keyword.trim())) {
+      message.warning('关键词已存在');
+      return;
     }
+    
+    // 添加到本地列表
+    keywords.value.push(newKeyword.value.keyword.trim());
+    message.success('关键词添加成功');
+    addKeywordModalVisible.value = false;
+    newKeyword.value.keyword = '';
   } catch (error: any) {
     console.error('添加关键词失败:', error);
     message.error('添加关键词失败: ' + error.message);
@@ -2359,14 +2286,18 @@ const handleEditKeyword = async () => {
   
   editKeywordLoading.value = true;
   try {
-    const response = await updateKeyword(editingKeyword.value.index, editingKeyword.value.keyword.trim());
-    if (response.success) {
-      message.success('关键词更新成功');
-      editKeywordModalVisible.value = false;
-      await refreshKeywords();
-    } else {
-      message.error(response.message || '更新关键词失败');
+    // 检查是否已存在（排除当前编辑的关键词）
+    const trimmedKeyword = editingKeyword.value.keyword.trim();
+    const existingIndex = keywords.value.findIndex((k, i) => k === trimmedKeyword && i !== editingKeyword.value.index);
+    if (existingIndex !== -1) {
+      message.warning('关键词已存在');
+      return;
     }
+    
+    // 更新本地列表
+    keywords.value[editingKeyword.value.index] = trimmedKeyword;
+    message.success('关键词更新成功');
+    editKeywordModalVisible.value = false;
   } catch (error: any) {
     console.error('更新关键词失败:', error);
     message.error('更新关键词失败: ' + error.message);
@@ -2384,13 +2315,9 @@ const deleteKeyword = (index: number, keyword: string) => {
     cancelText: '取消',
     onOk: async () => {
       try {
-        const response = await deleteKeywordApi(index);
-        if (response.success) {
-          message.success('关键词删除成功');
-          await refreshKeywords();
-        } else {
-          message.error(response.message || '删除关键词失败');
-        }
+        // 从本地列表删除
+        keywords.value.splice(index, 1);
+        message.success('关键词删除成功');
       } catch (error: any) {
         console.error('删除关键词失败:', error);
         message.error('删除关键词失败: ' + error.message);
@@ -2432,14 +2359,13 @@ const handleBatchKeywordUpdate = async () => {
   
   batchKeywordLoading.value = true;
   try {
-    const response = await batchUpdateKeywords(validKeywords);
-    if (response.success) {
-      message.success(`批量更新成功，共 ${validKeywords.length} 个关键词`);
-      batchKeywordModalVisible.value = false;
-      await refreshKeywords();
-    } else {
-      message.error(response.message || '批量更新失败');
-    }
+    // 去重处理
+    const uniqueKeywords = [...new Set(validKeywords)];
+    
+    // 更新本地列表
+    keywords.value = uniqueKeywords;
+    message.success(`批量更新成功，共 ${uniqueKeywords.length} 个关键词`);
+    batchKeywordModalVisible.value = false;
   } catch (error: any) {
     console.error('批量更新失败:', error);
     message.error('批量更新失败: ' + error.message);
@@ -2457,13 +2383,9 @@ const clearAllKeywords = () => {
     cancelText: '取消',
     onOk: async () => {
       try {
-        const response = await clearAllKeywordsApi();
-        if (response.success) {
-          message.success('所有关键词已清空');
-          await refreshKeywords();
-        } else {
-          message.error(response.message || '清空关键词失败');
-        }
+        // 清空本地列表
+        keywords.value = [];
+        message.success('所有关键词已清空');
       } catch (error: any) {
         console.error('清空关键词失败:', error);
         message.error('清空关键词失败: ' + error.message);
@@ -2486,8 +2408,8 @@ const getOriginalKeywordIndex = (filteredIndex: number) => {
 // 生命周期
 onMounted(() => {
   console.log('美国爬虫管理系统初始化完成');
-  // 初始化时加载关键词
-  refreshKeywords();
+  // 关键词已在前端初始化，无需从后端加载
+  console.log(`初始化关键词列表，共 ${keywords.value.length} 个关键词`);
 });
 </script>
 
@@ -3169,7 +3091,7 @@ onMounted(() => {
   }
 }
 
-/* 关键词管理样式 */
+/* 简化的关键词管理样式 */
 .main-tabs {
   margin-top: 16px;
 }
@@ -3179,7 +3101,28 @@ onMounted(() => {
 }
 
 .stats-section {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
+}
+
+.simple-stats {
+  display: flex;
+  gap: 24px;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #666;
+}
+
+.stat-item .anticon {
+  color: #1890ff;
 }
 
 .keywords-section {
@@ -3197,7 +3140,7 @@ onMounted(() => {
 }
 
 .keywords-list {
-  max-height: 600px;
+  max-height: 500px;
   overflow-y: auto;
 }
 
@@ -3205,55 +3148,53 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  border: 1px solid #f0f0f0;
-  border-radius: 6px;
-  margin-bottom: 8px;
-  background: #fff;
-  transition: all 0.3s ease;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s ease;
 }
 
 .keyword-item:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border-color: #1890ff;
+  background-color: #f8f9fa;
+}
+
+.keyword-item:last-child {
+  border-bottom: none;
 }
 
 .keyword-content {
   display: flex;
   align-items: center;
+  gap: 12px;
   flex: 1;
   min-width: 0;
 }
 
-.keyword-index {
-  width: 40px;
-  height: 40px;
-  background: #f0f0f0;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  color: #666;
-  margin-right: 12px;
-  flex-shrink: 0;
-}
-
 .keyword-text {
-  flex: 1;
   font-size: 14px;
   color: #262626;
-  margin-right: 12px;
   word-break: break-all;
   min-width: 0;
 }
 
-.keyword-stats {
+.keyword-length {
+  font-size: 12px;
+  color: #8c8c8c;
+  background: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 3px;
   flex-shrink: 0;
 }
 
 .keyword-actions {
+  display: flex;
+  gap: 4px;
   flex-shrink: 0;
+}
+
+.action-btn {
+  padding: 4px 8px !important;
+  height: auto !important;
+  min-width: auto !important;
 }
 
 .keyword-preview {
@@ -3278,14 +3219,21 @@ onMounted(() => {
 
 /* 响应式设计 - 关键词管理 */
 @media (max-width: 768px) {
+  .simple-stats {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
   .keyword-item {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: 8px;
+    padding: 12px;
   }
   
   .keyword-content {
     width: 100%;
+    justify-content: space-between;
   }
   
   .keyword-actions {

@@ -25,7 +25,7 @@ import java.util.List;
 @Table(name = "t_crawler_data")
 @EntityListeners(AuditingEntityListener.class)
 @Schema(description = "爬虫数据实体")
-public class CrawlerData {
+public class CertNewsData {
 
     @Schema(description = "数据ID", example = "b7e6c2e2-8c2a-4e2a-9b1a-2e4e2c2a8c2a")
     @Id

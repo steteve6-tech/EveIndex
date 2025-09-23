@@ -1,5 +1,6 @@
 package com.certification.repository.common;
 
+import com.certification.entity.common.CertNewsData;
 import com.certification.entity.common.Device510K;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -48,17 +49,17 @@ public interface Device510KRepository extends JpaRepository<Device510K, Long> {
     /**
      * 根据风险等级查找记录
      */
-    List<Device510K> findByRiskLevel(com.certification.entity.common.CrawlerData.RiskLevel riskLevel);
+    List<Device510K> findByRiskLevel(CertNewsData.RiskLevel riskLevel);
 
     /**
      * 根据风险等级查找记录（分页）
      */
-    org.springframework.data.domain.Page<Device510K> findByRiskLevel(com.certification.entity.common.CrawlerData.RiskLevel riskLevel, org.springframework.data.domain.Pageable pageable);
+    org.springframework.data.domain.Page<Device510K> findByRiskLevel(CertNewsData.RiskLevel riskLevel, org.springframework.data.domain.Pageable pageable);
 
     /**
      * 统计指定风险等级的记录数量
      */
-    long countByRiskLevel(com.certification.entity.common.CrawlerData.RiskLevel riskLevel);
+    long countByRiskLevel(CertNewsData.RiskLevel riskLevel);
 
     /**
      * 根据OpenFDA数据模糊查询

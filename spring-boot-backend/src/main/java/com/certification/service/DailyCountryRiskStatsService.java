@@ -1,6 +1,6 @@
 package com.certification.service;
 
-import com.certification.entity.common.CrawlerData;
+import com.certification.entity.common.CertNewsData;
 import com.certification.entity.common.CertNewsDailyCountryRiskStats;
 import com.certification.repository.CrawlerDataRepository;
 import com.certification.repository.DailyCountryRiskStatsRepository;
@@ -39,23 +39,23 @@ public class DailyCountryRiskStatsService {
             LocalDateTime startOfDay = statDate.atStartOfDay();
             LocalDateTime endOfDay = statDate.plusDays(1).atStartOfDay();
 
-            List<CrawlerData> allData = crawlerDataRepository.findByCrawlTimeBetweenAndDeletedFalse(startOfDay, endOfDay);
+            List<CertNewsData> allData = crawlerDataRepository.findByCrawlTimeBetweenAndDeletedFalse(startOfDay, endOfDay);
 
             // 按国家分组统计
-            Map<String, Map<CrawlerData.RiskLevel, Long>> countryRiskStats = allData.stream()
+            Map<String, Map<CertNewsData.RiskLevel, Long>> countryRiskStats = allData.stream()
                 .filter(data -> data.getCountry() != null && !data.getCountry().trim().isEmpty())
                 .collect(Collectors.groupingBy(
                     data -> data.getCountry().trim(),
                     Collectors.groupingBy(
-                        CrawlerData::getRiskLevel,
+                        CertNewsData::getRiskLevel,
                         Collectors.counting()
                     )
                 ));
 
             // 保存或更新统计数据
-            for (Map.Entry<String, Map<CrawlerData.RiskLevel, Long>> countryEntry : countryRiskStats.entrySet()) {
+            for (Map.Entry<String, Map<CertNewsData.RiskLevel, Long>> countryEntry : countryRiskStats.entrySet()) {
                 String country = countryEntry.getKey();
-                Map<CrawlerData.RiskLevel, Long> riskCounts = countryEntry.getValue();
+                Map<CertNewsData.RiskLevel, Long> riskCounts = countryEntry.getValue();
 
                 // 查找是否已存在该日期的统计记录
                 CertNewsDailyCountryRiskStats existingStats = dailyCountryRiskStatsRepository
@@ -71,10 +71,10 @@ public class DailyCountryRiskStatsService {
                 }
 
                 // 设置各风险等级的数量
-                stats.setHighRiskCount(riskCounts.getOrDefault(CrawlerData.RiskLevel.HIGH, 0L));
-                stats.setMediumRiskCount(riskCounts.getOrDefault(CrawlerData.RiskLevel.MEDIUM, 0L));
-                stats.setLowRiskCount(riskCounts.getOrDefault(CrawlerData.RiskLevel.LOW, 0L));
-                stats.setNoRiskCount(riskCounts.getOrDefault(CrawlerData.RiskLevel.NONE, 0L));
+                stats.setHighRiskCount(riskCounts.getOrDefault(CertNewsData.RiskLevel.HIGH, 0L));
+                stats.setMediumRiskCount(riskCounts.getOrDefault(CertNewsData.RiskLevel.MEDIUM, 0L));
+                stats.setLowRiskCount(riskCounts.getOrDefault(CertNewsData.RiskLevel.LOW, 0L));
+                stats.setNoRiskCount(riskCounts.getOrDefault(CertNewsData.RiskLevel.NONE, 0L));
 
                 // 计算总数
                 long totalCount = stats.getHighRiskCount() + stats.getMediumRiskCount() + 
@@ -113,13 +113,13 @@ public class DailyCountryRiskStatsService {
         
         try {
             // 查询所有数据（不管什么时候创建的）
-            List<CrawlerData> allData = crawlerDataRepository.findByDeleted(0);
+            List<CertNewsData> allData = crawlerDataRepository.findByDeleted(0);
             log.info("找到所有数据 {} 条", allData.size());
 
             // 按国家分组统计高风险数据
             Map<String, Long> countryHighRiskStats = allData.stream()
                 .filter(data -> data.getCountry() != null && !data.getCountry().trim().isEmpty())
-                .filter(data -> data.getRiskLevel() == CrawlerData.RiskLevel.HIGH)
+                .filter(data -> data.getRiskLevel() == CertNewsData.RiskLevel.HIGH)
                 .collect(Collectors.groupingBy(
                     data -> data.getCountry().trim(),
                     Collectors.counting()

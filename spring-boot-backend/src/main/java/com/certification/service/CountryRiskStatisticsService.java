@@ -1,6 +1,6 @@
 package com.certification.service;
 
-import com.certification.entity.common.CrawlerData;
+import com.certification.entity.common.CertNewsData;
 import com.certification.standards.CrawlerDataService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,16 +39,16 @@ public class CountryRiskStatisticsService {
             LocalDateTime endTime = today.atTime(23, 59, 59);
             
             // 获取高风险数据
-            List<CrawlerData> highRiskData = crawlerDataService.findByCrawlTimeBetween(startTime, endTime);
+            List<CertNewsData> highRiskData = crawlerDataService.findByCrawlTimeBetween(startTime, endTime);
             highRiskData = highRiskData.stream()
-                    .filter(data -> data.getRiskLevel() == CrawlerData.RiskLevel.HIGH)
+                    .filter(data -> data.getRiskLevel() == CertNewsData.RiskLevel.HIGH)
                     .toList();
             
             // 按国家和日期分组统计
             Map<String, Map<String, Integer>> countryDailyStats = new HashMap<>();
             Map<String, Integer> countryTotals = new HashMap<>();
             
-            for (CrawlerData data : highRiskData) {
+            for (CertNewsData data : highRiskData) {
                 String country = data.getCountry() != null ? data.getCountry() : "UNKNOWN";
                 LocalDate dataDate = data.getCrawlTime().toLocalDate();
                 String dateKey = dataDate.toString();
@@ -110,14 +110,14 @@ public class CountryRiskStatisticsService {
             LocalDateTime endTime = date.atTime(23, 59, 59);
             
             // 获取指定日期的高风险数据
-            List<CrawlerData> highRiskData = crawlerDataService.findByCrawlTimeBetween(startTime, endTime);
+            List<CertNewsData> highRiskData = crawlerDataService.findByCrawlTimeBetween(startTime, endTime);
             highRiskData = highRiskData.stream()
-                    .filter(data -> data.getRiskLevel() == CrawlerData.RiskLevel.HIGH)
+                    .filter(data -> data.getRiskLevel() == CertNewsData.RiskLevel.HIGH)
                     .toList();
             
             // 按国家统计
             Map<String, Integer> countryStats = new HashMap<>();
-            for (CrawlerData data : highRiskData) {
+            for (CertNewsData data : highRiskData) {
                 String country = data.getCountry() != null ? data.getCountry() : "UNKNOWN";
                 countryStats.put(country, countryStats.getOrDefault(country, 0) + 1);
             }
@@ -154,14 +154,14 @@ public class CountryRiskStatisticsService {
             LocalDateTime startTime = startDate.atStartOfDay();
             LocalDateTime endTime = endDate.atTime(23, 59, 59);
             
-            List<CrawlerData> highRiskData = crawlerDataService.findByCrawlTimeBetween(startTime, endTime);
+            List<CertNewsData> highRiskData = crawlerDataService.findByCrawlTimeBetween(startTime, endTime);
             highRiskData = highRiskData.stream()
-                    .filter(data -> data.getRiskLevel() == CrawlerData.RiskLevel.HIGH)
+                    .filter(data -> data.getRiskLevel() == CertNewsData.RiskLevel.HIGH)
                     .toList();
             
             // 按国家统计
             Map<String, Integer> countryStats = new HashMap<>();
-            for (CrawlerData data : highRiskData) {
+            for (CertNewsData data : highRiskData) {
                 String country = data.getCountry() != null ? data.getCountry() : "UNKNOWN";
                 countryStats.put(country, countryStats.getOrDefault(country, 0) + 1);
             }
@@ -199,9 +199,9 @@ public class CountryRiskStatisticsService {
             LocalDateTime endTime = yesterday.atTime(23, 59, 59);
             
             // 检查昨天是否有数据
-            List<CrawlerData> yesterdayData = crawlerDataService.findByCrawlTimeBetween(startTime, endTime);
+            List<CertNewsData> yesterdayData = crawlerDataService.findByCrawlTimeBetween(startTime, endTime);
             yesterdayData = yesterdayData.stream()
-                    .filter(data -> data.getRiskLevel() == CrawlerData.RiskLevel.HIGH)
+                    .filter(data -> data.getRiskLevel() == CertNewsData.RiskLevel.HIGH)
                     .toList();
             
             if (yesterdayData.isEmpty()) {

@@ -2,7 +2,7 @@ package com.certification.util;
 
 import com.certification.crawler.countrydata.us.US_event_api;
 import com.certification.entity.common.DeviceEventReport;
-import com.certification.entity.common.CrawlerData.RiskLevel;
+import com.certification.entity.common.CertNewsData.RiskLevel;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;

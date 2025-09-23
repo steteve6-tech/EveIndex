@@ -1,9 +1,8 @@
 package com.certification.standards;
 
-import com.certification.entity.common.CrawlerData;
-import com.certification.entity.common.CrawlerData.RiskLevel;
+import com.certification.entity.common.CertNewsData;
+import com.certification.entity.common.CertNewsData.RiskLevel;
 import com.certification.repository.CrawlerDataRepository;
-import com.certification.standards.KeywordService;
 import com.certification.service.DateFormatService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +45,7 @@ public class CrawlerDataService {
     /**
      * 根据ID获取爬虫数据
      */
-    public CrawlerData getCrawlerDataById(String id) {
+    public CertNewsData getCrawlerDataById(String id) {
         log.info("根据ID获取爬虫数据: {}", id);
         return crawlerDataRepository.findById(id).orElse(null);
     }
@@ -54,33 +53,33 @@ public class CrawlerDataService {
     /**
      * 保存爬虫数据
      */
-    public CrawlerData saveCrawlerData(CrawlerData crawlerData) {
-        log.info("保存爬虫数据: {}", crawlerData.getTitle());
+    public CertNewsData saveCrawlerData(CertNewsData certNewsData) {
+        log.info("保存爬虫数据: {}", certNewsData.getTitle());
         
         // 检查是否已存在相同URL的数据
-        Optional<CrawlerData> existingData = crawlerDataRepository.findByUrlAndDeleted(crawlerData.getUrl(), 0);
+        Optional<CertNewsData> existingData = crawlerDataRepository.findByUrlAndDeleted(certNewsData.getUrl(), 0);
         if (existingData.isPresent()) {
-            log.info("发现重复数据，URL: {}", crawlerData.getUrl());
-            crawlerData.setStatus(CrawlerData.DataStatus.DUPLICATE);
-            crawlerData.setRemarks("检测到重复URL: " + crawlerData.getUrl());
+            log.info("发现重复数据，URL: {}", certNewsData.getUrl());
+            certNewsData.setStatus(CertNewsData.DataStatus.DUPLICATE);
+            certNewsData.setRemarks("检测到重复URL: " + certNewsData.getUrl());
         }
         
-        return crawlerDataRepository.save(crawlerData);
+        return crawlerDataRepository.save(certNewsData);
     }
     
     /**
      * 批量保��爬虫数据（优化版本，高效去重）
      */
-    public List<CrawlerData> saveCrawlerDataList(List<CrawlerData> crawlerDataList) {
-        log.info("批量保存爬虫数据，数量: {}", crawlerDataList.size());
+    public List<CertNewsData> saveCrawlerDataList(List<CertNewsData> certNewsDataList) {
+        log.info("批量保存爬虫数据，数量: {}", certNewsDataList.size());
         
-        if (crawlerDataList.isEmpty()) {
+        if (certNewsDataList.isEmpty()) {
             return new ArrayList<>();
         }
         
         // 提取所有URL
-        List<String> urls = crawlerDataList.stream()
-                .map(CrawlerData::getUrl)
+        List<String> urls = certNewsDataList.stream()
+                .map(CertNewsData::getUrl)
                 .distinct()
                 .toList();
         
@@ -90,36 +89,36 @@ public class CrawlerDataService {
         
         log.info("发现 {} 个重复URL，{} 个新URL", existingUrls.size(), urls.size() - existingUrls.size());
         
-        List<CrawlerData> savedDataList = new ArrayList<>();
-        List<CrawlerData> newDataList = new ArrayList<>();
+        List<CertNewsData> savedDataList = new ArrayList<>();
+        List<CertNewsData> newDataList = new ArrayList<>();
         
         // 分离新数据和重复数据
-        for (CrawlerData crawlerData : crawlerDataList) {
-            if (existingUrlSet.contains(crawlerData.getUrl())) {
+        for (CertNewsData certNewsData : certNewsDataList) {
+            if (existingUrlSet.contains(certNewsData.getUrl())) {
                 // 重复数据，只记录日志，不保存
-                log.debug("跳过重复数据，URL: {}", crawlerData.getUrl());
+                log.debug("跳过重复数据，URL: {}", certNewsData.getUrl());
             } else {
                 // 新数据，设置为新建状态
-                if (crawlerData.getStatus() == null) {
-                    crawlerData.setStatus(CrawlerData.DataStatus.NEW);
+                if (certNewsData.getStatus() == null) {
+                    certNewsData.setStatus(CertNewsData.DataStatus.NEW);
                 }
-                log.debug("准备保存新数据，URL: {}", crawlerData.getUrl());
-                newDataList.add(crawlerData);
+                log.debug("准备保存新数据，URL: {}", certNewsData.getUrl());
+                newDataList.add(certNewsData);
             }
         }
         
         // 批量保存新数据
         if (!newDataList.isEmpty()) {
             try {
-                List<CrawlerData> savedBatch = crawlerDataRepository.saveAll(newDataList);
+                List<CertNewsData> savedBatch = crawlerDataRepository.saveAll(newDataList);
                 savedDataList.addAll(savedBatch);
                 log.info("成功保存 {} 条新数据", savedBatch.size());
             } catch (Exception e) {
                 log.error("批量保存数据时发生错误: {}", e.getMessage(), e);
                 // 如果批量保存失败，尝试逐个保存
-                for (CrawlerData data : newDataList) {
+                for (CertNewsData data : newDataList) {
                     try {
-                        CrawlerData savedData = crawlerDataRepository.save(data);
+                        CertNewsData savedData = crawlerDataRepository.save(data);
                         savedDataList.add(savedData);
                     } catch (Exception ex) {
                         log.error("保存单条数据失败，URL: {}, 错误: {}", data.getUrl(), ex.getMessage());
@@ -134,28 +133,28 @@ public class CrawlerDataService {
     /**
      * 批量保存爬虫数据（按数据源去重）
      */
-    public List<CrawlerData> saveCrawlerDataListBySource(List<CrawlerData> crawlerDataList) {
-        log.info("按数据源批量保存爬虫数据，数量: {}", crawlerDataList.size());
+    public List<CertNewsData> saveCrawlerDataListBySource(List<CertNewsData> certNewsDataList) {
+        log.info("按数据源批量保存爬虫数据，数量: {}", certNewsDataList.size());
         
-        if (crawlerDataList.isEmpty()) {
+        if (certNewsDataList.isEmpty()) {
             return new ArrayList<>();
         }
         
         // 按数据源分组
-        Map<String, List<CrawlerData>> sourceGroups = crawlerDataList.stream()
-                .collect(Collectors.groupingBy(CrawlerData::getSourceName));
+        Map<String, List<CertNewsData>> sourceGroups = certNewsDataList.stream()
+                .collect(Collectors.groupingBy(CertNewsData::getSourceName));
         
-        List<CrawlerData> allSavedData = new ArrayList<>();
+        List<CertNewsData> allSavedData = new ArrayList<>();
         
-        for (Map.Entry<String, List<CrawlerData>> entry : sourceGroups.entrySet()) {
+        for (Map.Entry<String, List<CertNewsData>> entry : sourceGroups.entrySet()) {
             String sourceName = entry.getKey();
-            List<CrawlerData> sourceDataList = entry.getValue();
+            List<CertNewsData> sourceDataList = entry.getValue();
             
             log.info("处理数据源: {}，数据量: {}", sourceName, sourceDataList.size());
             
             // 提取当前数据源的URL
             List<String> urls = sourceDataList.stream()
-                    .map(CrawlerData::getUrl)
+                    .map(CertNewsData::getUrl)
                     .distinct()
                     .toList();
             
@@ -166,34 +165,34 @@ public class CrawlerDataService {
             log.info("数据源 {} 发现 {} 个重复URL，{} 个新URL", 
                     sourceName, existingUrls.size(), urls.size() - existingUrls.size());
             
-            List<CrawlerData> newDataList = new ArrayList<>();
+            List<CertNewsData> newDataList = new ArrayList<>();
             
-            for (CrawlerData crawlerData : sourceDataList) {
-                if (existingUrlSet.contains(crawlerData.getUrl())) {
+            for (CertNewsData certNewsData : sourceDataList) {
+                if (existingUrlSet.contains(certNewsData.getUrl())) {
                     // 重复数据，只记录日志，不保存
-                    log.debug("跳过重复数据，数据源: {}，URL: {}", sourceName, crawlerData.getUrl());
+                    log.debug("跳过重复数据，数据源: {}，URL: {}", sourceName, certNewsData.getUrl());
                 } else {
                     // 新数据，设置为新建状态
-                    if (crawlerData.getStatus() == null) {
-                        crawlerData.setStatus(CrawlerData.DataStatus.NEW);
+                    if (certNewsData.getStatus() == null) {
+                        certNewsData.setStatus(CertNewsData.DataStatus.NEW);
                     }
-                    log.debug("准备保存新数据，数据源: {}，URL: {}", sourceName, crawlerData.getUrl());
-                    newDataList.add(crawlerData);
+                    log.debug("准备保存新数据，数据源: {}，URL: {}", sourceName, certNewsData.getUrl());
+                    newDataList.add(certNewsData);
                 }
             }
             
             // 批量保存新数据
             if (!newDataList.isEmpty()) {
                 try {
-                    List<CrawlerData> savedBatch = crawlerDataRepository.saveAll(newDataList);
+                    List<CertNewsData> savedBatch = crawlerDataRepository.saveAll(newDataList);
                     allSavedData.addAll(savedBatch);
                     log.info("数据源 {} 成功�����存 {} 条新数据", sourceName, savedBatch.size());
                 } catch (Exception e) {
                     log.error("数据源 {} 批量保存数据时发生错误: {}", sourceName, e.getMessage(), e);
                     // 如果批量保存失败，尝试逐个保存
-                    for (CrawlerData data : newDataList) {
+                    for (CertNewsData data : newDataList) {
                         try {
-                            CrawlerData savedData = crawlerDataRepository.save(data);
+                            CertNewsData savedData = crawlerDataRepository.save(data);
                             allSavedData.add(savedData);
                         } catch (Exception ex) {
                             log.error("数据源 {} 保存单条数据失败，URL: {}, 错误: {}", sourceName, data.getUrl(), ex.getMessage());
@@ -209,16 +208,16 @@ public class CrawlerDataService {
     /**
      * 过滤重复URL（返回去重后的数据列表）
      */
-    public List<CrawlerData> filterDuplicateUrls(List<CrawlerData> crawlerDataList) {
-        log.info("过滤重复URL，原始数量: {}", crawlerDataList.size());
+    public List<CertNewsData> filterDuplicateUrls(List<CertNewsData> certNewsDataList) {
+        log.info("过滤重复URL，原始数量: {}", certNewsDataList.size());
         
-        if (crawlerDataList.isEmpty()) {
+        if (certNewsDataList.isEmpty()) {
             return new ArrayList<>();
         }
         
         // 提取所有URL
-        List<String> urls = crawlerDataList.stream()
-                .map(CrawlerData::getUrl)
+        List<String> urls = certNewsDataList.stream()
+                .map(CertNewsData::getUrl)
                 .distinct()
                 .toList();
         
@@ -227,8 +226,8 @@ public class CrawlerDataService {
         Set<String> existingUrlSet = new HashSet<>(existingUrls);
         
         // 过滤掉重复的URL，filteredList只保留数据库中不存在的（即新）数据
-        List<CrawlerData> filteredList = new ArrayList<>();
-        for (CrawlerData data : crawlerDataList) {
+        List<CertNewsData> filteredList = new ArrayList<>();
+        for (CertNewsData data : certNewsDataList) {
             if (!existingUrlSet.contains(data.getUrl())) {
 
 //                if (data.getStatus() == null) {
@@ -245,28 +244,28 @@ public class CrawlerDataService {
     /**
      * 过滤重复URL（按数据源）
      */
-    public List<CrawlerData> filterDuplicateUrlsBySource(List<CrawlerData> crawlerDataList) {
-        log.info("按数据源过滤重复URL，原始数量: {}", crawlerDataList.size());
+    public List<CertNewsData> filterDuplicateUrlsBySource(List<CertNewsData> certNewsDataList) {
+        log.info("按数据源过滤重复URL，原始数量: {}", certNewsDataList.size());
         
-        if (crawlerDataList.isEmpty()) {
+        if (certNewsDataList.isEmpty()) {
             return new ArrayList<>();
         }
         
         // 按数据源分组
-        Map<String, List<CrawlerData>> sourceGroups = crawlerDataList.stream()
-                .collect(Collectors.groupingBy(CrawlerData::getSourceName));
+        Map<String, List<CertNewsData>> sourceGroups = certNewsDataList.stream()
+                .collect(Collectors.groupingBy(CertNewsData::getSourceName));
         
-        List<CrawlerData> allFilteredData = new ArrayList<>();
+        List<CertNewsData> allFilteredData = new ArrayList<>();
         
-        for (Map.Entry<String, List<CrawlerData>> entry : sourceGroups.entrySet()) {
+        for (Map.Entry<String, List<CertNewsData>> entry : sourceGroups.entrySet()) {
             String sourceName = entry.getKey();
-            List<CrawlerData> sourceDataList = entry.getValue();
+            List<CertNewsData> sourceDataList = entry.getValue();
             
             log.info("处理数据源: {}，原始数量: {}", sourceName, sourceDataList.size());
             
             // 提取���前数据源的URL
             List<String> urls = sourceDataList.stream()
-                    .map(CrawlerData::getUrl)
+                    .map(CertNewsData::getUrl)
                     .distinct()
                     .toList();
             
@@ -275,11 +274,11 @@ public class CrawlerDataService {
             Set<String> existingUrlSet = new HashSet<>(existingUrls);
             
             // 过滤掉重复的URL
-            List<CrawlerData> filteredList = new ArrayList<>();
-            for (CrawlerData data : sourceDataList) {
+            List<CertNewsData> filteredList = new ArrayList<>();
+            for (CertNewsData data : sourceDataList) {
                 if (!existingUrlSet.contains(data.getUrl())) {
                     if (data.getStatus() == null) {
-                        data.setStatus(CrawlerData.DataStatus.NEW);
+                        data.setStatus(CertNewsData.DataStatus.NEW);
                     }
                     filteredList.add(data);
                 }
@@ -298,7 +297,7 @@ public class CrawlerDataService {
      * 检查URL是否已存在
      */
     public boolean isUrlExists(String url) {
-        Optional<CrawlerData> existingData = crawlerDataRepository.findByUrlAndDeleted(url, 0);
+        Optional<CertNewsData> existingData = crawlerDataRepository.findByUrlAndDeleted(url, 0);
         return existingData.isPresent();
     }
     
@@ -324,9 +323,9 @@ public class CrawlerDataService {
     /**
      * 获取重复URL统计信息（统计真实新增和重复数）
      */
-    public Map<String, Object> getDuplicateUrlStats(List<CrawlerData> crawlerDataList) {
+    public Map<String, Object> getDuplicateUrlStats(List<CertNewsData> certNewsDataList) {
         Map<String, Object> stats = new HashMap<>();
-        if (crawlerDataList.isEmpty()) {
+        if (certNewsDataList.isEmpty()) {
             stats.put("totalCount", 0);
             stats.put("duplicateCount", 0);
             stats.put("newCount", 0);
@@ -335,8 +334,8 @@ public class CrawlerDataService {
             return stats;
         }
         // 提取所有URL
-        List<String> urls = crawlerDataList.stream()
-                .map(CrawlerData::getUrl)
+        List<String> urls = certNewsDataList.stream()
+                .map(CertNewsData::getUrl)
                 .distinct()
                 .toList();
         // 批量查询已存在的URL
@@ -352,16 +351,16 @@ public class CrawlerDataService {
     /**
      * 根据URL查找数据
      */
-    public CrawlerData findByUrl(String url) {
+    public CertNewsData findByUrl(String url) {
         log.info("根据URL查找数据: {}", url);
-        Optional<CrawlerData> data = crawlerDataRepository.findByUrlAndDeleted(url, 0);
+        Optional<CertNewsData> data = crawlerDataRepository.findByUrlAndDeleted(url, 0);
         return data.orElse(null);
     }
     
     /**
      * 根据数据源名称查找数据
      */
-    public List<CrawlerData> findBySourceName(String sourceName) {
+    public List<CertNewsData> findBySourceName(String sourceName) {
         log.info("根据数据源名称查找数据: {}", sourceName);
         return crawlerDataRepository.findBySourceNameAndDeleted(sourceName, 0);
     }
@@ -369,7 +368,7 @@ public class CrawlerDataService {
     /**
      * 查找未处理的数据
      */
-    public List<CrawlerData> findUnprocessedData() {
+    public List<CertNewsData> findUnprocessedData() {
         log.info("查找未处理的数据");
         return crawlerDataRepository.findByIsProcessedAndDeleted(false, 0);
     }
@@ -377,7 +376,7 @@ public class CrawlerDataService {
     /**
      * 查找指定时间范围内的数据
      */
-    public List<CrawlerData> findByCrawlTimeBetween(LocalDateTime startTime, LocalDateTime endTime) {
+    public List<CertNewsData> findByCrawlTimeBetween(LocalDateTime startTime, LocalDateTime endTime) {
         log.info("查找指定时间范围内的数据: {} - {}", startTime, endTime);
         return crawlerDataRepository.findByCrawlTimeBetweenAndDeleted(startTime, endTime, 0);
     }
@@ -417,7 +416,7 @@ public class CrawlerDataService {
     /**
      * 根据状态统计数据数量
      */
-    public long getCountByStatus(CrawlerData.DataStatus status) {
+    public long getCountByStatus(CertNewsData.DataStatus status) {
         log.info("根据状态统计数据数量: {}", status);
         return crawlerDataRepository.countByStatusAndDeleted(status, 0);
     }
@@ -429,7 +428,7 @@ public class CrawlerDataService {
         log.info("分页查询所有数据: current={}, size={}", current, size);
         
         Pageable pageable = PageRequest.of((int) (current - 1), (int) size);
-        Page<CrawlerData> page = crawlerDataRepository.findAll(pageable);
+        Page<CertNewsData> page = crawlerDataRepository.findAll(pageable);
         
         Map<String, Object> result = new HashMap<>();
         result.put("records", page.getContent());
@@ -444,9 +443,9 @@ public class CrawlerDataService {
     /**
      * 根据ID获取数据
      */
-    public CrawlerData getById(String id) {
+    public CertNewsData getById(String id) {
         log.info("根据ID获取数据: {}", id);
-        Optional<CrawlerData> data = crawlerDataRepository.findById(id);
+        Optional<CertNewsData> data = crawlerDataRepository.findById(id);
         return data.orElse(null);
     }
     
@@ -457,7 +456,7 @@ public class CrawlerDataService {
         log.info("根据数据源名称分页查询数据: sourceName={}, current={}, size={}", sourceName, current, size);
         
         Pageable pageable = PageRequest.of((int) (current - 1), (int) size);
-        Page<CrawlerData> page = crawlerDataRepository.findBySourceNameAndDeleted(sourceName, 0, pageable);
+        Page<CertNewsData> page = crawlerDataRepository.findBySourceNameAndDeleted(sourceName, 0, pageable);
         
         Map<String, Object> result = new HashMap<>();
         result.put("records", page.getContent());
@@ -472,11 +471,11 @@ public class CrawlerDataService {
     /**
      * 根据状态分页查询数据
      */
-    public Map<String, Object> findByStatusWithPagination(CrawlerData.DataStatus status, long current, long size) {
+    public Map<String, Object> findByStatusWithPagination(CertNewsData.DataStatus status, long current, long size) {
         log.info("根据状态分页查询数据: status={}, current={}, size={}", status, current, size);
         
         Pageable pageable = PageRequest.of((int) (current - 1), (int) size);
-        Page<CrawlerData> page = crawlerDataRepository.findByStatusAndDeleted(status, 0, pageable);
+        Page<CertNewsData> page = crawlerDataRepository.findByStatusAndDeleted(status, 0, pageable);
         
         Map<String, Object> result = new HashMap<>();
         result.put("records", page.getContent());
@@ -495,7 +494,7 @@ public class CrawlerDataService {
         log.info("根据关键词搜索数据: keyword={}, current={}, size={}", keyword, current, size);
         
         Pageable pageable = PageRequest.of((int) (current - 1), (int) size);
-        Page<CrawlerData> page = crawlerDataRepository.searchByKeyword(keyword, pageable);
+        Page<CertNewsData> page = crawlerDataRepository.searchByKeyword(keyword, pageable);
         
         Map<String, Object> result = new HashMap<>();
         result.put("records", page.getContent());
@@ -510,7 +509,7 @@ public class CrawlerDataService {
     /**
      * 根据国家查询数据
      */
-    public List<CrawlerData> findByCountry(String country) {
+    public List<CertNewsData> findByCountry(String country) {
         log.info("根据国家查询数据: {}", country);
         return crawlerDataRepository.findByCountryAndDeleted(country, 0);
     }
@@ -518,7 +517,7 @@ public class CrawlerDataService {
     /**
      * 根据类型查询数据
      */
-    public List<CrawlerData> findByType(String type) {
+    public List<CertNewsData> findByType(String type) {
         log.info("根据类型查询数据: {}", type);
         return crawlerDataRepository.findByTypeAndDeleted(type, 0);
     }
@@ -526,7 +525,7 @@ public class CrawlerDataService {
     /**
      * 查找最新数据
      */
-    public List<CrawlerData> findLatestData(long limit) {
+    public List<CertNewsData> findLatestData(long limit) {
         log.info("查找最新数据: limit={}", limit);
         Pageable pageable = PageRequest.of(0, (int) limit);
         return crawlerDataRepository.findRecentData(pageable);
@@ -535,7 +534,7 @@ public class CrawlerDataService {
     /**
      * 根据数据源查找最新数据
      */
-    public List<CrawlerData> findLatestDataBySource(String sourceName, long limit) {
+    public List<CertNewsData> findLatestDataBySource(String sourceName, long limit) {
         log.info("根据数据源查找最新数据: sourceName={}, limit={}", sourceName, limit);
         Pageable pageable = PageRequest.of(0, (int) limit);
         return crawlerDataRepository.findRecentDataBySource(sourceName, pageable);
@@ -544,7 +543,7 @@ public class CrawlerDataService {
     /**
      * 更新数据状态
      */
-    public boolean updateStatus(Long id, CrawlerData.DataStatus status) {
+    public boolean updateStatus(Long id, CertNewsData.DataStatus status) {
         log.info("更新数据状态: id={}, status={}", id, status);
         LocalDateTime now = LocalDateTime.now();
         int result = crawlerDataRepository.updateStatus(id, status, now);
@@ -657,7 +656,7 @@ public class CrawlerDataService {
     /**
      * 获取所有数据
      */
-    public List<CrawlerData> list() {
+    public List<CertNewsData> list() {
         log.info("获取所有数据");
         return crawlerDataRepository.findAll();
     }
@@ -665,7 +664,7 @@ public class CrawlerDataService {
     /**
      * 批量更新状态
      */
-    public boolean batchUpdateStatus(List<Long> ids, CrawlerData.DataStatus status) {
+    public boolean batchUpdateStatus(List<Long> ids, CertNewsData.DataStatus status) {
         log.info("批量更新状态: ids={}, status={}", ids, status);
         LocalDateTime now = LocalDateTime.now();
         
@@ -707,10 +706,10 @@ public class CrawlerDataService {
     /**
      * 根据条件查询数据
      */
-    public List<CrawlerData> findByConditions(String sourceName, CrawlerData.DataStatus status, String country, String type) {
+    public List<CertNewsData> findByConditions(String sourceName, CertNewsData.DataStatus status, String country, String type) {
         log.info("根据条件查询数据: sourceName={}, status={}, country={}, type={}", sourceName, status, country, type);
         
-        List<CrawlerData> result = new ArrayList<>();
+        List<CertNewsData> result = new ArrayList<>();
         
         if (sourceName != null && status != null) {
             result = crawlerDataRepository.findBySourceNameAndStatusAndDeleted(sourceName, status, 0);
@@ -732,9 +731,9 @@ public class CrawlerDataService {
     /**
      * 综合搜索爬虫数据（支持分页）
      */
-    public Page<CrawlerData> searchCrawlerData(String keyword, String country, Boolean related, 
-                                              String sourceName, String type, String startDate, 
-                                              String endDate, String riskLevel, String matchedKeyword, Pageable pageable) {
+    public Page<CertNewsData> searchCrawlerData(String keyword, String country, Boolean related,
+                                                String sourceName, String type, String startDate,
+                                                String endDate, String riskLevel, String matchedKeyword, Pageable pageable) {
         log.info("综合搜索爬虫数据: keyword={}, country={}, related={}, sourceName={}, type={}, startDate={}, endDate={}, riskLevel={}, matchedKeyword={}", 
                 keyword, country, related, sourceName, type, startDate, endDate, riskLevel, matchedKeyword);
         
@@ -796,7 +795,7 @@ public class CrawlerDataService {
                     Sort.by(direction, mappedSortField));
         }
         
-        Page<CrawlerData> result;
+        Page<CertNewsData> result;
         if ("publishDate".equals(mappedSortField)) {
             log.info("使用按发布时间排序的查询方法");
             // 获取排序方向
@@ -835,16 +834,16 @@ public class CrawlerDataService {
     /**
      * 高级URL去重（包含URL标准化）
      */
-    public List<CrawlerData> advancedUrlDeduplication(List<CrawlerData> crawlerDataList) {
-        log.info("执行高级URL去重，原始数量: {}", crawlerDataList.size());
+    public List<CertNewsData> advancedUrlDeduplication(List<CertNewsData> certNewsDataList) {
+        log.info("执行高级URL去重，原始数量: {}", certNewsDataList.size());
         
-        if (crawlerDataList.isEmpty()) {
+        if (certNewsDataList.isEmpty()) {
             return new ArrayList<>();
         }
         
         // 1. 提取并标准化所有URL
-        Map<String, CrawlerData> normalizedUrlMap = new HashMap<>();
-        for (CrawlerData data : crawlerDataList) {
+        Map<String, CertNewsData> normalizedUrlMap = new HashMap<>();
+        for (CertNewsData data : certNewsDataList) {
             String normalizedUrl = normalizeUrl(data.getUrl());
             if (normalizedUrl != null && !normalizedUrl.isEmpty()) {
                 normalizedUrlMap.put(normalizedUrl, data);
@@ -857,11 +856,11 @@ public class CrawlerDataService {
         Set<String> existingUrlSet = new HashSet<>(existingUrls);
         
         // 3. 过滤重复URL
-        List<CrawlerData> filteredList = normalizedUrlMap.values().stream()
+        List<CertNewsData> filteredList = normalizedUrlMap.values().stream()
                 .filter(data -> !existingUrlSet.contains(normalizeUrl(data.getUrl())))
                 .peek(data -> {
                     if (data.getStatus() == null) {
-                        data.setStatus(CrawlerData.DataStatus.NEW);
+                        data.setStatus(CertNewsData.DataStatus.NEW);
                     }
                 })
                 .toList();
@@ -922,10 +921,10 @@ public class CrawlerDataService {
     /**
      * 获取URL去重报告
      */
-    public Map<String, Object> getUrlDeduplicationReport(List<CrawlerData> crawlerDataList) {
+    public Map<String, Object> getUrlDeduplicationReport(List<CertNewsData> certNewsDataList) {
         Map<String, Object> report = new HashMap<>();
         
-        if (crawlerDataList.isEmpty()) {
+        if (certNewsDataList.isEmpty()) {
             report.put("totalCount", 0);
             report.put("uniqueCount", 0);
             report.put("duplicateCount", 0);
@@ -935,8 +934,8 @@ public class CrawlerDataService {
         }
         
         // 1. 原始URL统计
-        List<String> originalUrls = crawlerDataList.stream()
-                .map(CrawlerData::getUrl)
+        List<String> originalUrls = certNewsDataList.stream()
+                .map(CertNewsData::getUrl)
                 .toList();
         
         Set<String> uniqueOriginalUrls = new HashSet<>(originalUrls);
@@ -974,18 +973,18 @@ public class CrawlerDataService {
     /**
      * 智能URL去重（结合多种策略）
      */
-    public List<CrawlerData> intelligentUrlDeduplication(List<CrawlerData> crawlerDataList) {
-        log.info("执行智能URL去重，原始数量: {}", crawlerDataList.size());
+    public List<CertNewsData> intelligentUrlDeduplication(List<CertNewsData> certNewsDataList) {
+        log.info("执行智能URL去重，原始数量: {}", certNewsDataList.size());
         
-        if (crawlerDataList.isEmpty()) {
+        if (certNewsDataList.isEmpty()) {
             return new ArrayList<>();
         }
         
         // 1. 获取去重报告
-        Map<String, Object> report = getUrlDeduplicationReport(crawlerDataList);
+        Map<String, Object> report = getUrlDeduplicationReport(certNewsDataList);
         
         // 2. 执行高级去重
-        List<CrawlerData> deduplicatedList = advancedUrlDeduplication(crawlerDataList);
+        List<CertNewsData> deduplicatedList = advancedUrlDeduplication(certNewsDataList);
         
         // 3. 记录去重统计
         log.info("智能去重完成 - 原始: {}, 去重后: {}, 去重率: {}", 
@@ -999,25 +998,25 @@ public class CrawlerDataService {
     /**
      * 安全批量保存爬虫数据（带异常处理和重试机制）
      */
-    public List<CrawlerData> safeSaveCrawlerDataList(List<CrawlerData> crawlerDataList) {
-        return safeSaveCrawlerDataList(crawlerDataList, 50); // 默认每批50条
+    public List<CertNewsData> safeSaveCrawlerDataList(List<CertNewsData> certNewsDataList) {
+        return safeSaveCrawlerDataList(certNewsDataList, 50); // 默认每批50条
     }
     
     /**
      * 安全批量保存爬虫数据（带异常处理和重试机制）
-     * @param crawlerDataList 要保存的数据列表
+     * @param certNewsDataList 要保存的数据列表
      * @param batchSize 每批保存的数据数量
      * @return 成功保存的数据列表
      */
-    public List<CrawlerData> safeSaveCrawlerDataList(List<CrawlerData> crawlerDataList, int batchSize) {
-        log.info("安全批量保存爬虫数据，数量: {}，批次大小: {}", crawlerDataList.size(), batchSize);
+    public List<CertNewsData> safeSaveCrawlerDataList(List<CertNewsData> certNewsDataList, int batchSize) {
+        log.info("安全批量保存爬虫数据，数量: {}，批次大小: {}", certNewsDataList.size(), batchSize);
         
-        if (crawlerDataList.isEmpty()) {
+        if (certNewsDataList.isEmpty()) {
             return new ArrayList<>();
         }
         
         // 1. 执行去重
-        List<CrawlerData> deduplicatedList = filterDuplicateUrls(crawlerDataList);
+        List<CertNewsData> deduplicatedList = filterDuplicateUrls(certNewsDataList);
         
         if (deduplicatedList.isEmpty()) {
             log.info("所有数据都是重复的，无需保存");
@@ -1025,18 +1024,18 @@ public class CrawlerDataService {
         }
         
         // 2. 分批保存，避免一次性处理过多数据
-        List<CrawlerData> allSavedData = new ArrayList<>();
+        List<CertNewsData> allSavedData = new ArrayList<>();
         
         for (int i = 0; i < deduplicatedList.size(); i += batchSize) {
             int endIndex = Math.min(i + batchSize, deduplicatedList.size());
-            List<CrawlerData> batch = deduplicatedList.subList(i, endIndex);
+            List<CertNewsData> batch = deduplicatedList.subList(i, endIndex);
             
             log.info("保存批次 {}/{}，数量: {}", 
                     (i / batchSize) + 1, 
                     (deduplicatedList.size() + batchSize - 1) / batchSize, 
                     batch.size());
             
-            List<CrawlerData> savedBatch = safeSaveBatch(batch);
+            List<CertNewsData> savedBatch = safeSaveBatch(batch);
             allSavedData.addAll(savedBatch);
         }
         
@@ -1047,21 +1046,21 @@ public class CrawlerDataService {
     /**
      * 安全保存批次数据
      */
-    private List<CrawlerData> safeSaveBatch(List<CrawlerData> batch) {
-        List<CrawlerData> savedData = new ArrayList<>();
+    private List<CertNewsData> safeSaveBatch(List<CertNewsData> batch) {
+        List<CertNewsData> savedData = new ArrayList<>();
         
         // 首先尝试批量保存
         try {
-            List<CrawlerData> savedBatch = crawlerDataRepository.saveAll(batch);
+            List<CertNewsData> savedBatch = crawlerDataRepository.saveAll(batch);
             savedData.addAll(savedBatch);
             log.debug("批次批量保存成功，数量: {}", savedBatch.size());
         } catch (Exception e) {
             log.warn("批次批量保存失败，尝试逐个保存: {}", e.getMessage());
 
             // 批量保存失败，逐个保存
-            for (CrawlerData data : batch) {
+            for (CertNewsData data : batch) {
                 try {
-                    CrawlerData savedDataItem = crawlerDataRepository.save(data);
+                    CertNewsData savedDataItem = crawlerDataRepository.save(data);
                     savedData.add(savedDataItem);
                 } catch (Exception ex) {
                     // 检查是否是重复键错误
@@ -1081,27 +1080,27 @@ public class CrawlerDataService {
      * 使用INSERT IGNORE或ON DUPLICATE KEY UPDATE的保存方法
      * 注意：这需要数据库支持，MySQL支持，其他数据库可能需要调整
      */
-    public List<CrawlerData> saveWithIgnoreDuplicates(List<CrawlerData> crawlerDataList) {
-        log.info("使用忽略重复键的方式保存数据，数量: {}", crawlerDataList.size());
+    public List<CertNewsData> saveWithIgnoreDuplicates(List<CertNewsData> certNewsDataList) {
+        log.info("使用忽略重复键的方式保存数据，数量: {}", certNewsDataList.size());
         
-        if (crawlerDataList.isEmpty()) {
+        if (certNewsDataList.isEmpty()) {
             return new ArrayList<>();
         }
         
         // 执行去重
-        List<CrawlerData> deduplicatedList = filterDuplicateUrls(crawlerDataList);
+        List<CertNewsData> deduplicatedList = filterDuplicateUrls(certNewsDataList);
         
         if (deduplicatedList.isEmpty()) {
             log.info("所有数据都是重复的，无需保存");
             return new ArrayList<>();
         }
         
-        List<CrawlerData> savedData = new ArrayList<>();
+        List<CertNewsData> savedData = new ArrayList<>();
         
         // 逐个保存，忽略重复键错误
-        for (CrawlerData data : deduplicatedList) {
+        for (CertNewsData data : deduplicatedList) {
             try {
-                CrawlerData savedDataItem = crawlerDataRepository.save(data);
+                CertNewsData savedDataItem = crawlerDataRepository.save(data);
                 savedData.add(savedDataItem);
             } catch (Exception e) {
                 // 检查���否是重复键错误
@@ -1122,7 +1121,7 @@ public class CrawlerDataService {
     /**
      * 根据产品名称查询数据
      */
-    public List<CrawlerData> findByProduct(String product) {
+    public List<CertNewsData> findByProduct(String product) {
         log.info("根据产品名称查询数据: {}", product);
         return crawlerDataRepository.findByProductAndDeleted(product, 0);
     }
@@ -1130,7 +1129,7 @@ public class CrawlerDataService {
     /**
      * 根据产品名称分页查询
      */
-    public Page<CrawlerData> findByProduct(String product, Pageable pageable) {
+    public Page<CertNewsData> findByProduct(String product, Pageable pageable) {
         log.info("根据产品名称分页查询: {}, 页码: {}, 大小: {}", product, pageable.getPageNumber(), pageable.getPageSize());
         return crawlerDataRepository.findByProductAndDeleted(product, 0, pageable);
     }
@@ -1138,7 +1137,7 @@ public class CrawlerDataService {
     /**
      * 根据产品名称模糊查询
      */
-    public Page<CrawlerData> findByProductContaining(String product, Pageable pageable) {
+    public Page<CertNewsData> findByProductContaining(String product, Pageable pageable) {
         log.info("根据产品名称模糊查询: {}, 页码: {}, 大小: {}", product, pageable.getPageNumber(), pageable.getPageSize());
         return crawlerDataRepository.findByProductContaining(product, pageable);
     }
@@ -1146,7 +1145,7 @@ public class CrawlerDataService {
     /**
      * 根据产品名称模糊查询（不分页）
      */
-    public List<CrawlerData> findByProductContaining(String product) {
+    public List<CertNewsData> findByProductContaining(String product) {
         log.info("根据产品名称模糊查询（不分页）: {}", product);
         return crawlerDataRepository.findByProductContaining(product);
     }
@@ -1170,7 +1169,7 @@ public class CrawlerDataService {
     /**
      * 根据数据源和产品名称查询
      */
-    public List<CrawlerData> findBySourceNameAndProduct(String sourceName, String product) {
+    public List<CertNewsData> findBySourceNameAndProduct(String sourceName, String product) {
         log.info("根据数据源和产品名称查询: {} - {}", sourceName, product);
         return crawlerDataRepository.findBySourceNameAndProduct(sourceName, product);
     }
@@ -1178,7 +1177,7 @@ public class CrawlerDataService {
     /**
      * 根据数据源和产品名称分页查询
      */
-    public Page<CrawlerData> findBySourceNameAndProduct(String sourceName, String product, Pageable pageable) {
+    public Page<CertNewsData> findBySourceNameAndProduct(String sourceName, String product, Pageable pageable) {
         log.info("根据数据源和产品名称分页查询: {} - {}, 页码: {}, 大小: {}", sourceName, product, pageable.getPageNumber(), pageable.getPageSize());
         return crawlerDataRepository.findBySourceNameAndProduct(sourceName, product, pageable);
     }
@@ -1186,7 +1185,7 @@ public class CrawlerDataService {
     /**
      * 根据产品名称和关键词查询
      */
-    public Page<CrawlerData> findByProductAndKeyword(String product, String keyword, Pageable pageable) {
+    public Page<CertNewsData> findByProductAndKeyword(String product, String keyword, Pageable pageable) {
         log.info("根据产品名称和关键词查询: {} - {}, 页码: {}, 大小: {}", product, keyword, pageable.getPageNumber(), pageable.getPageSize());
         return crawlerDataRepository.findByProductAndKeyword(product, keyword, pageable);
     }
@@ -1216,24 +1215,24 @@ public class CrawlerDataService {
         statistics.put("totalCount", totalCount);
         
         // 统计各数据源的数据量
-        List<CrawlerData> productData = findByProduct(product);
+        List<CertNewsData> productData = findByProduct(product);
         Map<String, Long> sourceCounts = productData.stream()
                 .collect(Collectors.groupingBy(
-                        CrawlerData::getSourceName,
+                        CertNewsData::getSourceName,
                         Collectors.counting()
                 ));
         statistics.put("sourceCounts", sourceCounts);
         
         // 统计各状态的数据量
-        Map<CrawlerData.DataStatus, Long> statusCounts = productData.stream()
+        Map<CertNewsData.DataStatus, Long> statusCounts = productData.stream()
                 .collect(Collectors.groupingBy(
-                        CrawlerData::getStatus,
+                        CertNewsData::getStatus,
                         Collectors.counting()
                 ));
         statistics.put("statusCounts", statusCounts);
         
         // 获取最近的数据
-        List<CrawlerData> recentData = productData.stream()
+        List<CertNewsData> recentData = productData.stream()
                 .sorted((a, b) -> b.getCrawlTime().compareTo(a.getCrawlTime()))
                 .limit(5)
                 .toList();
@@ -1247,7 +1246,7 @@ public class CrawlerDataService {
     /**
      * 查询有发布时间列表的数据
      */
-    public List<CrawlerData> findByReleaseDateNotEmpty() {
+    public List<CertNewsData> findByReleaseDateNotEmpty() {
         log.info("查询有发布时间列表的数据");
         return crawlerDataRepository.findByReleaseDateNotEmpty();
     }
@@ -1255,7 +1254,7 @@ public class CrawlerDataService {
     /**
      * 根据数据源查询有发布时间列表的数据
      */
-    public List<CrawlerData> findBySourceNameAndReleaseDateNotEmpty(String sourceName) {
+    public List<CertNewsData> findBySourceNameAndReleaseDateNotEmpty(String sourceName) {
         log.info("根据数据源查询有发布时间列表的数据: {}", sourceName);
         return crawlerDataRepository.findBySourceNameAndReleaseDateNotEmpty(sourceName);
     }
@@ -1265,7 +1264,7 @@ public class CrawlerDataService {
     /**
      * 查询有执行时间列表的数据
      */
-    public List<CrawlerData> findByExecutionDateNotEmpty() {
+    public List<CertNewsData> findByExecutionDateNotEmpty() {
         log.info("查询有执行时间列表的数据");
         return crawlerDataRepository.findByExecutionDateNotEmpty();
     }
@@ -1273,7 +1272,7 @@ public class CrawlerDataService {
     /**
      * 根据数据源查询有执行时间列表的数据
      */
-    public List<CrawlerData> findBySourceNameAndExecutionDateNotEmpty(String sourceName) {
+    public List<CertNewsData> findBySourceNameAndExecutionDateNotEmpty(String sourceName) {
         log.info("根据数据源查询有执行时间列表的数据: {}", sourceName);
         return crawlerDataRepository.findBySourceNameAndExecutionDateNotEmpty(sourceName);
     }
@@ -1283,7 +1282,7 @@ public class CrawlerDataService {
     /**
      * 根据数据源查询同时有发布时间和执行时间的数据
      */
-    public List<CrawlerData> findBySourceNameAndBothDatesNotEmpty(String sourceName) {
+    public List<CertNewsData> findBySourceNameAndBothDatesNotEmpty(String sourceName) {
         log.info("根据数据源查询同时有发布时间和执行时间的数据: {}", sourceName);
         return crawlerDataRepository.findBySourceNameAndBothDatesNotEmpty(sourceName);
     }
@@ -1298,11 +1297,11 @@ public class CrawlerDataService {
         Map<String, Object> statistics = new HashMap<>();
         
         // 统计有发布时间列表的数据量
-        List<CrawlerData> releaseData = findByReleaseDateNotEmpty();
+        List<CertNewsData> releaseData = findByReleaseDateNotEmpty();
         statistics.put("releaseDateCount", releaseData.size());
         
         // 统计有执行时间列表的数据量
-        List<CrawlerData> executionData = findByExecutionDateNotEmpty();
+        List<CertNewsData> executionData = findByExecutionDateNotEmpty();
         statistics.put("executionDateCount", executionData.size());
         
         // 统计各数据源的时间字段使用情况
@@ -1319,7 +1318,7 @@ public class CrawlerDataService {
     /**
      * 根据相关状态查询数据
      */
-    public List<CrawlerData> findByRelated(Boolean related) {
+    public List<CertNewsData> findByRelated(Boolean related) {
         log.info("根据相关状态查询数据: {}", related);
         return crawlerDataRepository.findByRelatedAndDeleted(related, 0);
     }
@@ -1327,7 +1326,7 @@ public class CrawlerDataService {
     /**
      * 根据相关状态分页查询
      */
-    public Page<CrawlerData> findByRelated(Boolean related, Pageable pageable) {
+    public Page<CertNewsData> findByRelated(Boolean related, Pageable pageable) {
         log.info("根据相关状态分页查询: {}, 页码: {}, 大小: {}", related, pageable.getPageNumber(), pageable.getPageSize());
         return crawlerDataRepository.findByRelatedAndDeleted(related, 0, pageable);
     }
@@ -1343,7 +1342,7 @@ public class CrawlerDataService {
     /**
      * 查询相关数据（related = true）
      */
-    public List<CrawlerData> findRelatedData() {
+    public List<CertNewsData> findRelatedData() {
         log.info("查询相关数据");
         return crawlerDataRepository.findRelatedData();
     }
@@ -1351,7 +1350,7 @@ public class CrawlerDataService {
     /**
      * 查询相关数据（related = true）分页
      */
-    public Page<CrawlerData> findRelatedData(Pageable pageable) {
+    public Page<CertNewsData> findRelatedData(Pageable pageable) {
         log.info("查询相关数据分页，页码: {}, 大小: {}", pageable.getPageNumber(), pageable.getPageSize());
         return crawlerDataRepository.findRelatedData(pageable);
     }
@@ -1359,7 +1358,7 @@ public class CrawlerDataService {
     /**
      * 查询不相关数据（related = false）
      */
-    public List<CrawlerData> findUnrelatedData() {
+    public List<CertNewsData> findUnrelatedData() {
         log.info("查询不相关数据");
         return crawlerDataRepository.findUnrelatedData();
     }
@@ -1367,7 +1366,7 @@ public class CrawlerDataService {
     /**
      * 查询不相关数据（related = false）分页
      */
-    public Page<CrawlerData> findUnrelatedData(Pageable pageable) {
+    public Page<CertNewsData> findUnrelatedData(Pageable pageable) {
         log.info("查询不相关数据分页，页码: {}, 大小: {}", pageable.getPageNumber(), pageable.getPageSize());
         return crawlerDataRepository.findUnrelatedData(pageable);
     }
@@ -1375,7 +1374,7 @@ public class CrawlerDataService {
     /**
      * 查询未确定相关性的数据（related = null）
      */
-    public List<CrawlerData> findUndeterminedData() {
+    public List<CertNewsData> findUndeterminedData() {
         log.info("查询未确定相关性的数据");
         return crawlerDataRepository.findUndeterminedData();
     }
@@ -1383,7 +1382,7 @@ public class CrawlerDataService {
     /**
      * 查询未确定相关性的数据（related = null）分页
      */
-    public Page<CrawlerData> findUndeterminedData(Pageable pageable) {
+    public Page<CertNewsData> findUndeterminedData(Pageable pageable) {
         log.info("查询未确定相关性数据分页，页码: {}, 大小: {}", pageable.getPageNumber(), pageable.getPageSize());
         return crawlerDataRepository.findUndeterminedData(pageable);
     }
@@ -1391,7 +1390,7 @@ public class CrawlerDataService {
     /**
      * 根据数据源和相关状态查询
      */
-    public List<CrawlerData> findBySourceNameAndRelated(String sourceName, Boolean related) {
+    public List<CertNewsData> findBySourceNameAndRelated(String sourceName, Boolean related) {
         log.info("根据数据源和相关状态查询: {} - {}", sourceName, related);
         return crawlerDataRepository.findBySourceNameAndRelatedAndDeleted(sourceName, related, 0);
     }
@@ -1399,7 +1398,7 @@ public class CrawlerDataService {
     /**
      * 根据数据源和相关状态分页查询
      */
-    public Page<CrawlerData> findBySourceNameAndRelated(String sourceName, Boolean related, Pageable pageable) {
+    public Page<CertNewsData> findBySourceNameAndRelated(String sourceName, Boolean related, Pageable pageable) {
         log.info("根据数据源和相关状态分页查询: {} - {}, 页码: {}, 大小: {}", sourceName, related, pageable.getPageNumber(), pageable.getPageSize());
         return crawlerDataRepository.findBySourceNameAndRelatedAndDeleted(sourceName, related, 0, pageable);
     }
@@ -1407,7 +1406,7 @@ public class CrawlerDataService {
     /**
      * 根据国家相关状态查询
      */
-    public List<CrawlerData> findByCountryAndRelated(String country, Boolean related) {
+    public List<CertNewsData> findByCountryAndRelated(String country, Boolean related) {
         log.info("根据国家相关状态查询: {} - {}", country, related);
         return crawlerDataRepository.findByCountryAndRelatedAndDeleted(country, related, 0);
     }
@@ -1415,7 +1414,7 @@ public class CrawlerDataService {
     /**
      * 根据国家相关状态分页查询
      */
-    public Page<CrawlerData> findByCountryAndRelated(String country, Boolean related, Pageable pageable) {
+    public Page<CertNewsData> findByCountryAndRelated(String country, Boolean related, Pageable pageable) {
         log.info("根据国家相关状态分页查询: {} - {}, 页码: {}, 大小: {}", country, related, pageable.getPageNumber(), pageable.getPageSize());
         return crawlerDataRepository.findByCountryAndRelatedAndDeleted(country, related, 0, pageable);
     }
@@ -1423,7 +1422,7 @@ public class CrawlerDataService {
     /**
      * 根据产品名称和相关状态查询
      */
-    public List<CrawlerData> findByProductAndRelated(String product, Boolean related) {
+    public List<CertNewsData> findByProductAndRelated(String product, Boolean related) {
         log.info("根据产品名称和相关状态查询: {} - {}", product, related);
         return crawlerDataRepository.findByProductAndRelatedAndDeleted(product, related, 0);
     }
@@ -1431,7 +1430,7 @@ public class CrawlerDataService {
     /**
      * 根据产品名称和相关状态分页查询
      */
-    public Page<CrawlerData> findByProductAndRelated(String product, Boolean related, Pageable pageable) {
+    public Page<CertNewsData> findByProductAndRelated(String product, Boolean related, Pageable pageable) {
         log.info("根据产品名称和相关状态分页查询: {} - {}, 页码: {}, 大小: {}", product, related, pageable.getPageNumber(), pageable.getPageSize());
         return crawlerDataRepository.findByProductAndRelatedAndDeleted(product, related, 0, pageable);
     }
@@ -1532,7 +1531,7 @@ public class CrawlerDataService {
     /**
      * 根据关键词搜索并过滤相关状态
      */
-    public Page<CrawlerData> searchByKeywordAndRelated(String keyword, Boolean related, Pageable pageable) {
+    public Page<CertNewsData> searchByKeywordAndRelated(String keyword, Boolean related, Pageable pageable) {
         log.info("根据关键词搜索并过滤相关状态: {} - {}, 页码: {}, 大小: {}", keyword, related, pageable.getPageNumber(), pageable.getPageSize());
         return crawlerDataRepository.searchByKeywordAndRelated(keyword, related, pageable);
     }
@@ -1540,8 +1539,8 @@ public class CrawlerDataService {
     /**
      * 根据多个关键词搜索并过滤相关状态
      */
-    public Page<CrawlerData> searchByKeywordsAndRelated(String keyword, String keyword2, String keyword3, 
-                                                       String country, String sourceName, Boolean related, Pageable pageable) {
+    public Page<CertNewsData> searchByKeywordsAndRelated(String keyword, String keyword2, String keyword3,
+                                                         String country, String sourceName, Boolean related, Pageable pageable) {
         log.info("根据多个关键词搜索并过滤相关状态: {} - {} - {} - {} - {} - {}, 页码: {}, 大小: {}", 
                 keyword, keyword2, keyword3, country, sourceName, related, pageable.getPageNumber(), pageable.getPageSize());
         return crawlerDataRepository.searchByKeywordsAndRelated(keyword, keyword2, keyword3, country, sourceName, related, pageable);
@@ -1601,7 +1600,7 @@ public class CrawlerDataService {
         
         try {
             // 获取所有未删除的数据
-            List<CrawlerData> allData = crawlerDataRepository.findByDeleted(0);
+            List<CertNewsData> allData = crawlerDataRepository.findByDeleted(0);
             log.info("找到 {} 条数据需要处理", allData.size());
             
             int processedCount = 0;
@@ -1610,7 +1609,7 @@ public class CrawlerDataService {
             int unchangedCount = 0;
             int riskProcessedCount = 0; // 新增：风险等级处理计数
             
-            for (CrawlerData data : allData) {
+            for (CertNewsData data : allData) {
                 // 检查标题、内容、摘要是否包含关键词
                 String searchText = "";
                 if (data.getTitle() != null) {
@@ -1746,7 +1745,7 @@ public class CrawlerDataService {
         
         try {
             // 获取指定数据源的所有未删除数据
-            List<CrawlerData> allData = crawlerDataRepository.findBySourceNameAndDeleted(sourceName, 0);
+            List<CertNewsData> allData = crawlerDataRepository.findBySourceNameAndDeleted(sourceName, 0);
             log.info("找到数据源 {} 的 {} 条数据需要处理", sourceName, allData.size());
             
             int processedCount = 0;
@@ -1754,7 +1753,7 @@ public class CrawlerDataService {
             int unrelatedCount = 0;
             int unchangedCount = 0;
             
-            for (CrawlerData data : allData) {
+            for (CertNewsData data : allData) {
                 // 检查标题、内容、摘要是否包含关键词
                 String searchText = "";
                 if (data.getTitle() != null) {
@@ -1825,7 +1824,7 @@ public class CrawlerDataService {
         
         try {
             // 获取所有未删除的数据
-            List<CrawlerData> allData = crawlerDataRepository.findAll().stream()
+            List<CertNewsData> allData = crawlerDataRepository.findAll().stream()
                 .filter(data -> data.getDeleted() == 0)
                 .toList();
             
@@ -1836,7 +1835,7 @@ public class CrawlerDataService {
             int unchangedCount = 0;
             Map<String, Integer> countryUpdates = new HashMap<>();
             
-            for (CrawlerData data : allData) {
+            for (CertNewsData data : allData) {
                 // 分析标题和内容中的国家信息
                 String detectedCountry = detectCountryFromContent(data.getTitle(), data.getContent());
                 
@@ -1903,7 +1902,7 @@ public class CrawlerDataService {
             log.info("开始统计当前数据的国家分布");
             
             // 获取所有未删除的数据
-            List<CrawlerData> allData = crawlerDataRepository.findAll().stream()
+            List<CertNewsData> allData = crawlerDataRepository.findAll().stream()
                 .filter(data -> data.getDeleted() == 0)
                 .toList();
             
@@ -1911,7 +1910,7 @@ public class CrawlerDataService {
             int nullCountryCount = 0;
             int emptyCountryCount = 0;
             
-            for (CrawlerData data : allData) {
+            for (CertNewsData data : allData) {
                 String country = data.getCountry();
                 if (country == null) {
                     nullCountryCount++;
@@ -2085,11 +2084,11 @@ public class CrawlerDataService {
             log.info("需要处理的数据源: {}", targetSources);
             
             // 获取所有目标数据源的数据
-            List<CrawlerData> allData = new ArrayList<>();
+            List<CertNewsData> allData = new ArrayList<>();
             Map<String, Integer> sourceCounts = new HashMap<>();
             
             for (String sourceName : targetSources) {
-                List<CrawlerData> sourceData = crawlerDataRepository.findBySourceNameAndDeleted(sourceName, 0);
+                List<CertNewsData> sourceData = crawlerDataRepository.findBySourceNameAndDeleted(sourceName, 0);
                 allData.addAll(sourceData);
                 sourceCounts.put(sourceName, sourceData.size());
                 log.info("找到{}数据: {} 条", sourceName, sourceData.size());
@@ -2108,7 +2107,7 @@ public class CrawlerDataService {
                 sourceStats.put(sourceName, 0);
             }
             
-            for (CrawlerData data : allData) {
+            for (CertNewsData data : allData) {
                 totalProcessed++;
                 
                 String originalDate = data.getPublishDate();
