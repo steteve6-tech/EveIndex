@@ -9,8 +9,13 @@ COPY vue-frontend/package*.json ./
 # 安装依赖
 RUN npm ci
 
-# 复制前端源代码
-COPY vue-frontend/ .
+# 明确复制前端源代码
+COPY vue-frontend/index.html .
+COPY vue-frontend/src/ ./src/
+COPY vue-frontend/public/ ./public/
+COPY vue-frontend/vite.config.mjs .
+COPY vue-frontend/tsconfig.json .
+COPY vue-frontend/tsconfig.node.json .
 
 # 设置环境变量
 ENV NODE_ENV=production

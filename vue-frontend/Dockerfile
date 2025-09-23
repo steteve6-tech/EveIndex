@@ -9,8 +9,13 @@ COPY package*.json ./
 # 安装依赖
 RUN npm ci
 
-# 复制源代码
-COPY . .
+# 明确复制所有需要的文件
+COPY index.html .
+COPY src/ ./src/
+COPY public/ ./public/
+COPY vite.config.mjs .
+COPY tsconfig.json .
+COPY tsconfig.node.json .
 
 # 设置环境变量
 ENV NODE_ENV=production
