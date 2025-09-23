@@ -3181,7 +3181,7 @@ const updateEntityRiskLevelAndKeywords = async (entityType: string, item: any) =
     const result = await updateEntityByType(entityType, item.id, updateData.riskLevel, keywordsString)
 
     // 处理响应结果
-    const responseData = result.data || result
+    const responseData = (result as any).data || result
     if (responseData && responseData.success) {
       console.log(`成功更新 ${entityType}，ID: ${item.id}`, responseData)
       return true
@@ -3307,13 +3307,14 @@ const handleCountryChange = (country: string) => {
   }
 }
 
-// 处理添加欧盟设备数据
-const handleAddEuDeviceData = () => {
-  message.info('欧盟设备数据添加功能开发中，敬请期待！')
-  // 这里可以打开添加设备数据的模态框或跳转到添加页面
-}
+// 处理添加欧盟设备数据 - 暂时未使用
+// const handleAddEuDeviceData = () => {
+//   message.info('欧盟设备数据添加功能开发中，敬请期待！')
+//   // 这里可以打开添加设备数据的模态框或跳转到添加页面
+// }
 
-// 导出分析结果
+// 导出分析结果 - 暂时未使用
+/*
 const exportAnalysisResults = () => {
   if (analysisResults.value.length === 0) {
     message.warning('没有可导出的分析结果')
@@ -3324,7 +3325,7 @@ const exportAnalysisResults = () => {
     // 创建CSV内容
     let csvContent = '数据模块,记录数量,匹配关键词,风险等级,关键词列表\n'
 
-    analysisResults.value.forEach((result, index) => {
+    analysisResults.value.forEach((result) => {
       if (result.data && result.data.length > 0) {
         result.data.forEach((item: any) => {
           const keywords = Array.isArray(item.keywords) ? item.keywords.join(';') : (item.keywords || '')
@@ -3349,9 +3350,10 @@ const exportAnalysisResults = () => {
     message.success('分析结果导出成功')
   } catch (error) {
     console.error('导出失败:', error)
-    message.error('导出失败: ' + (error.message || '未知错误'))
+    message.error('导出失败: ' + ((error as any).message || '未知错误'))
   }
 }
+*/
 
 // 格式化字段标签
 const formatFieldLabel = (key: string): string => {
@@ -3417,7 +3419,7 @@ const formatFieldLabel = (key: string): string => {
     
     // EU Safety Gate 特有字段
     'productNameSpecific': '产品具体名称',
-    'productDescription': '产品描述',
+    'euProductDescription': '产品描述',
     'riskType': '风险类型',
     'riskDescription': '风险描述',
     'notifyingCountry': '通知国家',
@@ -3645,7 +3647,8 @@ const getCountryDisplayName = (countryCode: string): string => {
   return countryNames[countryCode] || countryCode
 }
 
-// 获取数据类型显示名称
+// 获取数据类型显示名称 - 暂时未使用
+/*
 const getDataTypeDisplayName = (dataType: string): string => {
   const typeNames: Record<string, string> = {
     'Device510K': '申请记录',
@@ -3657,9 +3660,11 @@ const getDataTypeDisplayName = (dataType: string): string => {
   }
   return typeNames[dataType] || dataType
 }
+*/
 
 
-// 获取数据类型颜色
+// 获取数据类型颜色 - 暂时未使用
+/*
 const getDataTypeColor = (dataType: string): string => {
   const colors: Record<string, string> = {
     'Device510K': '#1890ff',
@@ -3671,6 +3676,7 @@ const getDataTypeColor = (dataType: string): string => {
   }
   return colors[dataType] || '#666'
 }
+*/
 
 // 根据中文名称获取数据类型颜色
 const getDataTypeColorByChineseName = (chineseName: string): string => {
