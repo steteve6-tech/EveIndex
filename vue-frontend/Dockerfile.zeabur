@@ -26,8 +26,8 @@ COPY . .
 ENV NODE_ENV=production
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL:-/api}
 
-# 构建应用
-RUN npm run build
+# 构建应用 - 直接使用 node_modules 中的 vite
+RUN ./node_modules/.bin/vite build
 
 # 验证构建结果
 RUN ls -la /app/dist/ && echo "=== 构建成功 ==="

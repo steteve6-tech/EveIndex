@@ -22,8 +22,8 @@ COPY . .
 ENV NODE_ENV=production
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL:-/api}
 
-# 使用 npm script 构建（npm 会自动找到正确的路径）
-RUN npm run build
+# 直接使用 vite 构建
+RUN ./node_modules/.bin/vite build
 
 # 验证构建结果
 RUN ls -la /app/dist/ && echo "=== 构建成功 ==="
