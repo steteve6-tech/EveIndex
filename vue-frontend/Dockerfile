@@ -16,8 +16,8 @@ COPY . .
 ENV NODE_ENV=production
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL:-/api}
 
-# 直接运行 vite build，使用 .mjs 配置文件
-RUN node_modules/.bin/vite build --config vite.config.mjs
+# 直接运行 vite build，不使用配置文件
+RUN node_modules/.bin/vite build
 
 # 验证构建结果
 RUN ls -la dist/ && echo "=== 构建成功 ==="

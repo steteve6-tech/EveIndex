@@ -4,6 +4,8 @@ import { resolve } from 'path'
 
 export default defineConfig({
   plugins: [vue()],
+  root: '.',
+  publicDir: 'public',
   resolve: {
     alias: {
       '@': resolve('./src'),
@@ -13,6 +15,9 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     rollupOptions: {
+      input: {
+        main: resolve('./index.html')
+      },
       output: {
         manualChunks: {
           vendor: ['vue', 'vue-router', 'pinia'],
