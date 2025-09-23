@@ -4,8 +4,8 @@
   "description": "认证监控系统前端",
   "scripts": {
     "dev": "vite",
-    "build": "npx vite build",
-    "build:zeabur": "npx vite build --mode production",
+    "build": "./node_modules/.bin/vite build",
+    "build:zeabur": "./node_modules/.bin/vite build --mode production",
     "build:check": "npx vue-tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore"
