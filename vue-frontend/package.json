@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc && vite build",
-    "build:zeabur": "node build-zeabur.js",
+    "build:zeabur": "vue-tsc && vite build --mode production",
+    "build:check": "vue-tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore"
   },
