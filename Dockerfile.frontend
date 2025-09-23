@@ -1,16 +1,16 @@
-# 前端构建 Dockerfile for Zeabur - 修复版
+# 前端 Dockerfile - 从项目根目录构建
 FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# 复制 package.json 和 package-lock.json
-COPY package*.json ./
+# 复制前端 package.json 和 package-lock.json
+COPY vue-frontend/package*.json ./
 
 # 安装依赖
 RUN npm ci
 
-# 复制源代码
-COPY . .
+# 复制前端源代码
+COPY vue-frontend/ .
 
 # 设置环境变量
 ENV NODE_ENV=production
@@ -21,8 +21,8 @@ RUN ls -la
 RUN ls -la index.html
 RUN ls -la src/
 
-# 直接运行 vite build，不使用配置文件
-RUN node_modules/.bin/vite build
+# 使用 npm script 构建
+RUN npm run build
 
 # 验证构建结果
 RUN ls -la dist/ && echo "=== 构建成功 ==="
@@ -34,7 +34,7 @@ FROM nginx:alpine
 RUN apk add --no-cache wget
 
 # 复制 Nginx 配置
-COPY nginx.zeabur.conf /etc/nginx/nginx.conf
+COPY vue-frontend/nginx.zeabur.conf /etc/nginx/nginx.conf
 
 # 复制构建结果
 COPY --from=builder /app/dist /usr/share/nginx/html
