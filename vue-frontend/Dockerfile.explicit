@@ -1,4 +1,4 @@
-# 前端构建 Dockerfile for Zeabur - 修复版
+# 明确复制文件的 Dockerfile for Zeabur
 FROM node:18-alpine AS builder
 
 WORKDIR /app
@@ -9,11 +9,13 @@ COPY package*.json ./
 # 安装依赖
 RUN npm ci
 
-# 复制源代码
-COPY . .
-
-# 明确复制 index.html 文件
+# 明确复制关键文件
 COPY index.html .
+COPY src/ ./src/
+COPY public/ ./public/
+COPY vite.config.mjs .
+COPY tsconfig.json .
+COPY tsconfig.node.json .
 
 # 设置环境变量
 ENV NODE_ENV=production
@@ -24,8 +26,8 @@ RUN ls -la
 RUN ls -la index.html
 RUN ls -la src/
 
-# 直接运行 vite build，不使用配置文件
-RUN node_modules/.bin/vite build
+# 使用 npm script 构建
+RUN npm run build
 
 # 验证构建结果
 RUN ls -la dist/ && echo "=== 构建成功 ==="
