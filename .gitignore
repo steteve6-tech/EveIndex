@@ -48,6 +48,7 @@ chrome-portable/
 crawler_output/
 *.csv
 *.html
+!vue-frontend/index.html
 
 # 测试文件
 test-*.html

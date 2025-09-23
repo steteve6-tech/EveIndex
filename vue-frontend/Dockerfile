@@ -16,6 +16,9 @@ COPY . .
 ENV NODE_ENV=production
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL:-/api}
 
+# 确保 public 目录存在（如果为空的话）
+RUN mkdir -p public/
+
 # 验证文件是否正确复制
 RUN ls -la
 RUN echo "=== 检查 index.html ==="
