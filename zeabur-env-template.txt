@@ -1,0 +1,45 @@
+# Zeabur 环境变量配置模板
+# 复制此文件内容到 Zeabur Dashboard 的环境变量配置中
+
+# ===========================================
+# 数据库配置
+# ===========================================
+MYSQL_ROOT_PASSWORD=your-secure-mysql-root-password
+MYSQL_USERNAME=app_user
+MYSQL_PASSWORD=your-secure-mysql-password
+
+# ===========================================
+# 后端服务环境变量
+# ===========================================
+SPRING_PROFILES_ACTIVE=zeabur
+SPRING_DATASOURCE_URL=${{mysql.DATABASE_URL}}
+SPRING_DATASOURCE_USERNAME=${{mysql.USERNAME}}
+SPRING_DATASOURCE_PASSWORD=${{mysql.PASSWORD}}
+SPRING_DATA_REDIS_HOST=${{redis.HOST}}
+SPRING_DATA_REDIS_PORT=${{redis.PORT}}
+
+# ===========================================
+# 火山引擎配置（可选）
+# ===========================================
+VOLCENGINE_ACCESS_KEY=your-volcengine-access-key
+VOLCENGINE_SECRET_KEY=your-volcengine-secret-key
+ARK_API_KEY=your-ark-api-key
+
+# ===========================================
+# 邮件配置（可选）
+# ===========================================
+MAIL_USERNAME=your-email@example.com
+MAIL_PASSWORD=your-email-password
+
+# ===========================================
+# 前端服务环境变量
+# ===========================================
+VITE_API_BASE_URL=${{backend.URL}}/api
+
+# ===========================================
+# 使用说明
+# ===========================================
+# 1. 将上述环境变量复制到 Zeabur Dashboard
+# 2. 替换所有 "your-xxx" 为实际值
+# 3. ${{service.VARIABLE}} 格式的变量会自动从其他服务获取
+# 4. 确保密码和密钥的安全性

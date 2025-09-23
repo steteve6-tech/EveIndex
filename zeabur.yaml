@@ -1,0 +1,68 @@
+# Zeabur 部署配置文件
+# 这个文件定义了如何在Zeabur上部署整个项目
+
+services:
+  # 后端Spring Boot服务
+  backend:
+    source:
+      type: git
+      repo: your-github-repo  # 替换为你的GitHub仓库地址
+      branch: main
+      buildPath: ./spring-boot-backend
+    env:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=${MYSQL_URL}
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT}
+      - VOLCENGINE_ACCESS_KEY=${VOLCENGINE_ACCESS_KEY}
+      - VOLCENGINE_SECRET_KEY=${VOLCENGINE_SECRET_KEY}
+      - ARK_API_KEY=${ARK_API_KEY}
+    ports:
+      - 8080
+    healthCheck:
+      path: /api/health
+      port: 8080
+
+  # 前端Vue服务
+  frontend:
+    source:
+      type: git
+      repo: your-github-repo  # 替换为你的GitHub仓库地址
+      branch: main
+      buildPath: ./vue-frontend
+    env:
+      - VITE_API_BASE_URL=${BACKEND_URL}
+    ports:
+      - 80
+
+  # MySQL数据库
+  mysql:
+    type: mysql
+    version: "8.0"
+    env:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=common_db
+      - MYSQL_USER=${MYSQL_USERNAME}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+
+  # Redis缓存
+  redis:
+    type: redis
+    version: "7.0"
+
+# 环境变量配置
+env:
+  # 数据库配置
+  MYSQL_ROOT_PASSWORD: "your-secure-password"
+  MYSQL_USERNAME: "app_user"
+  MYSQL_PASSWORD: "your-app-password"
+  
+  # 火山引擎配置
+  VOLCENGINE_ACCESS_KEY: "your-volcengine-access-key"
+  VOLCENGINE_SECRET_KEY: "your-volcengine-secret-key"
+  ARK_API_KEY: "your-ark-api-key"
+  
+  # 服务间通信
+  BACKEND_URL: "https://your-backend-domain.zeabur.app"

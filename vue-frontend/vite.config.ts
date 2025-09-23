@@ -94,6 +94,15 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false, // 生产环境关闭sourcemap以减小体积
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['vue', 'vue-router', 'pinia'],
+          antd: ['ant-design-vue', '@ant-design/icons-vue'],
+          utils: ['axios', 'dayjs', 'echarts']
+        }
+      }
+    }
   },
 })
