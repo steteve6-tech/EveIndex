@@ -9,11 +9,15 @@ COPY package*.json ./
 # 安装所有依赖（包括开发依赖）
 RUN npm ci
 
+# 强制重新安装 vite 以确保正确安装
+RUN npm install vite@^7.1.2 --save-dev
+
 # 验证关键依赖是否正确安装
 RUN npm list vite
 RUN npm list vue-tsc
 RUN ls -la node_modules/.bin/
 RUN ls -la node_modules/.bin/vite || echo "vite binary not found"
+RUN npm list @vitejs/plugin-vue
 
 # 复制源代码
 COPY . .

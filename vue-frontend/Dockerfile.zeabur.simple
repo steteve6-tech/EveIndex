@@ -9,6 +9,12 @@ COPY package*.json ./
 # 安装所有依赖
 RUN npm ci
 
+# 确保 vite 正确安装
+RUN npm install vite@^7.1.2 @vitejs/plugin-vue@^6.0.1 --save-dev
+
+# 验证安装
+RUN ls -la node_modules/.bin/vite
+
 # 复制源代码
 COPY . .
 
@@ -16,8 +22,7 @@ COPY . .
 ENV NODE_ENV=production
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL:-/api}
 
-# 使用 npx 运行构建（确保能找到 vue-tsc）
-RUN npx vue-tsc --version
+# 使用 npm script 构建（npm 会自动找到正确的路径）
 RUN npm run build
 
 # 验证构建结果
