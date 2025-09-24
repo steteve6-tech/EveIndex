@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # 设置默认后端地址
-DEFAULT_BACKEND_HOST="eveindex2-0.zeabur.internal"
+DEFAULT_BACKEND_HOST="service-68d2b58a030e2df4a56a3efb"
 DEFAULT_BACKEND_PORT="8080"
 
 # 使用环境变量或默认值
