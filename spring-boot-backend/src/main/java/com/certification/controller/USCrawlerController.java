@@ -26,27 +26,27 @@ public class USCrawlerController {
     private USCrawlerService usCrawlerService;
 
     /**
-     * 测试D_510K爬虫
+     * 测试D_510K爬虫 - 已禁用
      */
-    @PostMapping("/test/d510k")
-    @Operation(summary = "测试D_510K爬虫", description = "测试FDA 510K设备审批数据爬虫")
-    public ResponseEntity<Map<String, Object>> testD510K(
-            @RequestBody(required = false) Map<String, Object> params) {
-        
-        log.info("收到D_510K爬虫测试请求，参数: {}", params);
-        
-        try {
-            Map<String, Object> result = usCrawlerService.testD510K(params != null ? params : Map.of());
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            log.error("D_510K爬虫测试失败", e);
-            return ResponseEntity.internalServerError().body(Map.of(
-                "success", false,
-                "message", "D_510K爬虫测试失败: " + e.getMessage(),
-                "error", e.getMessage()
-            ));
-        }
-    }
+    // @PostMapping("/test/d510k")
+    // @Operation(summary = "测试D_510K爬虫", description = "测试FDA 510K设备审批数据爬虫")
+    // public ResponseEntity<Map<String, Object>> testD510K(
+    //         @RequestBody(required = false) Map<String, Object> params) {
+    //     
+    //     log.info("收到D_510K爬虫测试请求，参数: {}", params);
+    //     
+    //     try {
+    //         Map<String, Object> result = usCrawlerService.testD510K(params != null ? params : Map.of());
+    //         return ResponseEntity.ok(result);
+    //     } catch (Exception e) {
+    //         log.error("D_510K爬虫测试失败", e);
+    //         return ResponseEntity.internalServerError().body(Map.of(
+    //             "success", false,
+    //             "message", "D_510K爬虫测试失败: " + e.getMessage(),
+    //             "error", e.getMessage()
+    //         ));
+    //     }
+    // }
 
     /**
      * 测试US_510K爬虫
@@ -72,42 +72,42 @@ public class USCrawlerController {
     }
 
     /**
-     * D_510K参数化搜索爬虫
+     * D_510K参数化搜索爬虫 - 已禁用
      */
-    @PostMapping("/search/d510k")
-    @Operation(summary = "D_510K参数化搜索", description = "按设备名称、申请人、决策日期等参数搜索FDA 510K数据")
-    public ResponseEntity<Map<String, Object>> searchD510K(
-            @Parameter(description = "设备名称关键词") @RequestParam(required = false) String deviceName,
-            @Parameter(description = "申请人名称") @RequestParam(required = false) String applicantName,
-            @Parameter(description = "开始日期(MM/DD/YYYY)") @RequestParam(required = false) String dateFrom,
-            @Parameter(description = "结束日期(MM/DD/YYYY)") @RequestParam(required = false) String dateTo,
-            @Parameter(description = "最大爬取页数，0表示爬取所有数据") @RequestParam(required = false, defaultValue = "0") Integer maxPages,
-            @Parameter(description = "输入关键词列表") @RequestParam(required = false) String inputKeywords) {
-        
-        log.info("收到D_510K参数化搜索请求 - 设备名称: {}, 申请人: {}, 日期范围: {} - {}, 最大页数: {}, 关键词: {}", 
-                deviceName, applicantName, dateFrom, dateTo, maxPages, inputKeywords);
-        
-        try {
-            Map<String, Object> params = Map.of(
-                "deviceName", deviceName != null ? deviceName : "",
-                "applicantName", applicantName != null ? applicantName : "",
-                "dateFrom", dateFrom != null ? dateFrom : "",
-                "dateTo", dateTo != null ? dateTo : "",
-                "maxPages", maxPages,
-                "inputKeywords", inputKeywords != null ? inputKeywords : ""
-            );
-            
-            Map<String, Object> result = usCrawlerService.testD510K(params);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            log.error("D_510K参数化搜索失败", e);
-            return ResponseEntity.internalServerError().body(Map.of(
-                "success", false,
-                "message", "D_510K参数化搜索失败: " + e.getMessage(),
-                "error", e.getMessage()
-            ));
-        }
-    }
+    // @PostMapping("/search/d510k")
+    // @Operation(summary = "D_510K参数化搜索", description = "按设备名称、申请人、决策日期等参数搜索FDA 510K数据")
+    // public ResponseEntity<Map<String, Object>> searchD510K(
+    //         @Parameter(description = "设备名称关键词") @RequestParam(required = false) String deviceName,
+    //         @Parameter(description = "申请人名称") @RequestParam(required = false) String applicantName,
+    //         @Parameter(description = "开始日期(MM/DD/YYYY)") @RequestParam(required = false) String dateFrom,
+    //         @Parameter(description = "结束日期(MM/DD/YYYY)") @RequestParam(required = false) String dateTo,
+    //         @Parameter(description = "最大爬取页数，0表示爬取所有数据") @RequestParam(required = false, defaultValue = "0") Integer maxPages,
+    //         @Parameter(description = "输入关键词列表") @RequestParam(required = false) String inputKeywords) {
+    //     
+    //     log.info("收到D_510K参数化搜索请求 - 设备名称: {}, 申请人: {}, 日期范围: {} - {}, 最大页数: {}, 关键词: {}", 
+    //             deviceName, applicantName, dateFrom, dateTo, maxPages, inputKeywords);
+    //     
+    //     try {
+    //         Map<String, Object> params = Map.of(
+    //             "deviceName", deviceName != null ? deviceName : "",
+    //             "applicantName", applicantName != null ? applicantName : "",
+    //             "dateFrom", dateFrom != null ? dateFrom : "",
+    //             "dateTo", dateTo != null ? dateTo : "",
+    //             "maxPages", maxPages,
+    //             "inputKeywords", inputKeywords != null ? inputKeywords : ""
+    //         );
+    //         
+    //         Map<String, Object> result = usCrawlerService.testD510K(params);
+    //         return ResponseEntity.ok(result);
+    //     } catch (Exception e) {
+    //         log.error("D_510K参数化搜索失败", e);
+    //         return ResponseEntity.internalServerError().body(Map.of(
+    //             "success", false,
+    //             "message", "D_510K参数化搜索失败: " + e.getMessage(),
+    //             "error", e.getMessage()
+    //         ));
+    //     }
+    // }
 
     /**
      * US_510K参数化搜索爬虫
@@ -276,27 +276,27 @@ public class USCrawlerController {
     }
 
     /**
-     * 测试D_recall爬虫
+     * 测试D_recall爬虫 - 已禁用
      */
-    @PostMapping("/test/drecall")
-    @Operation(summary = "测试D_recall爬虫", description = "测试FDA设备召回数据爬虫")
-    public ResponseEntity<Map<String, Object>> testDRecall(
-            @RequestBody(required = false) Map<String, Object> params) {
-        
-        log.info("收到D_recall爬虫测试请求，参数: {}", params);
-        
-        try {
-            Map<String, Object> result = usCrawlerService.testDRecall(params != null ? params : Map.of());
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            log.error("D_recall爬虫测试失败", e);
-            return ResponseEntity.internalServerError().body(Map.of(
-                "success", false,
-                "message", "D_recall爬虫测试失败: " + e.getMessage(),
-                "error", e.getMessage()
-            ));
-        }
-    }
+    // @PostMapping("/test/drecall")
+    // @Operation(summary = "测试D_recall爬虫", description = "测试FDA设备召回数据爬虫")
+    // public ResponseEntity<Map<String, Object>> testDRecall(
+    //         @RequestBody(required = false) Map<String, Object> params) {
+    //     
+    //     log.info("收到D_recall爬虫测试请求，参数: {}", params);
+    //     
+    //     try {
+    //         Map<String, Object> result = usCrawlerService.testDRecall(params != null ? params : Map.of());
+    //         return ResponseEntity.ok(result);
+    //     } catch (Exception e) {
+    //         log.error("D_recall爬虫测试失败", e);
+    //         return ResponseEntity.internalServerError().body(Map.of(
+    //             "success", false,
+    //             "message", "D_recall爬虫测试失败: " + e.getMessage(),
+    //             "error", e.getMessage()
+    //         ));
+    //     }
+    // }
 
     /**
      * 测试US_recall_api爬虫
@@ -322,48 +322,48 @@ public class USCrawlerController {
     }
 
     /**
-     * D_recall参数化搜索爬虫
+     * D_recall参数化搜索爬虫 - 已禁用
      */
-    @PostMapping("/search/drecall")
-    @Operation(summary = "D_recall参数化搜索", description = "按产品名称、召回原因、召回公司、召回日期等参数搜索FDA召回数据，支持关键词列表")
-    public ResponseEntity<Map<String, Object>> searchDRecall(
-            @Parameter(description = "产品名称") @RequestParam(required = false) String productName,
-            @Parameter(description = "召回原因") @RequestParam(required = false) String reasonForRecall,
-            @Parameter(description = "召回公司") @RequestParam(required = false) String recallingFirm,
-            @Parameter(description = "开始日期(MM/DD/YYYY)") @RequestParam(required = false) String dateFrom,
-            @Parameter(description = "结束日期(MM/DD/YYYY)") @RequestParam(required = false) String dateTo,
-            @Parameter(description = "最大爬取页数，0表示爬取所有数据") @RequestParam(required = false, defaultValue = "0") Integer maxPages,
-            @Parameter(description = "输入关键词列表") @RequestParam(required = false) String inputKeywords) {
-        
-        log.info("收到D_recall参数化搜索请求 - 产品名称: {}, 召回原因: {}, 召回公司: {}, 日期范围: {} - {}, 最大页数: {}, 关键词: {}", 
-                productName, reasonForRecall, recallingFirm, dateFrom, dateTo, maxPages, inputKeywords);
-        log.info("inputKeywords参数详情 - 类型: {}, 值: '{}', 长度: {}", 
-                inputKeywords != null ? inputKeywords.getClass().getSimpleName() : "null", 
-                inputKeywords, 
-                inputKeywords != null ? inputKeywords.length() : 0);
-        
-        try {
-            Map<String, Object> params = Map.of(
-                "productName", productName != null ? productName : "",
-                "reasonForRecall", reasonForRecall != null ? reasonForRecall : "",
-                "recallingFirm", recallingFirm != null ? recallingFirm : "",
-                "dateFrom", dateFrom != null ? dateFrom : "",
-                "dateTo", dateTo != null ? dateTo : "",
-                "maxPages", maxPages,
-                "inputKeywords", inputKeywords != null ? inputKeywords : ""
-            );
-            
-            Map<String, Object> result = usCrawlerService.testDRecall(params);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            log.error("D_recall参数化搜索失败", e);
-            return ResponseEntity.internalServerError().body(Map.of(
-                "success", false,
-                "message", "D_recall参数化搜索失败: " + e.getMessage(),
-                "error", e.getMessage()
-            ));
-        }
-    }
+    // @PostMapping("/search/drecall")
+    // @Operation(summary = "D_recall参数化搜索", description = "按产品名称、召回原因、召回公司、召回日期等参数搜索FDA召回数据，支持关键词列表")
+    // public ResponseEntity<Map<String, Object>> searchDRecall(
+    //         @Parameter(description = "产品名称") @RequestParam(required = false) String productName,
+    //         @Parameter(description = "召回原因") @RequestParam(required = false) String reasonForRecall,
+    //         @Parameter(description = "召回公司") @RequestParam(required = false) String recallingFirm,
+    //         @Parameter(description = "开始日期(MM/DD/YYYY)") @RequestParam(required = false) String dateFrom,
+    //         @Parameter(description = "结束日期(MM/DD/YYYY)") @RequestParam(required = false) String dateTo,
+    //         @Parameter(description = "最大爬取页数，0表示爬取所有数据") @RequestParam(required = false, defaultValue = "0") Integer maxPages,
+    //         @Parameter(description = "输入关键词列表") @RequestParam(required = false) String inputKeywords) {
+    //     
+    //     log.info("收到D_recall参数化搜索请求 - 产品名称: {}, 召回原因: {}, 召回公司: {}, 日期范围: {} - {}, 最大页数: {}, 关键词: {}", 
+    //             productName, reasonForRecall, recallingFirm, dateFrom, dateTo, maxPages, inputKeywords);
+    //     log.info("inputKeywords参数详情 - 类型: {}, 值: '{}', 长度: {}", 
+    //             inputKeywords != null ? inputKeywords.getClass().getSimpleName() : "null", 
+    //             inputKeywords, 
+    //             inputKeywords != null ? inputKeywords.length() : 0);
+    //     
+    //     try {
+    //         Map<String, Object> params = Map.of(
+    //             "productName", productName != null ? productName : "",
+    //             "reasonForRecall", reasonForRecall != null ? reasonForRecall : "",
+    //             "recallingFirm", recallingFirm != null ? recallingFirm : "",
+    //             "dateFrom", dateFrom != null ? dateFrom : "",
+    //             "dateTo", dateTo != null ? dateTo : "",
+    //             "maxPages", maxPages,
+    //             "inputKeywords", inputKeywords != null ? inputKeywords : ""
+    //         );
+    //         
+    //         Map<String, Object> result = usCrawlerService.testDRecall(params);
+    //         return ResponseEntity.ok(result);
+    //     } catch (Exception e) {
+    //         log.error("D_recall参数化搜索失败", e);
+    //         return ResponseEntity.internalServerError().body(Map.of(
+    //             "success", false,
+    //             "message", "D_recall参数化搜索失败: " + e.getMessage(),
+    //             "error", e.getMessage()
+    //         ));
+    //     }
+    // }
 
     /**
      * US_recall_api参数化搜索爬虫
@@ -429,18 +429,18 @@ public class USCrawlerController {
 //    }
 //
     /**
-     * D_registration参数化搜索爬虫
+     * US_registration参数化搜索爬虫
      */
-    @PostMapping("/search/dregistration")
-    @Operation(summary = "D_registration专门搜索", description = "按设备名称、专有名称、制造商名称等参数搜索FDA注册数据")
-    public ResponseEntity<Map<String, Object>> searchDRegistration(
+    @PostMapping("/search/usregistration")
+    @Operation(summary = "US_registration专门搜索", description = "按设备名称、专有名称、制造商名称等参数搜索FDA注册数据")
+    public ResponseEntity<Map<String, Object>> searchUSRegistration(
             @Parameter(description = "设备名称（使用device_name搜索）") @RequestParam(required = false) String establishmentName,
             @Parameter(description = "专有名称（使用proprietary_name搜索）") @RequestParam(required = false) String proprietaryName,
             @Parameter(description = "制造商名称（使用manufacturer_name搜索）") @RequestParam(required = false) String ownerOperatorName,
             @Parameter(description = "最大爬取页数，0表示爬取所有数据") @RequestParam(required = false, defaultValue = "0") Integer maxPages,
             @Parameter(description = "输入关键词列表") @RequestParam(required = false) String inputKeywords) {
 
-        log.info("收到D_registration专门搜索请求 - 机构/贸易名称: {}, 专有名称: {}, 所有者/经营者名称: {}, 最大页数: {}, 关键词: {}",
+        log.info("收到US_registration专门搜索请求 - 机构/贸易名称: {}, 专有名称: {}, 所有者/经营者名称: {}, 最大页数: {}, 关键词: {}",
                 establishmentName, proprietaryName, ownerOperatorName, maxPages, inputKeywords);
 
         try {
@@ -452,13 +452,13 @@ public class USCrawlerController {
                 "inputKeywords", inputKeywords != null ? inputKeywords : ""
             );
 
-            Map<String, Object> result = usCrawlerService.testDRegistration(params);
+            Map<String, Object> result = usCrawlerService.testUSRegistration(params);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
-            log.error("D_registration参数化搜索失败", e);
+            log.error("US_registration参数化搜索失败", e);
             return ResponseEntity.internalServerError().body(Map.of(
                 "success", false,
-                "message", "D_registration参数化搜索失败: " + e.getMessage(),
+                "message", "US_registration参数化搜索失败: " + e.getMessage(),
                 "error", e.getMessage()
             ));
         }
@@ -644,11 +644,7 @@ public class USCrawlerController {
         
         Map<String, Object> config = switch (crawlerType.toLowerCase()) {
             case "d510k", "d_510k" -> Map.of(
-                "deviceName", "设备名称关键词",
-                "applicantName", "申请人名称",
-                "dateFrom", "开始日期(MM/DD/YYYY)",
-                "dateTo", "结束日期(MM/DD/YYYY)",
-                "maxPages", "最大爬取页数"
+                "error", "D_510K爬虫已禁用"
             );
             case "us510k", "us_510k" -> Map.of(
                 "deviceName", "设备名称关键词",
@@ -677,12 +673,7 @@ public class USCrawlerController {
                 "inputKeywords", "输入关键词列表"
             );
             case "drecall", "d_recall" -> Map.of(
-                "productName", "产品名称",
-                "reasonForRecall", "召回原因",
-                "recallingFirm", "召回公司",
-                "dateFrom", "开始日期(MM/DD/YYYY)",
-                "dateTo", "结束日期(MM/DD/YYYY)",
-                "maxPages", "最大爬取页数"
+                "error", "D_recall爬虫已禁用"
             );
             case "usrecall", "us_recall" -> Map.of(
                 "recallingFirm", "召回公司",
@@ -693,7 +684,7 @@ public class USCrawlerController {
                 "maxPages", "最大爬取页数",
                 "inputKeywords", "输入关键词列表"
             );
-            case "dregistration", "d_registration" -> Map.of(
+            case "usregistration", "us_registration" -> Map.of(
                 "establishmentName", "设备名称（使用device_name搜索）",
                 "proprietaryName", "专有名称（使用proprietary_name搜索）",
                 "ownerOperatorName", "制造商名称（使用manufacturer_name搜索）",
@@ -737,8 +728,11 @@ public class USCrawlerController {
             "message", "美国爬虫服务正常运行",
             "timestamp", System.currentTimeMillis(),
             "availableCrawlers", new String[]{
-                "d510k", "us510k", "devent", "usevent", "drecall", "usrecall", "dregistration", 
+                "us510k", "devent", "usevent", "usrecall", "usregistration", 
                 "unicrawl", "customs-case", "guidance"
+            },
+            "disabledCrawlers", new String[]{
+                "d510k", "drecall"
             }
         ));
     }

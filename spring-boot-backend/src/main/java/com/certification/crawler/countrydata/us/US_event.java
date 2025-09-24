@@ -30,7 +30,7 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-public class D_event {
+public class US_event {
 
     // -------------------------- 1. 初始化配置 --------------------------
     private static final String BASE_URL = "https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfmaude/results.cfm";

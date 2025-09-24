@@ -28,7 +28,6 @@ import java.util.Map;
 @Slf4j
 @Component
 public class D_510K {
-
     // -------------------------- 1. 初始化配置 --------------------------
     private static final String BASE_URL = "https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfpmn/pmn.cfm";
     private static final int MAX_PAGES = 10; // 最大爬取页数（0表示爬到最后一页）

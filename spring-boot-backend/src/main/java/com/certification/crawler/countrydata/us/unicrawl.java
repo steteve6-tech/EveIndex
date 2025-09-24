@@ -31,7 +31,7 @@ public class unicrawl {
     private D_510K d510kCrawler;
     
     @Autowired
-    private D_event dEventCrawler;
+    private US_event dEventCrawler;
     
     @Autowired
     private D_recall dRecallCrawler;

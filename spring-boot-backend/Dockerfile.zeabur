@@ -36,7 +36,7 @@ RUN addgroup -g 1001 -S spring && \
 WORKDIR /app
 
 # 从构建阶段复制JAR文件
-COPY --from=builder /app/target/certification-monitor-*.jar app.jar
+COPY --from=builder /app/target/*.jar app.jar
 
 # 创建日志目录
 RUN mkdir -p /app/logs && chown -R spring:spring /app

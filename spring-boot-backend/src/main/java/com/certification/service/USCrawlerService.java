@@ -1,7 +1,7 @@
 package com.certification.service;
 
 import com.certification.crawler.countrydata.us.D_510K;
-import com.certification.crawler.countrydata.us.D_event;
+import com.certification.crawler.countrydata.us.US_event;
 import com.certification.crawler.countrydata.us.D_recall;
 import com.certification.crawler.countrydata.us.US_registration;
 import com.certification.crawler.countrydata.us.US_510K;
@@ -57,7 +57,7 @@ public class USCrawlerService {
     }
 
     @Autowired
-    private D_event dEventCrawler;
+    private US_event dEventCrawler;
 
     @Autowired
     private D_recall dRecallCrawler;
@@ -543,12 +543,12 @@ public class USCrawlerService {
     }
 
     /**
-     * 执行D_registration爬虫测试
+     * 执行US_registration爬虫测试
      */
-    public Map<String, Object> testDRegistration(Map<String, Object> params) {
+    public Map<String, Object> testUSRegistration(Map<String, Object> params) {
         Map<String, Object> result = new HashMap<>();
         try {
-            log.info("开始执行D_registration爬虫测试，参数: {}", params);
+            log.info("开始执行US_registration爬虫测试，参数: {}", params);
 
             // 提取参数
             String establishmentName = (String) params.getOrDefault("establishmentName", "");
@@ -610,16 +610,16 @@ public class USCrawlerService {
             }
 
             result.put("success", true);
-            result.put("message", "D_registration爬虫测试成功，数据已保存到数据库");
+            result.put("message", "US_registration爬虫测试成功，数据已保存到数据库");
             result.put("databaseResult", crawlResult);
             result.put("savedToDatabase", true);
 
-            log.info("D_registration爬虫测试完成，数据库保存结果: {}", crawlResult);
+            log.info("US_registration爬虫测试完成，数据库保存结果: {}", crawlResult);
 
         } catch (Exception e) {
-            log.error("D_registration爬虫测试失败", e);
+            log.error("US_registration爬虫测试失败", e);
             result.put("success", false);
-            result.put("message", "D_registration爬虫测试失败: " + e.getMessage());
+            result.put("message", "US_registration爬虫测试失败: " + e.getMessage());
             result.put("error", e.getMessage());
         }
 
