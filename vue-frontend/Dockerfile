@@ -24,8 +24,8 @@ FROM nginx:alpine
 # 复制构建结果
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# 使用独立运行的 nginx 配置文件（不依赖后端服务）
-COPY nginx.standalone.conf /etc/nginx/conf.d/default.conf
+# 使用修复的 nginx 配置文件（直接使用后端地址）
+COPY nginx.fixed.conf /etc/nginx/conf.d/default.conf
 
 # 暴露端口
 EXPOSE 80
