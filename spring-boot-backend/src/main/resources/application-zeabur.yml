@@ -36,19 +36,19 @@ spring:
       filters: stat,wall,slf4j
       connection-properties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=5000
 
-  # Redis配置
-  data:
-    redis:
-      host: ${SPRING_DATA_REDIS_HOST:localhost}
-      port: ${SPRING_DATA_REDIS_PORT:6379}
-      database: 0
-      timeout: 2000ms
-      lettuce:
-        pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
-          max-wait: -1ms
+  # Redis配置 - 暂时禁用
+  # data:
+  #   redis:
+  #     host: ${SPRING_DATA_REDIS_HOST:localhost}
+  #     port: ${SPRING_DATA_REDIS_PORT:6379}
+  #     database: 0
+  #     timeout: 2000ms
+  #     lettuce:
+  #       pool:
+  #         max-active: 8
+  #         max-idle: 8
+  #         min-idle: 0
+  #         max-wait: -1ms
 
   # 邮件配置
   mail:
@@ -105,7 +105,7 @@ management:
     mail:
       enabled: false
     redis:
-      enabled: true
+      enabled: false
     db:
       enabled: true
 

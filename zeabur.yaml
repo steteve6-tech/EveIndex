@@ -15,8 +15,8 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:mysql://sjc1.clusters.zeabur.com:32188/zeabur?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&autoReconnect=true&failOverReadOnly=false&maxReconnects=3
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=lSA1WT05oPUMyb746xzQ8EcwBRY932aq
-      - SPRING_DATA_REDIS_HOST=${REDIS_HOST:localhost}
-      - SPRING_DATA_REDIS_PORT=${REDIS_PORT:6379}
+      # - SPRING_DATA_REDIS_HOST=${REDIS_HOST:localhost}
+      # - SPRING_DATA_REDIS_PORT=${REDIS_PORT:6379}
       - VOLCENGINE_ACCESS_KEY=${VOLCENGINE_ACCESS_KEY:}
       - VOLCENGINE_SECRET_KEY=${VOLCENGINE_SECRET_KEY:}
       - ARK_API_KEY=${ARK_API_KEY:}
