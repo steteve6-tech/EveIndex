@@ -24,20 +24,8 @@ FROM nginx:alpine
 # 复制构建结果
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# 创建简单的 nginx 配置
-RUN echo 'server {' > /etc/nginx/conf.d/default.conf && \
-    echo '    listen 80;' >> /etc/nginx/conf.d/default.conf && \
-    echo '    server_name _;' >> /etc/nginx/conf.d/default.conf && \
-    echo '    root /usr/share/nginx/html;' >> /etc/nginx/conf.d/default.conf && \
-    echo '    index index.html;' >> /etc/nginx/conf.d/default.conf && \
-    echo '    location / {' >> /etc/nginx/conf.d/default.conf && \
-    echo '        try_files $uri $uri/ /index.html;' >> /etc/nginx/conf.d/default.conf && \
-    echo '    }' >> /etc/nginx/conf.d/default.conf && \
-    echo '    location /health {' >> /etc/nginx/conf.d/default.conf && \
-    echo '        return 200 "OK";' >> /etc/nginx/conf.d/default.conf && \
-    echo '        add_header Content-Type text/plain;' >> /etc/nginx/conf.d/default.conf && \
-    echo '    }' >> /etc/nginx/conf.d/default.conf && \
-    echo '}' >> /etc/nginx/conf.d/default.conf
+# 创建简单的 nginx 配置文件
+COPY nginx.simple.conf /etc/nginx/conf.d/default.conf
 
 # 暴露端口
 EXPOSE 80
