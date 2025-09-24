@@ -24,11 +24,12 @@ FROM nginx:alpine
 # 复制构建结果
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# 使用修复的 nginx 配置文件（直接使用后端地址）
-COPY nginx.fixed.conf /etc/nginx/conf.d/default.conf
+# 复制启动脚本
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
 
 # 暴露端口
 EXPOSE 80
 
-# 启动 Nginx
-CMD ["nginx", "-g", "daemon off;"]
+# 启动脚本
+CMD ["/start.sh"]
