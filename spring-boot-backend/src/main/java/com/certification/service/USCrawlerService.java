@@ -8,8 +8,9 @@ import com.certification.crawler.countrydata.us.US_510K;
 import com.certification.crawler.countrydata.us.US_event_api;
 import com.certification.crawler.countrydata.us.US_recall_api;
 import com.certification.crawler.countrydata.us.unicrawl;
-// import com.certification.crawler.generalArchitecture.us.CustomsCaseCrawler; // 已删除
-// import com.certification.crawler.generalArchitecture.us.GuidanceCrawler; // 已删除
+import com.certification.crawler.countrydata.us.CustomsCaseCrawler;
+import com.certification.crawler.countrydata.us.GuidanceCrawler;
+import com.certification.entity.common.CustomsCase;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -68,11 +69,11 @@ public class USCrawlerService {
     @Autowired
     private unicrawl uniCrawler;
 
-    // @Autowired
-    // private CustomsCaseCrawler customsCaseCrawler; // 已删除
+    @Autowired
+    private CustomsCaseCrawler customsCaseCrawler;
 
-    // @Autowired
-    // private GuidanceCrawler guidanceCrawler; // 已删除
+    @Autowired
+    private GuidanceCrawler guidanceCrawler;
 
     /**
      * 执行D_510K爬虫测试
@@ -704,33 +705,34 @@ public class USCrawlerService {
             log.info("爬取参数 - HS编码: {}, 最大记录数: {}, 批次大小: {}, 开始日期: {}, 关键词数量: {}", 
                     hsCode, maxRecords, batchSize, startDate, inputKeywords != null ? inputKeywords.size() : 0);
             
-            // CustomsCaseCrawler已删除，返回模拟结果
-            log.info("CustomsCaseCrawler已删除，返回模拟结果");
-            
             if (inputKeywords != null && !inputKeywords.isEmpty()) {
-                log.info("模拟关键词列表爬取模式");
-                String crawlResult = "CustomsCaseCrawler已删除，无法执行关键词爬取";
+                log.info("使用关键词列表爬取模式");
+                // 使用第一个关键词作为搜索词
+                String searchTerm = inputKeywords.get(0);
+                List<CustomsCase> crawlResult = customsCaseCrawler.crawlAndSaveCustomsCases(searchTerm, maxRecords, batchSize);
                 
                 result.put("success", true);
-                result.put("message", "CustomsCaseCrawler已删除，返回模拟结果");
-                result.put("crawlResult", crawlResult);
+                result.put("message", "CustomsCaseCrawler关键词爬取成功");
+                result.put("crawlResult", "成功爬取 " + crawlResult.size() + " 条记录");
+                result.put("totalSaved", crawlResult.size());
                 result.put("keywordsProcessed", inputKeywords.size());
                 result.put("keywords", inputKeywords);
                 
-                log.info("CustomsCaseCrawler模拟关键词爬取完成，处理关键词数: {}", inputKeywords.size());
+                log.info("CustomsCaseCrawler关键词爬取完成，处理关键词数: {}, 保存记录数: {}", inputKeywords.size(), crawlResult.size());
             } else {
-                // 否则使用原有的HS编码爬取方法
-                log.info("模拟HS编码爬取模式");
-                var crawlResult = new java.util.ArrayList<>();
+                log.info("使用HS编码爬取模式");
+                List<CustomsCase> crawlResult = customsCaseCrawler.crawlAndSaveCustomsCases(hsCode, maxRecords, batchSize);
                 
                 result.put("success", true);
-                result.put("message", "CustomsCaseCrawler已删除，返回模拟结果");
-                result.put("totalSaved", 0);
-                result.put("totalSkipped", 0);
-                result.put("totalPages", 0);
-                result.put("data", crawlResult);
+                result.put("message", "CustomsCaseCrawler HS编码爬取成功");
+                result.put("crawlResult", "成功爬取 " + crawlResult.size() + " 条记录");
+                result.put("totalSaved", crawlResult.size());
+                result.put("hsCode", hsCode);
+                result.put("maxRecords", maxRecords);
+                result.put("batchSize", batchSize);
+                result.put("startDate", startDate);
                 
-                log.info("CustomsCaseCrawler模拟爬虫测试完成，保存记录数: 0");
+                log.info("CustomsCaseCrawler HS编码爬取完成，HS编码: {}, 最大记录数: {}, 保存记录数: {}", hsCode, maxRecords, crawlResult.size());
             }
             
         } catch (Exception e) {
@@ -753,16 +755,17 @@ public class USCrawlerService {
             
             Integer maxRecords = (Integer) params.getOrDefault("maxRecords", 10);
             
-            // GuidanceCrawler已删除，返回模拟结果
-            log.info("GuidanceCrawler已删除，返回模拟结果");
+            log.info("爬取参数 - 最大记录数: {}", maxRecords);
+            
+            // 调用GuidanceCrawler爬虫
+            guidanceCrawler.crawlWithLimit(maxRecords);
             
             result.put("success", true);
-            result.put("message", "GuidanceCrawler已删除，返回模拟结果");
-            result.put("totalSaved", 0);
-            result.put("totalSkipped", 0);
-            result.put("totalPages", 0);
+            result.put("message", "GuidanceCrawler爬虫测试成功");
+            result.put("crawlResult", "爬取完成，最大记录数: " + maxRecords);
+            result.put("maxRecords", maxRecords);
             
-            log.info("GuidanceCrawler模拟爬虫测试完成，目标数量: {}", maxRecords);
+            log.info("GuidanceCrawler爬虫测试完成，最大记录数: {}", maxRecords);
             
         } catch (Exception e) {
             log.error("GuidanceCrawler爬虫测试失败", e);
