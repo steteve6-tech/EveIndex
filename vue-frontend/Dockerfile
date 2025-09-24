@@ -40,8 +40,20 @@ FROM nginx:alpine
 # 安装 wget 用于健康检查
 RUN apk add --no-cache wget
 
-# 复制 Nginx 配置
+# 复制 Nginx 配置（根据环境变量选择配置）
 COPY nginx.zeabur.conf /etc/nginx/nginx.conf
+COPY nginx.standalone.conf /etc/nginx/nginx.standalone.conf
+
+# 创建启动脚本
+RUN echo '#!/bin/sh' > /docker-entrypoint.sh && \
+    echo 'if [ "$STANDALONE_MODE" = "true" ]; then' >> /docker-entrypoint.sh && \
+    echo '  echo "Starting in standalone mode (no backend)"' >> /docker-entrypoint.sh && \
+    echo '  cp /etc/nginx/nginx.standalone.conf /etc/nginx/nginx.conf' >> /docker-entrypoint.sh && \
+    echo 'else' >> /docker-entrypoint.sh && \
+    echo '  echo "Starting with backend proxy"' >> /docker-entrypoint.sh && \
+    echo 'fi' >> /docker-entrypoint.sh && \
+    echo 'exec nginx -g "daemon off;"' >> /docker-entrypoint.sh && \
+    chmod +x /docker-entrypoint.sh
 
 # 复制构建结果
 COPY --from=builder /app/dist /usr/share/nginx/html
