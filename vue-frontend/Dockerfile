@@ -39,6 +39,8 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 
 # 验证文件复制
 RUN ls -la /usr/share/nginx/html/ && echo "=== 文件复制成功 ==="
+RUN echo "=== 检查 index.html 内容 ===" && head -5 /usr/share/nginx/html/index.html || echo "index.html 不存在或为空"
+RUN echo "=== 检查 dist 目录结构 ===" && find /usr/share/nginx/html -type f -name "*.html" -o -name "*.js" -o -name "*.css" | head -10
 
 # 暴露端口
 EXPOSE 80
