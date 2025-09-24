@@ -8,7 +8,7 @@ echo ""
 
 # 配置
 FRONTEND_URL="https://eveindex.zeabur.app"
-BACKEND_URL="https://your-backend-domain.zeabur.app"  # 替换为实际的后端域名
+BACKEND_INTERNAL_URL="http://eveindex2-0.zeabur.internal:8080"
 
 echo "=== 1. 测试前端服务 ==="
 echo "前端 URL: $FRONTEND_URL"
@@ -16,8 +16,8 @@ curl -s -o /dev/null -w "HTTP状态码: %{http_code}\n" "$FRONTEND_URL"
 echo ""
 
 echo "=== 2. 测试后端健康检查 ==="
-echo "直接访问后端: $BACKEND_URL/api/health"
-curl -s -o /dev/null -w "HTTP状态码: %{http_code}\n" "$BACKEND_URL/api/health"
+echo "直接访问后端: $BACKEND_INTERNAL_URL/api/health"
+curl -s -o /dev/null -w "HTTP状态码: %{http_code}\n" "$BACKEND_INTERNAL_URL/api/health"
 echo ""
 
 echo "=== 3. 测试前端代理后端 ==="
