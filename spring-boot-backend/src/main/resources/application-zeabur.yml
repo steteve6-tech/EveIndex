@@ -15,26 +15,27 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
     
-    # Druid连接池配置 - 针对云环境优化
+    # Druid连接池配置 - 针对Zeabur云环境优化
     druid:
-      initial-size: 2
-      min-idle: 2
-      max-active: 10
-      max-wait: 60000
-      time-between-eviction-runs-millis: 60000
-      min-evictable-idle-time-millis: 300000
-      validation-query: SELECT 1 FROM DUAL
-      validation-query-timeout: 10
+      initial-size: 1          # 减少初始连接数
+      min-idle: 1              # 减少最小空闲连接
+      max-active: 5            # 减少最大连接数
+      max-wait: 30000          # 减少等待时间
+      time-between-eviction-runs-millis: 30000  # 更频繁检查
+      min-evictable-idle-time-millis: 180000    # 减少空闲时间
+      validation-query: SELECT 1
+      validation-query-timeout: 5
       test-while-idle: true
-      test-on-borrow: false
+      test-on-borrow: true     # 云环境建议开启
       test-on-return: false
       remove-abandoned: true
-      remove-abandoned-timeout: 300
+      remove-abandoned-timeout: 180
       log-abandoned: true
       pool-prepared-statements: true
       max-pool-prepared-statement-per-connection-size: 20
       filters: stat,wall,slf4j
-      connection-properties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=5000
+      # 连接超时优化
+      connection-properties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=3000;connectTimeout=10000;socketTimeout=30000
 
   # Redis配置 - 暂时禁用
   # data:

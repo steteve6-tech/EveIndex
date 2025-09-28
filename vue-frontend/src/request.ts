@@ -4,7 +4,7 @@ import { message } from 'ant-design-vue'
 // 创建axios实例
 const request = axios.create({
   baseURL: '/api', // 使用 /api 前缀，让 Vite 代理转发到后端
-  timeout: 60000, // 增加到60秒，特别是AI处理接口需要更长时间
+  timeout: 30000, // 减少到30秒，提高响应速度
   headers: {
     'Content-Type': 'application/json',
   },

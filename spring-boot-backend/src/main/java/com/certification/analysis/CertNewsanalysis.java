@@ -47,8 +47,11 @@ public class CertNewsanalysis {
     @Autowired
     private DailyCountryRiskStatsRepository dailyCountryRiskStatsRepository;
     
-    // 关键词文件路径
-    private static final String KEYWORDS_FILE_PATH = "src/main/java/com/certification/analysis/CertNewsKeywords.txt";
+    // 关键词文件路径 - 支持多种路径
+    private static final String[] KEYWORDS_FILE_PATHS = {
+        "CertNewsKeywords.txt",  // 运行环境路径
+        "src/main/java/com/certification/analysis/CertNewsKeywords.txt"  // 开发环境路径
+    };
     
     /**
      * 自动处理所有数据的相关状态
@@ -321,23 +324,29 @@ public class CertNewsanalysis {
      */
     public List<String> loadKeywordsFromFile() {
         List<String> keywords = new ArrayList<>();
-        try {
-            Path filePath = Paths.get(KEYWORDS_FILE_PATH);
-            if (Files.exists(filePath)) {
-                List<String> lines = Files.readAllLines(filePath, StandardCharsets.UTF_8);
-                for (String line : lines) {
-                    String trimmedLine = line.trim();
-                    if (!trimmedLine.isEmpty() && !trimmedLine.startsWith("#")) {
-                        keywords.add(trimmedLine);
+        
+        // 尝试多个路径
+        for (String filePath : KEYWORDS_FILE_PATHS) {
+            try {
+                Path path = Paths.get(filePath);
+                if (Files.exists(path)) {
+                    List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
+                    for (String line : lines) {
+                        String trimmedLine = line.trim();
+                        if (!trimmedLine.isEmpty() && !trimmedLine.startsWith("#")) {
+                            keywords.add(trimmedLine);
+                        }
                     }
+                    log.info("从文件加载了 {} 个关键词，文件路径: {}", keywords.size(), filePath);
+                    return keywords; // 找到文件就返回
                 }
-                log.info("从文件加载了 {} 个关键词", keywords.size());
-            } else {
-                log.warn("关键词文件不存在: {}", KEYWORDS_FILE_PATH);
+            } catch (Exception e) {
+                log.warn("尝试加载关键词文件失败: {}, 错误: {}", filePath, e.getMessage());
             }
-        } catch (Exception e) {
-            log.error("加载关键词文件失败: {}", e.getMessage(), e);
         }
+        
+        // 如果所有路径都失败，记录警告
+        log.warn("所有关键词文件路径都不存在: {}", Arrays.toString(KEYWORDS_FILE_PATHS));
         return keywords;
     }
     
@@ -346,7 +355,8 @@ public class CertNewsanalysis {
      */
     public boolean saveKeywordsToFile(List<String> keywords) {
         try {
-            Path filePath = Paths.get(KEYWORDS_FILE_PATH);
+            // 优先使用运行环境路径
+            Path filePath = Paths.get(KEYWORDS_FILE_PATHS[0]);
             
             // 确保目录存在
             Files.createDirectories(filePath.getParent());
@@ -364,7 +374,7 @@ public class CertNewsanalysis {
             }
             
             Files.write(filePath, content.toString().getBytes(StandardCharsets.UTF_8));
-            log.info("成功保存 {} 个关键词到文件: {}", keywords.size(), KEYWORDS_FILE_PATH);
+            log.info("成功保存 {} 个关键词到文件: {}", keywords.size(), filePath);
             return true;
             
         } catch (Exception e) {
@@ -383,7 +393,7 @@ public class CertNewsanalysis {
             result.put("success", true);
             result.put("keywords", keywords);
             result.put("count", keywords.size());
-            result.put("filePath", KEYWORDS_FILE_PATH);
+            result.put("filePath", KEYWORDS_FILE_PATHS[0]);
             result.put("timestamp", LocalDateTime.now().toString());
         } catch (Exception e) {
             log.error("获取文件关键词信息失败: {}", e.getMessage(), e);
@@ -411,7 +421,7 @@ public class CertNewsanalysis {
                 result.put("success", true);
                 result.put("message", "成功将本地关键词迁移到文件");
                 result.put("migratedCount", localKeywords.size());
-                result.put("filePath", KEYWORDS_FILE_PATH);
+                result.put("filePath", KEYWORDS_FILE_PATHS[0]);
                 log.info("成功迁移 {} 个关键词从localStorage到文件", localKeywords.size());
             } else {
                 result.put("success", false);
