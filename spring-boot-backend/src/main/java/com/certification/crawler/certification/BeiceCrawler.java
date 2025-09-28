@@ -13,7 +13,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -26,6 +25,7 @@ import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 北测新闻爬虫
@@ -33,7 +33,6 @@ import java.util.*;
  */
 @Slf4j
 @Component
-@Transactional
 public class BeiceCrawler implements BaseCrawler {
     
     @Autowired
@@ -58,6 +57,22 @@ public class BeiceCrawler implements BaseCrawler {
     // 分页相关常量
     private static final int ITEMS_PER_PAGE = 20; // 每页20项新闻
     private static final int MAX_PAGES = 125; // 最大爬取页数，可根据需要调整
+    
+    // 顺序ID生成器
+    private static final AtomicLong idCounter = new AtomicLong(System.currentTimeMillis());
+
+    /**
+     * 生成顺序ID（使用时间戳+随机数确保唯一性）
+     * @return 顺序ID字符串
+     */
+    private String generateSequentialId() {
+        long timestamp = System.currentTimeMillis();
+        long sequence = idCounter.getAndIncrement();
+        int random = (int) (Math.random() * 100); // 减少随机数范围
+        // 使用更短的ID格式：BEICE_时间戳后8位_序列号_随机数
+        String shortTimestamp = String.valueOf(timestamp).substring(5); // 取后8位
+        return String.format("BEICE_%s_%d_%02d", shortTimestamp, sequence % 10000, random);
+    }
     
     public BeiceCrawler() {
         // 初始化配置
@@ -1141,7 +1156,9 @@ public class BeiceCrawler implements BaseCrawler {
             List<CrawlerResult> allCrawlerResults = new ArrayList<>();
             int page = 1;
             int consecutiveFailures = 0;
-            final int MAX_CONSECUTIVE_FAILURES = 3;
+            final int MAX_CONSECUTIVE_FAILURES = 10; // 增加连续失败容忍度
+            int consecutiveDuplicatePages = 0;
+            final int MAX_CONSECUTIVE_DUPLICATE_PAGES = 10; // 增加连续重复页面容忍度
             // 根据请求数量计算需要的最大页数，但不超过安全限制
             int maxPagesNeeded = Math.min((count / ITEMS_PER_PAGE) + 10, 500);
             
@@ -1204,10 +1221,46 @@ public class BeiceCrawler implements BaseCrawler {
                         List<CertNewsData> pageDataList = convertToCrawlerData(pageResults);
                         
                         // 立即保存当前页数据
+                        log.info("开始保存第 {} 页数据到数据库，数量: {}", page, pageDataList.size());
                         List<CertNewsData> pageSavedList = crawlerDataService.safeSaveCrawlerDataList(pageDataList, 30);
                         allSavedDataList.addAll(pageSavedList);
                         
-                        log.info("第 {} 页数据保存完成，保存了 {} 条新数据", page, pageSavedList.size());
+                        // 强制刷新到数据库
+                        log.info("第 {} 页数据已保存，强制刷新到数据库", page);
+                        
+                        int newSavedCount = pageSavedList.size();
+                        int duplicateCountInPage = pageDataList.size() - newSavedCount;
+                        
+                        log.info("第 {} 页数据保存完成，新增: {} 条，重复: {} 条", page, newSavedCount, duplicateCountInPage);
+                        
+                        // 验证数据确实保存到数据库
+                        if (!pageSavedList.isEmpty()) {
+                            String firstId = pageSavedList.get(0).getId();
+                            try {
+                                CertNewsData verifyData = crawlerDataService.getById(firstId);
+                                if (verifyData != null) {
+                                    log.info("✅ 第 {} 页数据验证成功：ID {} 已存在于数据库中", page, firstId);
+                                } else {
+                                    log.error("❌ 第 {} 页数据验证失败：ID {} 未在数据库中找到", page, firstId);
+                                }
+                            } catch (Exception e) {
+                                log.error("❌ 第 {} 页数据验证异常：{}", page, e.getMessage());
+                            }
+                        }
+                        
+                        // 检查是否全部是重复数据
+                        if (newSavedCount == 0 && pageDataList.size() > 0) {
+                            consecutiveDuplicatePages++;
+                            log.warn("第 {} 页全部是重复数据，连续重复页面计数: {}", page, consecutiveDuplicatePages);
+                        } else {
+                            consecutiveDuplicatePages = 0; // 有新数据，重置计数
+                        }
+                        
+                        // 检查是否达到连续重复页面限制
+                        if (consecutiveDuplicatePages >= MAX_CONSECUTIVE_DUPLICATE_PAGES) {
+                            log.warn("已达到最大连续重复页面限制 ({})，停止爬取。", MAX_CONSECUTIVE_DUPLICATE_PAGES);
+                            break;
+                        }
                         
                         // 记录当前页的数据保存日志
                         for (CertNewsData data : pageSavedList) {
@@ -1229,7 +1282,8 @@ public class BeiceCrawler implements BaseCrawler {
                 }
             }
             
-            log.info("北测新闻爬虫完成，共爬取 {} 条数据，保存 {} 条数据", allCrawlerResults.size(), allSavedDataList.size());
+            log.info("北测新闻爬虫完成，共爬取 {} 条数据，保存 {} 条数据，连续重复页面: {}", 
+                allCrawlerResults.size(), allSavedDataList.size(), consecutiveDuplicatePages);
             
             // 使用已保存的数据列表进行统计
             List<CertNewsData> savedDataList = allSavedDataList;
@@ -1248,12 +1302,8 @@ public class BeiceCrawler implements BaseCrawler {
             long executionTime = System.currentTimeMillis() - startTime;
             
             // 记录成功日志
-            log.info(
-                "北测爬虫执行完成",
-                String.format("北测爬虫执行完成，爬取 %d 条数据，新增 %d 条，耗时 %d ms",
-                    allCrawlerResults.size(), newDataCount, executionTime),
-                "BeiceCrawler"
-            );
+            log.info("北测爬虫执行完成，爬取 {} 条数据，新增 {} 条，总页数: {}，连续重复页面: {}，耗时 {} ms",
+                allCrawlerResults.size(), newDataCount, page - 1, consecutiveDuplicatePages, executionTime);
             
             // 构建返回结果
             result.put("success", true);
@@ -1265,6 +1315,8 @@ public class BeiceCrawler implements BaseCrawler {
             result.put("newDataCount", newDataCount);
             result.put("totalDataCount", afterCount);
             result.put("statusCounts", statusCounts);
+            result.put("totalPages", page - 1);
+            result.put("consecutiveDuplicatePages", consecutiveDuplicatePages);
             result.put("executionTime", executionTime);
             result.put("timestamp", LocalDateTime.now().toString());
             result.put("message", "北测爬虫执行成功");
@@ -1300,14 +1352,32 @@ public class BeiceCrawler implements BaseCrawler {
         for (CrawlerResult result : crawlerResults) {
             CertNewsData certNewsData = new CertNewsData();
             // 设置ID为随机UUID
-            certNewsData.setId(UUID.randomUUID().toString());
+            certNewsData.setId(generateSequentialId());
             
             // 设置基本信息
             certNewsData.setSourceName(result.getSource());
             certNewsData.setTitle(result.getTitle());
             certNewsData.setUrl(result.getUrl());
-            certNewsData.setSummary(result.getContent());
-            certNewsData.setContent(result.getContent());
+            // 设置内容
+            String content = result.getContent();
+            certNewsData.setContent(content);
+            
+        // 生成摘要（取内容的前200个字符，避免过长）
+        if (content != null && !content.trim().isEmpty()) {
+            String summary = content.trim();
+            if (summary.length() > 200) {
+                // 确保在字符边界截断，避免截断UTF-8字符
+                summary = summary.substring(0, 200);
+                // 找到最后一个完整的字符边界
+                while (summary.length() > 0 && !Character.isLetterOrDigit(summary.charAt(summary.length() - 1))) {
+                    summary = summary.substring(0, summary.length() - 1);
+                }
+                summary = summary + "...";
+            }
+            certNewsData.setSummary(summary);
+        } else {
+            certNewsData.setSummary("无摘要内容");
+        }
             
             // 统一日期格式
             String rawDate = result.getDate();

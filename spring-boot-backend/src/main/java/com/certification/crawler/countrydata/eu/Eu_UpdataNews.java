@@ -1,10 +1,17 @@
 package com.certification.crawler.countrydata.eu;
 
 import com.certification.crawler.common.CsvExporter;
+import com.certification.entity.common.GuidanceDocument;
+import com.certification.entity.common.CertNewsData.RiskLevel;
+import com.certification.repository.common.GuidanceDocumentRepository;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.io.File;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -13,13 +20,22 @@ import java.util.*;
 /**
  * 欧盟医疗设备最新更新新闻爬虫
  * 爬取 https://health.ec.europa.eu/medical-devices-topics-interest/latest-updates_en 页面内容
+ * 支持批次保存到数据库，连续3个批次完全重复则停止爬取
  */
+@Component
 public class Eu_UpdataNews {
     
     private static final String BASE_URL = "https://health.ec.europa.eu/medical-devices-topics-interest/latest-updates_en";
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
     
+    // 批次大小和重复检测配置
+    private static final int BATCH_SIZE = 20;
+    private static final int MAX_CONSECUTIVE_DUPLICATE_BATCHES = 3;
+    
     private final CsvExporter csvExporter;
+    
+    @Autowired
+    private GuidanceDocumentRepository guidanceDocumentRepository;
     
     public Eu_UpdataNews() {
         this.csvExporter = new CsvExporter();
@@ -295,6 +311,266 @@ public class Eu_UpdataNews {
         }
         
         return allNews;
+    }
+    
+    /**
+     * 爬取并保存到数据库（支持批次保存和重复检测）
+     * @param maxPages 最大爬取页数
+     * @return 保存到数据库的记录数量
+     */
+    @Transactional
+    public int crawlAndSaveToDatabase(int maxPages) {
+        System.out.println("🚀 开始爬取EU医疗设备新闻并保存到数据库...");
+        System.out.println("📊 批次大小: " + BATCH_SIZE + "，最大连续重复批次: " + MAX_CONSECUTIVE_DUPLICATE_BATCHES);
+        
+        int totalSaved = 0;
+        int consecutiveDuplicateBatches = 0;
+        List<Map<String, String>> currentBatch = new ArrayList<>();
+        
+        try {
+            for (int page = 0; page < maxPages; page++) {
+                try {
+                    long pageStartTime = System.currentTimeMillis();
+                    
+                    // 构建分页URL
+                    String pageUrl = buildPageUrl(page);
+                    System.out.println("📄 正在爬取第" + (page + 1) + "页: " + pageUrl);
+                    
+                    // 使用Jsoup获取页面内容
+                    Document doc = Jsoup.connect(pageUrl)
+                            .userAgent(USER_AGENT)
+                            .timeout(30000)
+                            .get();
+                    
+                    long pageEndTime = System.currentTimeMillis();
+                    System.out.println("⏱️ 第" + (page + 1) + "页页面加载完成，耗时: " + (pageEndTime - pageStartTime) + " 毫秒");
+                    
+                    // 解析新闻内容
+                    List<Map<String, String>> pageNews = parseNewsContent(doc);
+                    if (pageNews.isEmpty()) {
+                        System.out.println("⚠️ 第" + (page + 1) + "页没有找到新闻数据，停止爬取");
+                        break;
+                    }
+                    
+                    // 添加到当前批次
+                    currentBatch.addAll(pageNews);
+                    System.out.println("📝 第" + (page + 1) + "页解析完成，获取到 " + pageNews.size() + " 条新闻");
+                    
+                    // 检查是否需要保存批次
+                    if (currentBatch.size() >= BATCH_SIZE) {
+                        int savedInBatch = saveBatchToDatabase(currentBatch);
+                        totalSaved += savedInBatch;
+                        
+                        if (savedInBatch == 0) {
+                            consecutiveDuplicateBatches++;
+                            System.out.println("🔄 批次完全重复，连续重复批次数: " + consecutiveDuplicateBatches);
+                            
+                            if (consecutiveDuplicateBatches >= MAX_CONSECUTIVE_DUPLICATE_BATCHES) {
+                                System.out.println("🛑 连续 " + MAX_CONSECUTIVE_DUPLICATE_BATCHES + " 个批次完全重复，停止爬取");
+                                break;
+                            }
+                        } else {
+                            consecutiveDuplicateBatches = 0; // 重置计数器
+                            System.out.println("✅ 批次保存成功，保存了 " + savedInBatch + " 条新记录");
+                        }
+                        
+                        currentBatch.clear(); // 清空当前批次
+                    }
+                    
+                    // 添加延迟避免请求过快
+                    Thread.sleep(1000);
+                    
+                } catch (Exception e) {
+                    System.err.println("❌ 爬取第" + (page + 1) + "页时出错: " + e.getMessage());
+                    break;
+                }
+            }
+            
+            // 处理剩余的批次数据
+            if (!currentBatch.isEmpty()) {
+                int savedInBatch = saveBatchToDatabase(currentBatch);
+                totalSaved += savedInBatch;
+                System.out.println("✅ 最后批次保存完成，保存了 " + savedInBatch + " 条记录");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("❌ 爬取过程中发生错误: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        System.out.println("🎉 爬取完成！总共保存了 " + totalSaved + " 条新记录到数据库");
+        return totalSaved;
+    }
+    
+    /**
+     * 保存批次数据到数据库
+     * @param batchData 批次数据
+     * @return 实际保存的记录数量
+     */
+    @Transactional
+    private int saveBatchToDatabase(List<Map<String, String>> batchData) {
+        if (batchData == null || batchData.isEmpty()) {
+            return 0;
+        }
+        
+        int savedCount = 0;
+        List<GuidanceDocument> documentsToSave = new ArrayList<>();
+        
+        try {
+            for (Map<String, String> newsData : batchData) {
+                // 检查是否已存在（基于标题和发布日期）
+                String title = newsData.get("title");
+                String publishDate = newsData.get("publish_date");
+                
+                if (title == null || title.trim().isEmpty()) {
+                    continue; // 跳过无效数据
+                }
+                
+                // 检查数据库中是否已存在相同标题和发布日期的记录
+                boolean exists = checkIfDocumentExists(title, publishDate);
+                if (exists) {
+                    System.out.println("⏭️ 跳过重复记录: " + title);
+                    continue;
+                }
+                
+                // 创建GuidanceDocument实体
+                GuidanceDocument document = createGuidanceDocumentFromNews(newsData);
+                if (document != null) {
+                    documentsToSave.add(document);
+                    savedCount++;
+                }
+            }
+            
+            // 批量保存到数据库
+            if (!documentsToSave.isEmpty()) {
+                guidanceDocumentRepository.saveAll(documentsToSave);
+                System.out.println("💾 批次保存完成: " + savedCount + " 条新记录");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("❌ 保存批次数据时出错: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return savedCount;
+    }
+    
+    /**
+     * 检查文档是否已存在
+     * @param title 标题
+     * @param publishDate 发布日期
+     * @return 是否存在
+     */
+    private boolean checkIfDocumentExists(String title, String publishDate) {
+        try {
+            // 根据标题查找
+            List<GuidanceDocument> existingDocs = guidanceDocumentRepository.findByTitleContaining(title);
+            
+            if (existingDocs.isEmpty()) {
+                return false;
+            }
+            
+            // 如果提供了发布日期，进一步检查
+            if (publishDate != null && !publishDate.trim().isEmpty()) {
+                for (GuidanceDocument doc : existingDocs) {
+                    if (doc.getTitle().equals(title) && 
+                        doc.getPublicationDate() != null && 
+                        doc.getPublicationDate().toString().equals(publishDate)) {
+                        return true;
+                    }
+                }
+            } else {
+                // 只检查标题
+                for (GuidanceDocument doc : existingDocs) {
+                    if (doc.getTitle().equals(title)) {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        } catch (Exception e) {
+            System.err.println("❌ 检查文档是否存在时出错: " + e.getMessage());
+            return false; // 出错时假设不存在，继续保存
+        }
+    }
+    
+    /**
+     * 从新闻数据创建GuidanceDocument实体
+     * @param newsData 新闻数据
+     * @return GuidanceDocument实体
+     */
+    private GuidanceDocument createGuidanceDocumentFromNews(Map<String, String> newsData) {
+        try {
+            GuidanceDocument document = new GuidanceDocument();
+            
+            // 设置文档类型
+            document.setDocumentType("NEWS");
+            
+            // 核心字段映射
+            document.setTitle(getStringValue(newsData, "title"));
+            document.setPublicationDate(parseDate(getStringValue(newsData, "publish_date")));
+            document.setDocumentUrl(getStringValue(newsData, "detail_url"));
+            document.setSourceUrl("https://health.ec.europa.eu/medical-devices-topics-interest/latest-updates_en");
+            document.setDataSource("EU");
+            document.setJdCountry("EU");
+            
+            // EU新闻特有字段
+            document.setNewsType(getStringValue(newsData, "news_type"));
+            document.setDescription(getStringValue(newsData, "description"));
+            document.setReadTime(getStringValue(newsData, "read_time"));
+            document.setImageUrl(getStringValue(newsData, "image_url"));
+            document.setImageAlt(getStringValue(newsData, "image_alt"));
+            document.setArticleIndex(parseInteger(getStringValue(newsData, "article_index")));
+            
+            // 设置默认值
+            document.setRiskLevel(RiskLevel.MEDIUM); // 默认中等风险
+            document.setKeywords(""); // 默认为空
+            
+            // 设置爬取时间
+            document.setCrawlTime(LocalDateTime.now());
+            
+            return document;
+        } catch (Exception e) {
+            System.err.println("❌ 创建GuidanceDocument实体时出错: " + e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * 工具方法：安全获取字符串值
+     */
+    private String getStringValue(Map<String, String> map, String key) {
+        if (map == null || key == null) return null;
+        String value = map.get(key);
+        return (value != null && !value.trim().isEmpty()) ? value.trim() : null;
+    }
+    
+    /**
+     * 工具方法：解析日期
+     */
+    private java.time.LocalDate parseDate(String dateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty()) return null;
+        
+        String[] patterns = {"yyyy-MM-dd", "yyyyMMdd", "MM/dd/yyyy", "dd/MM/yyyy", "yyyy-MM-dd'T'HH:mm:ss"};
+        for (String pattern : patterns) {
+            try {
+                return java.time.LocalDate.parse(dateStr, DateTimeFormatter.ofPattern(pattern));
+            } catch (Exception ignore) {}
+        }
+        return null;
+    }
+    
+    /**
+     * 工具方法：解析整数
+     */
+    private Integer parseInteger(String str) {
+        if (str == null || str.trim().isEmpty()) return null;
+        try {
+            return Integer.parseInt(str.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
     
     /**

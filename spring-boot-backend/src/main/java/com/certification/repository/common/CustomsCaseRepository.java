@@ -152,4 +152,9 @@ public interface CustomsCaseRepository extends JpaRepository<CustomsCase, Long> 
     // 新增：按关键词搜索
     @Query("SELECT cc FROM CustomsCase cc WHERE cc.keywords LIKE %:keyword%")
     List<CustomsCase> findByKeywordsContaining(@Param("keyword") String keyword);
+    
+    /**
+     * 根据HS编码和裁定结果模糊查询（用于重复检测）
+     */
+    List<CustomsCase> findByHsCodeUsedContainingAndRulingResultContaining(String hsCode, String rulingResult);
 }

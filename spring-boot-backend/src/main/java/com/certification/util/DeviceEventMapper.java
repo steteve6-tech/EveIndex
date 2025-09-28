@@ -36,33 +36,14 @@ public class DeviceEventMapper {
 
         // 产品信息映射
         entity.setGenericName(getStringValue(euEventData, "product"));
-        entity.setProductNameSpecific(getStringValue(euEventData, "product_name_specific"));
-        entity.setProductDescription(getStringValue(euEventData, "product_description"));
-        entity.setModelNumber(getStringValue(euEventData, "product_model"));
         entity.setBrandName(getStringValue(euEventData, "brand"));
-        entity.setBrandsList(getStringValue(euEventData, "brands"));
 
         // 类别信息
-        entity.setProductCategory(getStringValue(euEventData, "category"));
-        entity.setProductSubcategory(getStringValue(euEventData, "subcategory"));
         entity.setDeviceClass(getStringValue(euEventData, "category")); // 使用category作为device_class
 
-        // 风险信息
-        entity.setRiskType(getStringValue(euEventData, "risk_type"));
-        entity.setRiskDescription(getStringValue(euEventData, "risk"));
-        entity.setRisksList(getStringValue(euEventData, "risks"));
 
-        // 地理位置信息
-        entity.setManufacturerCountry(getStringValue(euEventData, "country"));
-        entity.setNotifyingCountry(getStringValue(euEventData, "notifying_country"));
 
-        // 措施和描述
-        entity.setMeasuresDescription(getStringValue(euEventData, "measures"));
-        entity.setMdrTextDescription(getStringValue(euEventData, "description"));
 
-        // URL信息
-        entity.setDetailUrl(getStringValue(euEventData, "url"));
-        entity.setImageUrl(getStringValue(euEventData, "image_url"));
 
         // 计算风险等级
         entity.setRiskLevel(calculateRiskLevelFromEuData(euEventData));
@@ -85,65 +66,23 @@ public class DeviceEventMapper {
 
         // 核心标识字段
         entity.setReportNumber(fdaEventData.getReportNumber());
-        entity.setEventType(fdaEventData.getEventType());
         entity.setDateReceived(parseDate(fdaEventData.getDateReceived()));
         entity.setDateOfEvent(parseDate(fdaEventData.getDateOfEvent()));
-        entity.setDateReportToFda(parseDate(fdaEventData.getDateReportToFda()));
         entity.setDataSource("FDA");
         entity.setJdCountry("US");
 
-        // 报告类型和来源
-        entity.setTypeOfReport(joinList(fdaEventData.getTypeOfReport()));
-        entity.setSourceType(joinList(fdaEventData.getSourceType()));
 
-        // FDA特有字段
-        entity.setAdverseEventFlag(fdaEventData.getAdverseEventFlag());
-        entity.setReportToFda(fdaEventData.getReportToFda());
-        entity.setReportToManufacturer(fdaEventData.getReportToManufacturer());
-        entity.setMdrReportKey(fdaEventData.getMdrReportKey());
-        entity.setEventLocation(fdaEventData.getEventLocation());
-        entity.setEventKey(fdaEventData.getEventKey());
-        entity.setNumberDevicesInEvent(parseInteger(fdaEventData.getNumberDevicesInEvent()));
-        entity.setProductProblemFlag(fdaEventData.getProductProblemFlag());
-        entity.setProductProblemsList(joinList(fdaEventData.getProductProblems()));
-        entity.setRemedialActionList(joinList(fdaEventData.getRemedialAction()));
 
-        // 患者数量
-        entity.setPatientCount(parseInteger(fdaEventData.getNumberPatientsInEvent()));
 
         // 从设备信息中提取字段
         if (fdaEventData.getDevices() != null && !fdaEventData.getDevices().isEmpty()) {
             var device = fdaEventData.getDevices().get(0); // 取第一个设备
             entity.setBrandName(device.getDeviceName());
-            entity.setModelNumber(device.getModelNumber());
             entity.setGenericName(device.getGenericName());
             entity.setManufacturerName(device.getManufacturerName());
             entity.setDeviceClass(device.getDeviceClass());
         }
 
-        // 从MDR文本中提取描述和行动
-        if (fdaEventData.getMdrText() != null && !fdaEventData.getMdrText().isEmpty()) {
-            StringBuilder description = new StringBuilder();
-            StringBuilder action = new StringBuilder();
-            
-            for (Map<String, Object> textItem : fdaEventData.getMdrText()) {
-                if (textItem.containsKey("text_type_code") && textItem.containsKey("text")) {
-                    String textType = textItem.get("text_type_code").toString();
-                    String text = textItem.get("text").toString();
-                    
-                    if ("NARRATIVE_1".equals(textType) || "DESCRIPTION".equals(textType)) {
-                        if (description.length() > 0) description.append(" ");
-                        description.append(text);
-                    } else if ("ACTION".equals(textType) || "REMEDIAL_ACTION".equals(textType)) {
-                        if (action.length() > 0) action.append(" ");
-                        action.append(text);
-                    }
-                }
-            }
-            
-            entity.setMdrTextDescription(description.length() > 0 ? description.toString() : null);
-            entity.setMdrTextAction(action.length() > 0 ? action.toString() : null);
-        }
 
         // 计算风险等级
         entity.setRiskLevel(RiskLevelUtil.calculateRiskLevelByEventType(fdaEventData.getEventType()));

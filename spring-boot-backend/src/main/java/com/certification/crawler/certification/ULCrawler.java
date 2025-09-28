@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,6 +44,22 @@ public class ULCrawler implements BaseCrawler {
     private DateFormatService dateFormatService;
     
     private final CrawlerConfig config;
+    
+    // 顺序ID生成器
+    private static final AtomicLong idCounter = new AtomicLong(System.currentTimeMillis());
+
+    /**
+     * 生成顺序ID（使用时间戳+随机数确保唯一性）
+     * @return 顺序ID字符串
+     */
+    private String generateSequentialId() {
+        long timestamp = System.currentTimeMillis();
+        long sequence = idCounter.getAndIncrement();
+        int random = (int) (Math.random() * 100); // 减少随机数范围
+        // 使用更短的ID格式：UL_时间戳后8位_序列号_随机数
+        String shortTimestamp = String.valueOf(timestamp).substring(5); // 取后8位
+        return String.format("UL_%s_%d_%02d", shortTimestamp, sequence % 10000, random);
+    }
     
          // 日期正则表达式 - 支持多种格式
     private static final Pattern DATE_PATTERN = Pattern.compile("\\d{4} 年 \\d{1,2} 月 \\d{1,2} 日");
@@ -157,6 +174,7 @@ public class ULCrawler implements BaseCrawler {
             
             // 创建CrawlerData对象并添加到列表
             CertNewsData certNewsData = new CertNewsData()
+                .setId(generateSequentialId())
                 .setSourceName("UL Solutions")
                 .setTitle(title)
                 .setUrl(link)
@@ -272,6 +290,7 @@ public class ULCrawler implements BaseCrawler {
             
             // 创建CrawlerData对象并添加到列表
             CertNewsData certNewsData = new CertNewsData()
+                .setId(generateSequentialId())
                 .setSourceName("UL Solutions")
                 .setTitle(title)
                 .setUrl(link)
@@ -1325,14 +1344,33 @@ public class ULCrawler implements BaseCrawler {
         List<CertNewsData> certNewsDataList = new ArrayList<>();
         
         for (CrawlerResult result : crawlerResults) {
+            // 生成摘要（取内容的前200个字符，避免过长）
+            String content = result.getContent();
+            String summary;
+            if (content != null && !content.trim().isEmpty()) {
+                summary = content.trim();
+                if (summary.length() > 200) {
+                    // 确保在字符边界截断，避免截断UTF-8字符
+                    summary = summary.substring(0, 200);
+                    // 找到最后一个完整的字符边界
+                    while (summary.length() > 0 && !Character.isLetterOrDigit(summary.charAt(summary.length() - 1))) {
+                        summary = summary.substring(0, summary.length() - 1);
+                    }
+                    summary = summary + "...";
+                }
+            } else {
+                summary = "无摘要内容";
+            }
+            
             CertNewsData certNewsData = new CertNewsData()
+                .setId(generateSequentialId())
                 .setSourceName("UL Solutions")
                 .setTitle(result.getTitle())
                 .setUrl(result.getUrl())
-                .setSummary(result.getContent()) // 使用content作为summary
+                .setSummary(summary)
                 .setCountry(result.getCountry())
                 .setType(result.getType())
-                .setContent(result.getContent())
+                .setContent(content)
                 .setCrawlTime(LocalDateTime.now())
                 .setStatus(CertNewsData.DataStatus.NEW)
                 .setIsProcessed(false)

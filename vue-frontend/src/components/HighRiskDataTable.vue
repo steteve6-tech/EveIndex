@@ -196,39 +196,75 @@
         </a-descriptions-item>
         
         <!-- 显示其他字段 -->
-        <a-descriptions-item 
-          v-for="(value, key) in filteredRecord" 
-          :key="key" 
-          :label="getColumnLabel(key)"
-          :span="isWideField(key) ? 2 : 1"
-        >
-          <template v-if="key === 'riskLevel'">
-            <a-tag :color="getRiskLevelColor(value)">
-              {{ getRiskLevelLabel(value) }}
-            </a-tag>
-          </template>
-          <template v-else-if="key === 'keywords' && value">
-            <div v-if="typeof value === 'string'">
-              <a-tag v-for="keyword in parseKeywords(value)" :key="keyword" color="blue" style="margin: 2px;">
-                {{ keyword }}
+        <template v-for="(value, key) in filteredRecord" :key="key">
+          <!-- 宽字段单独占一行 -->
+          <a-descriptions-item 
+            v-if="isWideField(key)"
+            :label="getColumnLabel(key)"
+            :span="2"
+          >
+            <template v-if="key === 'riskLevel'">
+              <a-tag :color="getRiskLevelColor(value)">
+                {{ getRiskLevelLabel(value) }}
               </a-tag>
-            </div>
-            <div v-else>
-              {{ value }}
-            </div>
-          </template>
-          <template v-else-if="isDateField(key) && value">
-            {{ formatDate(value) }}
-          </template>
-          <template v-else-if="isUrlField(key) && value">
-            <a :href="value" target="_blank" rel="noopener noreferrer">
-              {{ value }}
-            </a>
-          </template>
-          <template v-else>
-            {{ formatFieldValue(value) }}
-          </template>
-        </a-descriptions-item>
+            </template>
+            <template v-else-if="key === 'keywords' && value">
+              <div v-if="typeof value === 'string'">
+                <a-tag v-for="keyword in parseKeywords(value)" :key="keyword" color="blue" style="margin: 2px;">
+                  {{ keyword }}
+                </a-tag>
+              </div>
+              <div v-else>
+                {{ value }}
+              </div>
+            </template>
+            <template v-else-if="isDateField(key) && value">
+              {{ formatDate(value) }}
+            </template>
+            <template v-else-if="isUrlField(key) && value">
+              <a :href="value" target="_blank" rel="noopener noreferrer">
+                {{ value }}
+              </a>
+            </template>
+            <template v-else>
+              {{ formatFieldValue(value) }}
+            </template>
+          </a-descriptions-item>
+          
+          <!-- 普通字段占一列 -->
+          <a-descriptions-item 
+            v-else
+            :label="getColumnLabel(key)"
+            :span="1"
+          >
+            <template v-if="key === 'riskLevel'">
+              <a-tag :color="getRiskLevelColor(value)">
+                {{ getRiskLevelLabel(value) }}
+              </a-tag>
+            </template>
+            <template v-else-if="key === 'keywords' && value">
+              <div v-if="typeof value === 'string'">
+                <a-tag v-for="keyword in parseKeywords(value)" :key="keyword" color="blue" style="margin: 2px;">
+                  {{ keyword }}
+                </a-tag>
+              </div>
+              <div v-else>
+                {{ value }}
+              </div>
+            </template>
+            <template v-else-if="isDateField(key) && value">
+              {{ formatDate(value) }}
+            </template>
+            <template v-else-if="isUrlField(key) && value">
+              <a :href="value" target="_blank" rel="noopener noreferrer">
+                {{ value }}
+              </a>
+            </template>
+            <template v-else>
+              {{ formatFieldValue(value) }}
+            </template>
+          </a-descriptions-item>
+        </template>
       </a-descriptions>
     </a-modal>
 

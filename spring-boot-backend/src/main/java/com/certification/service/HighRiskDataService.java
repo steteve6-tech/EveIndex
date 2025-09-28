@@ -431,10 +431,7 @@ public class HighRiskDataService {
         map.put("id", device.getId());
         map.put("deviceName", device.getDeviceName()); // 设备名称
         map.put("applicant", device.getApplicant()); // 申请人
-        map.put("decisionDate", device.getDecisionDate()); // 决定日期
         map.put("deviceClass", device.getDeviceClass()); // 设备类别
-        map.put("productCode", device.getProductCode()); // 产品代码
-        map.put("regulationNumber", device.getRegulationNumber()); // 法规编号
         map.put("riskLevel", device.getRiskLevel());
         map.put("dataType", "Device510K");
         return map;
@@ -459,9 +456,7 @@ public class HighRiskDataService {
         map.put("manufacturerName", event.getManufacturerName()); // 制造商
         map.put("dateReceived", event.getDateReceived()); // 接收日期
         map.put("genericName", event.getGenericName()); // 通用名称
-        map.put("eventType", event.getEventType()); // 事件类型
         map.put("dateOfEvent", event.getDateOfEvent()); // 事件日期
-        map.put("mdrTextDescription", event.getMdrTextDescription()); // 事件描述
         map.put("riskLevel", event.getRiskLevel());
         map.put("dataType", "DeviceEventReport");
         return map;
@@ -475,7 +470,6 @@ public class HighRiskDataService {
         map.put("registrationId", registration.getRegistrationNumber()); // 注册号（主要标识符）
         map.put("deviceClass", registration.getDeviceClass()); // 设备类别
         map.put("proprietaryName", registration.getProprietaryName()); // 专有名称
-        map.put("riskClass", registration.getRiskClass()); // 风险等级
         map.put("statusCode", registration.getStatusCode()); // 状态码
         map.put("createdDate", registration.getCreatedDate()); // 创建日期
         map.put("riskLevel", registration.getRiskLevel());

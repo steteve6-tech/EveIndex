@@ -302,9 +302,9 @@
                               <SaveOutlined/>
                               保存关键词
                             </a-button>
-                            <a-button @click="resetUnifiedConfig">
-                              重置配置
-                            </a-button>
+<!--                            <a-button @click="resetUnifiedConfig">-->
+<!--                              重置配置-->
+<!--                            </a-button>-->
         <a-button type="warning" @click="resetAllDataToMediumRisk" :loading="resettingRisk">
           <ReloadOutlined/>
           重置
@@ -1280,14 +1280,24 @@
       <div v-if="selectedRecord" class="detail-content">
         <a-descriptions :column="2" bordered size="small">
           <template v-for="(value, key) in selectedRecord" :key="key">
+            <!-- 长字段单独占一行 -->
             <a-descriptions-item 
+              v-if="isLongField(key)"
               :label="formatFieldLabel(key)" 
-              :span="isLongField(key) ? 2 : 1"
+              :span="2"
             >
-              <div v-if="isLongField(key)" class="long-field-content">
+              <div class="long-field-content">
                 {{ formatFieldValue(key, value) }}
               </div>
-              <div v-else>
+            </a-descriptions-item>
+            
+            <!-- 普通字段占一列 -->
+            <a-descriptions-item 
+              v-else
+              :label="formatFieldLabel(key)" 
+              :span="1"
+            >
+              <div>
                 {{ formatFieldValue(key, value) }}
               </div>
             </a-descriptions-item>
@@ -1590,7 +1600,7 @@ const registrationColumns = [
     }
   },
   {title: '匹配关键词', key: 'matchedKeywords', width: 200},
-  {title: '匹配字段', key: 'matchedFields', width: 150},
+  // {title: '匹配字段', key: 'matchedFields', width: 150},
   {title: '操作', key: 'action', width: 100}
 ]
 
@@ -1608,7 +1618,7 @@ const customsColumns = [
   {title: 'HS编码', dataIndex: 'hsCodeUsed', key: 'hsCodeUsed'},
   {title: '处理日期', dataIndex: 'caseDate', key: 'caseDate'},
   {title: '匹配关键词', key: 'matchedKeywords', width: 200},
-  {title: '匹配字段', key: 'matchedFields', width: 150},
+  // {title: '匹配字段', key: 'matchedFields', width: 150},
   {title: '操作', key: 'action', width: 100}
 ]
 
@@ -1664,14 +1674,14 @@ const analysisDevice510KColumns = [
     }
     return '-'
   }},
-  {title: '匹配字段', key: 'matchedFields', width: 150, customRender: ({ record }: any) => {
-    if (record.matchedFields && Array.isArray(record.matchedFields)) {
-      return record.matchedFields.map((field: string) => 
-        h('a-tag', { color: 'green', style: 'margin: 2px;' }, field)
-      )
-    }
-    return '-'
-  }},
+  // {title: '匹配字段', key: 'matchedFields', width: 150, customRender: ({ record }: any) => {
+  //   if (record.matchedFields && Array.isArray(record.matchedFields)) {
+  //     return record.matchedFields.map((field: string) =>
+  //       h('a-tag', { color: 'green', style: 'margin: 2px;' }, field)
+  //     )
+  //   }
+  //   return '-'
+  // }},
   {title: '风险等级', key: 'riskLevel', width: 100, customRender: ({ record }: any) => {
     const riskLevel = record.riskLevel
     let color = 'default'
@@ -1703,14 +1713,14 @@ const analysisEventColumns = [
     }
     return '-'
   }},
-  {title: '匹配字段', key: 'matchedFields', width: 150, customRender: ({ record }: any) => {
-    if (record.matchedFields && Array.isArray(record.matchedFields)) {
-      return record.matchedFields.map((field: string) => 
-        h('a-tag', { color: 'green', style: 'margin: 2px;' }, field)
-      )
-    }
-    return '-'
-  }},
+  // {title: '匹配字段', key: 'matchedFields', width: 150, customRender: ({ record }: any) => {
+  //   if (record.matchedFields && Array.isArray(record.matchedFields)) {
+  //     return record.matchedFields.map((field: string) =>
+  //       h('a-tag', { color: 'green', style: 'margin: 2px;' }, field)
+  //     )
+  //   }
+  //   return '-'
+  // }},
   {title: '风险等级', key: 'riskLevel', width: 100, customRender: ({ record }: any) => {
     const riskLevel = record.riskLevel
     let color = 'default'
@@ -1775,14 +1785,14 @@ const analysisRegistrationColumns = [
     }
     return '-'
   }},
-  {title: '匹配字段', key: 'matchedFields', width: 150, customRender: ({ record }: any) => {
-    if (record.matchedFields && Array.isArray(record.matchedFields)) {
-      return record.matchedFields.map((field: string) => 
-        h('a-tag', { color: 'green', style: 'margin: 2px;' }, field)
-      )
-    }
-    return '-'
-  }},
+  // {title: '匹配字段', key: 'matchedFields', width: 150, customRender: ({ record }: any) => {
+  //   if (record.matchedFields && Array.isArray(record.matchedFields)) {
+  //     return record.matchedFields.map((field: string) =>
+  //       h('a-tag', { color: 'green', style: 'margin: 2px;' }, field)
+  //     )
+  //   }
+  //   return '-'
+  // }},
   {title: '风险等级', key: 'riskLevel', width: 100, customRender: ({ record }: any) => {
     const riskLevel = record.riskLevel
     let color = 'default'
@@ -1814,14 +1824,14 @@ const analysisGuidanceColumns = [
     }
     return '-'
   }},
-  {title: '匹配字段', key: 'matchedFields', width: 150, customRender: ({ record }: any) => {
-    if (record.matchedFields && Array.isArray(record.matchedFields)) {
-      return record.matchedFields.map((field: string) => 
-        h('a-tag', { color: 'green', style: 'margin: 2px;' }, field)
-      )
-    }
-    return '-'
-  }},
+  // {title: '匹配字段', key: 'matchedFields', width: 150, customRender: ({ record }: any) => {
+  //   if (record.matchedFields && Array.isArray(record.matchedFields)) {
+  //     return record.matchedFields.map((field: string) =>
+  //       h('a-tag', { color: 'green', style: 'margin: 2px;' }, field)
+  //     )
+  //   }
+  //   return '-'
+  // }},
   {title: '风险等级', key: 'riskLevel', width: 100, customRender: ({ record }: any) => {
     const riskLevel = record.riskLevel
     let color = 'default'
@@ -1854,14 +1864,14 @@ const analysisCustomsColumns = [
     }
     return '-'
   }},
-  {title: '匹配字段', key: 'matchedFields', width: 150, customRender: ({ record }: any) => {
-    if (record.matchedFields && Array.isArray(record.matchedFields)) {
-      return record.matchedFields.map((field: string) => 
-        h('a-tag', { color: 'green', style: 'margin: 2px;' }, field)
-      )
-    }
-    return '-'
-  }},
+  // {title: '匹配字段', key: 'matchedFields', width: 150, customRender: ({ record }: any) => {
+  //   if (record.matchedFields && Array.isArray(record.matchedFields)) {
+  //     return record.matchedFields.map((field: string) =>
+  //       h('a-tag', { color: 'green', style: 'margin: 2px;' }, field)
+  //     )
+  //   }
+  //   return '-'
+  // }},
   {title: '风险等级', key: 'riskLevel', width: 100, customRender: ({ record }: any) => {
     const riskLevel = record.riskLevel
     let color = 'default'
@@ -3058,53 +3068,108 @@ const saveUnifiedResultsToDatabase = async () => {
 
   try {
     savingToDatabase.value = true
-    message.info('开始保存统一搜索结果到数据库...')
+    message.info('开始批量保存统一搜索结果到数据库...')
 
     let totalSaved = 0
     let totalErrors = 0
     const errorDetails: string[] = []
 
-    // 遍历所有实体类型的结果
+    // 按实体类型分组数据，准备批量更新
+    const groupedUpdates = new Map()
+    
     for (const result of unifiedResults.value) {
       if (result.data && result.data.length > 0) {
-        console.log(`开始保存实体类型 ${result.entityType} 的数据...`)
-
-        for (const item of result.data) {
+        const entityType = result.entityType
+        const ids = result.data.map(item => item.id)
+        
+        // 获取风险等级和关键词（假设同一类型的数据使用相同的风险等级和关键词）
+        const firstItem = result.data[0]
+        let keywords = ''
+        
+        // 处理关键词格式
+        if (firstItem.matchedKeywords && Array.isArray(firstItem.matchedKeywords)) {
+          keywords = JSON.stringify(firstItem.matchedKeywords)
+        } else if (firstItem.keywords && Array.isArray(firstItem.keywords)) {
+          keywords = JSON.stringify(firstItem.keywords)
+        } else if (firstItem.keywords && typeof firstItem.keywords === 'string') {
           try {
-            // 根据实体类型调用不同的更新API
-            const success = await updateEntityRiskLevelAndKeywords(result.entityType, item)
-            if (success) {
-              totalSaved++
-              console.log(`成功保存数据项 ${item.id}`)
-            } else {
-              totalErrors++
-              errorDetails.push(`${result.entityType} ID:${item.id}`)
-            }
-          } catch (error) {
-            console.error(`保存数据项 ${item.id} 失败:`, error)
-            totalErrors++
-            errorDetails.push(`${result.entityType} ID:${item.id} - ${error.message || '未知错误'}`)
+            JSON.parse(firstItem.keywords)
+            keywords = firstItem.keywords
+          } catch (e) {
+            keywords = JSON.stringify([firstItem.keywords])
           }
+        } else {
+          keywords = JSON.stringify([])
         }
+        
+        const riskLevel = firstItem.riskLevel || unifiedConfig.saveRiskLevel
+        
+        // 按实体类型和参数分组
+        const key = `${entityType}_${riskLevel}_${keywords}`
+        if (!groupedUpdates.has(key)) {
+          groupedUpdates.set(key, {
+            entityType,
+            riskLevel,
+            keywords,
+            ids: []
+          })
+        }
+        groupedUpdates.get(key).ids.push(...ids)
       }
     }
 
+    console.log(`准备批量更新 ${groupedUpdates.size} 个分组，涉及 ${Array.from(groupedUpdates.values()).reduce((sum, group) => sum + group.ids.length, 0)} 条记录`)
+
+    // 执行批量更新
+    for (const [key, group] of groupedUpdates) {
+      try {
+        console.log(`开始批量更新 ${group.entityType}，数量: ${group.ids.length}，风险等级: ${group.riskLevel}`)
+        
+        const response = await batchUpdateRiskLevelAndKeywords(
+          { entityType: group.entityType },
+          {
+            ids: group.ids,
+            riskLevel: group.riskLevel,
+            keywords: group.keywords
+          }
+        )
+        
+        // 由于响应拦截器已经返回了response.data，所以response就是后端返回的数据
+        const responseData = response as any
+        console.log(`批量更新 ${group.entityType} 响应数据:`, responseData)
+        
+        if (responseData && responseData.success) {
+          const updatedCount = responseData.totalUpdated || group.ids.length
+          totalSaved += updatedCount
+          console.log(`成功批量更新 ${group.entityType}: ${updatedCount} 条记录`)
+        } else {
+          totalErrors += group.ids.length
+          errorDetails.push(`${group.entityType}: ${group.ids.length} 条记录更新失败`)
+          console.error(`批量更新 ${group.entityType} 失败:`, responseData?.message || '未知错误')
+          console.error(`响应数据结构:`, {
+            responseData,
+            success: responseData?.success,
+            message: responseData?.message,
+            totalUpdated: responseData?.totalUpdated
+          })
+        }
+      } catch (error) {
+        totalErrors += group.ids.length
+        errorDetails.push(`${group.entityType}: ${group.ids.length} 条记录更新失败 - ${error.message || '未知错误'}`)
+        console.error(`批量更新 ${group.entityType} 失败:`, error)
+      }
+    }
+
+    // 显示结果
     if (totalErrors === 0) {
-      message.success(`成功保存 ${totalSaved} 条记录到数据库`)
+      message.success(`成功批量保存 ${totalSaved} 条记录到数据库`)
     } else {
-      const errorMessage = `保存完成：成功 ${totalSaved} 条，失败 ${totalErrors} 条`
+      const errorMessage = `批量保存完成：成功 ${totalSaved} 条，失败 ${totalErrors} 条`
       message.warning(errorMessage)
       
-      // 显示详细错误信息
-      // if (errorDetails.length > 0) {
-      //   console.error('保存失败的详细信息:', errorDetails)
-      //   // 可以选择是否显示详细错误信息给用户
-      //   if (errorDetails.length <= 10) {
-      //     message.error(`失败详情: ${errorDetails.join(', ')}`)
-      //   } else {
-      //     message.error(`失败详情: ${errorDetails.slice(0, 10).join(', ')}...等${errorDetails.length}项`)
-      //   }
-      // }
+      if (errorDetails.length > 0) {
+        console.error('批量更新失败的详细信息:', errorDetails)
+      }
     }
 
     // 刷新数据以显示最新的风险等级和关键词
@@ -3114,14 +3179,15 @@ const saveUnifiedResultsToDatabase = async () => {
     }
 
   } catch (error) {
-    console.error('保存到数据库失败:', error)
-    // message.error('保存失败: ' + (error.message || '未知错误'))
+    console.error('批量保存到数据库失败:', error)
+    message.error('批量保存失败: ' + (error.message || '未知错误'))
   } finally {
     savingToDatabase.value = false
   }
 }
 
 import {resetAllDataToMediumRisk as resetAllDataAPI} from '@/api/deviceDataUpdate'
+import {batchUpdateRiskLevelAndKeywords} from '@/api/api/shebaoshujuguanli'
 import request from '@/request'
 
 // 根据实体类型调用对应的更新API

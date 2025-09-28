@@ -16,7 +16,6 @@ public interface DeviceEventReportRepository extends JpaRepository<DeviceEventRe
 
     Optional<DeviceEventReport> findByReportNumber(String reportNumber);
 
-    List<DeviceEventReport> findByEventType(String eventType);
 
     List<DeviceEventReport> findByDateReceived(LocalDate dateReceived);
 

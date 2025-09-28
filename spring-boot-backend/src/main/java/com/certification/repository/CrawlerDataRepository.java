@@ -512,11 +512,11 @@ public interface CrawlerDataRepository extends JpaRepository<CertNewsData, Strin
     int updateRelatedStatusWithKeywords(@Param("id") String id, @Param("related") Boolean related, @Param("matchedKeywords") String matchedKeywords, @Param("updatedAt") LocalDateTime updatedAt);
     
     /**
-     * 更新风险等级和风险说明
+     * 更新风险等级
      */
     @Modifying
-    @Query("UPDATE CertNewsData c SET c.riskLevel = :riskLevel, c.riskDescription = :riskDescription, c.updatedAt = :updatedAt WHERE c.id = :id")
-    int updateRiskLevel(@Param("id") String id, @Param("riskLevel") RiskLevel riskLevel, @Param("riskDescription") String riskDescription, @Param("updatedAt") LocalDateTime updatedAt);
+    @Query("UPDATE CertNewsData c SET c.riskLevel = :riskLevel, c.updatedAt = :updatedAt WHERE c.id = :id")
+    int updateRiskLevel(@Param("id") String id, @Param("riskLevel") RiskLevel riskLevel, @Param("updatedAt") LocalDateTime updatedAt);
     
     /**
      * 根据关键词搜索并过滤相关状态

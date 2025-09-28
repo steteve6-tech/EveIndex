@@ -658,7 +658,6 @@ public class US_event {
         report.setJdCountry("US");
         
         // 设置默认值
-        report.setEventType("Adverse Event");
         report.setDeviceClass("Unknown");
         report.setRiskLevel(CertNewsData.RiskLevel.MEDIUM);
         

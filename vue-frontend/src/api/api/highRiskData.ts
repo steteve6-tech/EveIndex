@@ -30,14 +30,14 @@ export const RISK_LEVEL_COLOR_MAP = {
 
 // 获取高风险数据统计
 export async function getHighRiskStatistics() {
-  return request('/api/high-risk-data/statistics', {
+  return request('/high-risk-data/statistics', {
     method: 'GET'
   })
 }
 
 // 按国家获取高风险数据统计
 export async function getHighRiskStatisticsByCountry() {
-  return request('/api/high-risk-data/statistics/by-country', {
+  return request('/high-risk-data/statistics/by-country', {
     method: 'GET'
   })
 }
@@ -49,7 +49,7 @@ export async function getKeywordStatistics(country?: string) {
     params.country = country
   }
   
-  return request('/api/high-risk-data/keywords/statistics', {
+  return request('/high-risk-data/keywords/statistics', {
     method: 'GET',
     params
   })
@@ -67,7 +67,7 @@ export async function getHighRiskDataByType(
     keyword?: string
   }
 ) {
-  return request(`/api/high-risk-data/${dataType}`, {
+  return request(`/high-risk-data/${dataType}`, {
     method: 'GET',
     params
   })
@@ -75,7 +75,7 @@ export async function getHighRiskDataByType(
 
 // 更新风险等级
 export async function updateRiskLevel(dataType: string, id: number, riskLevel: string) {
-  return request(`/api/high-risk-data/${dataType}/${id}/risk-level`, {
+  return request(`/high-risk-data/${dataType}/${id}/risk-level`, {
     method: 'PUT',
     data: { riskLevel }
   })
@@ -83,7 +83,7 @@ export async function updateRiskLevel(dataType: string, id: number, riskLevel: s
 
 // 批量更新风险等级
 export async function batchUpdateRiskLevel(ids: number[], riskLevel: string) {
-  return request('/api/high-risk-data/batch/risk-level', {
+  return request('/high-risk-data/batch/risk-level', {
     method: 'PUT',
     data: { ids, riskLevel }
   })
@@ -91,7 +91,7 @@ export async function batchUpdateRiskLevel(ids: number[], riskLevel: string) {
 
 // 更新关键词
 export async function updateKeywords(dataType: string, id: number, oldKeyword: string, newKeyword: string) {
-  return request(`/api/high-risk-data/${dataType}/${id}/keywords`, {
+  return request(`/high-risk-data/${dataType}/${id}/keywords`, {
     method: 'PUT',
     data: { oldKeyword, newKeyword }
   })
@@ -101,14 +101,14 @@ export async function updateKeywords(dataType: string, id: number, oldKeyword: s
 
 // 获取所有关键词
 export async function getAllKeywords() {
-  return request('/api/high-risk-data/keywords', {
+  return request('/high-risk-data/keywords', {
     method: 'GET'
   })
 }
 
 // 根据类型获取关键词
 export async function getKeywordsByType(keywordType: string) {
-  return request('/api/high-risk-data/keywords/by-type', {
+  return request('/high-risk-data/keywords/by-type', {
     method: 'GET',
     params: { keywordType }
   })
@@ -116,7 +116,7 @@ export async function getKeywordsByType(keywordType: string) {
 
 // 创建关键词
 export async function createKeyword(keyword: string, keywordType: string, enabled: boolean = true) {
-  return request('/api/high-risk-data/keywords', {
+  return request('/high-risk-data/keywords', {
     method: 'POST',
     data: { keyword, keywordType, enabled }
   })
@@ -124,7 +124,7 @@ export async function createKeyword(keyword: string, keywordType: string, enable
 
 // 更新关键词
 export async function updateKeyword(id: number, data: { keyword?: string; keywordType?: string; enabled?: boolean }) {
-  return request(`/api/high-risk-data/keywords/${id}`, {
+  return request(`/high-risk-data/keywords/${id}`, {
     method: 'PUT',
     data
   })
@@ -132,14 +132,14 @@ export async function updateKeyword(id: number, data: { keyword?: string; keywor
 
 // 删除关键词
 export async function deleteKeyword(id: number) {
-  return request(`/api/high-risk-data/keywords/${id}`, {
+  return request(`/high-risk-data/keywords/${id}`, {
     method: 'DELETE'
   })
 }
 
 // 搜索关键词
 export async function searchKeywords(keyword: string) {
-  return request('/api/high-risk-data/keywords/search', {
+  return request('/high-risk-data/keywords/search', {
     method: 'GET',
     params: { keyword }
   })

@@ -79,7 +79,37 @@
         <!-- 数据更新设置 -->
         <a-card title="数据更新设置">
           <a-form layout="vertical">
-            <a-form-item label="自动更新频率">
+            <a-form-item label="认证新闻数据更新频率">
+              <a-select v-model:value="settings.certNewsUpdateFrequency">
+                <a-select-option value="realtime">实时更新</a-select-option>
+                <a-select-option value="5min">每5分钟</a-select-option>
+                <a-select-option value="15min">每15分钟</a-select-option>
+                <a-select-option value="30min">每30分钟</a-select-option>
+                <a-select-option value="hourly">每小时</a-select-option>
+                <a-select-option value="daily">每天</a-select-option>
+              </a-select>
+              <div class="frequency-description">
+                <a-tag color="blue">当前: {{ getFrequencyDescription(settings.certNewsUpdateFrequency) }}</a-tag>
+              </div>
+            </a-form-item>
+            
+            <a-form-item label="医疗认证风险数据更新频率">
+              <a-select v-model:value="settings.medicalRiskUpdateFrequency">
+                <a-select-option value="realtime">实时更新</a-select-option>
+                <a-select-option value="5min">每5分钟</a-select-option>
+                <a-select-option value="15min">每15分钟</a-select-option>
+                <a-select-option value="30min">每30分钟</a-select-option>
+                <a-select-option value="hourly">每小时</a-select-option>
+                <a-select-option value="daily">每天</a-select-option>
+              </a-select>
+              <div class="frequency-description">
+                <a-tag color="green">当前: {{ getFrequencyDescription(settings.medicalRiskUpdateFrequency) }}</a-tag>
+              </div>
+            </a-form-item>
+            
+            <a-divider />
+            
+            <a-form-item label="通用数据更新频率">
               <a-select v-model:value="settings.updateFrequency">
                 <a-select-option value="hourly">每小时</a-select-option>
                 <a-select-option value="daily">每天</a-select-option>
@@ -93,6 +123,38 @@
                 :max="24"
                 addon-after="小时"
               />
+            </a-form-item>
+            
+            <a-divider />
+            
+            <!-- 更新状态显示 -->
+            <a-form-item label="当前更新状态">
+              <a-space direction="vertical" style="width: 100%;">
+                <a-row :gutter="16">
+                  <a-col :span="12">
+                    <a-statistic 
+                      title="认证新闻数据" 
+                      :value="lastUpdateTime.certNews" 
+                      :value-style="{ fontSize: '14px' }"
+                    />
+                  </a-col>
+                  <a-col :span="12">
+                    <a-statistic 
+                      title="医疗风险数据" 
+                      :value="lastUpdateTime.medicalRisk" 
+                      :value-style="{ fontSize: '14px' }"
+                    />
+                  </a-col>
+                </a-row>
+                <a-space>
+                  <a-button size="small" @click="triggerCertNewsUpdate" :loading="updating.certNews">
+                    手动更新认证新闻
+                  </a-button>
+                  <a-button size="small" @click="triggerMedicalRiskUpdate" :loading="updating.medicalRisk">
+                    手动更新风险数据
+                  </a-button>
+                </a-space>
+              </a-space>
             </a-form-item>
           </a-form>
         </a-card>
@@ -111,7 +173,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 
 const settings = reactive({
@@ -132,9 +194,37 @@ const settings = reactive({
     highRisk: 0.7,
     mediumRisk: 0.4
   },
+  // 新增的更新频率设置
+  certNewsUpdateFrequency: 'hourly',
+  medicalRiskUpdateFrequency: '30min',
   updateFrequency: 'daily',
   cacheTtl: 6
 })
+
+// 更新状态相关数据
+const lastUpdateTime = reactive({
+  certNews: '从未更新',
+  medicalRisk: '从未更新'
+})
+
+const updating = reactive({
+  certNews: false,
+  medicalRisk: false
+})
+
+// 获取频率描述
+const getFrequencyDescription = (frequency: string) => {
+  const descriptions: Record<string, string> = {
+    'realtime': '实时更新',
+    '5min': '每5分钟',
+    '15min': '每15分钟',
+    '30min': '每30分钟',
+    'hourly': '每小时',
+    'daily': '每天',
+    'weekly': '每周'
+  }
+  return descriptions[frequency] || frequency
+}
 
 const saveSettings = async () => {
   try {
@@ -152,6 +242,8 @@ const resetSettings = () => {
     slack: { enabled: false, webhookUrl: '' },
     email: { enabled: false, smtpHost: '', smtpPort: 587, username: '', password: '', from: '', to: [] },
     thresholds: { highRisk: 0.7, mediumRisk: 0.4 },
+    certNewsUpdateFrequency: 'hourly',
+    medicalRiskUpdateFrequency: '30min',
     updateFrequency: 'daily',
     cacheTtl: 6
   })
@@ -170,6 +262,43 @@ const testNotification = async () => {
     message.error('测试通知发送失败')
   }
 }
+
+// 手动触发认证新闻数据更新
+const triggerCertNewsUpdate = async () => {
+  updating.certNews = true
+  try {
+    // 模拟API调用
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    lastUpdateTime.certNews = new Date().toLocaleString()
+    message.success('认证新闻数据更新成功')
+  } catch (error) {
+    message.error('认证新闻数据更新失败')
+  } finally {
+    updating.certNews = false
+  }
+}
+
+// 手动触发医疗风险数据更新
+const triggerMedicalRiskUpdate = async () => {
+  updating.medicalRisk = true
+  try {
+    // 模拟API调用
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    lastUpdateTime.medicalRisk = new Date().toLocaleString()
+    message.success('医疗风险数据更新成功')
+  } catch (error) {
+    message.error('医疗风险数据更新失败')
+  } finally {
+    updating.medicalRisk = false
+  }
+}
+
+// 组件挂载时获取当前更新状态
+onMounted(() => {
+  // 模拟获取当前更新状态
+  lastUpdateTime.certNews = '2024-12-02 14:30:25'
+  lastUpdateTime.medicalRisk = '2024-12-02 14:25:10'
+})
 </script>
 
 <style scoped>
@@ -190,5 +319,31 @@ const testNotification = async () => {
 .actions {
   margin-top: 24px;
   text-align: center;
+}
+
+.frequency-description {
+  margin-top: 8px;
+}
+
+.frequency-description .ant-tag {
+  margin: 0;
+}
+
+/* 更新状态区域样式 */
+.ant-statistic-title {
+  font-size: 12px !important;
+  color: #666;
+}
+
+.ant-statistic-content {
+  font-size: 14px !important;
+  color: #1890ff;
+}
+
+/* 手动更新按钮样式 */
+.ant-btn-sm {
+  height: 28px;
+  padding: 0 12px;
+  font-size: 12px;
 }
 </style>

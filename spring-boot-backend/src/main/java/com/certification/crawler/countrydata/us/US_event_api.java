@@ -789,51 +789,21 @@ public class US_event_api {
 
         // 设置基本信息
         entity.setReportNumber(truncateString(src.getReportNumber(), 64));
-        entity.setEventType(truncateString(src.getEventType(), 50));
-        entity.setTypeOfReport(joinCsv(src.getTypeOfReport()));
         entity.setDateOfEvent(parseDate(src.getDateOfEvent()));
-        entity.setDateReport(parseDate(src.getDateReportToFda()));
         entity.setDateReceived(parseDate(src.getDateReceived()));
-        entity.setSourceType(joinCsv(src.getSourceType()));
         entity.setDataSource("FDA");
         entity.setJdCountry(src.getJdCountry());
         
-        // 设置患者数量
-        entity.setPatientCount(parseInteger(src.getNumberPatientsInEvent()));
         
         // 从设备信息中提取字段
         if (src.getDevices() != null && !src.getDevices().isEmpty()) {
             Device device = src.getDevices().get(0); // 取第一个设备
             entity.setBrandName(truncateString(device.getDeviceName(), 255));
-            entity.setModelNumber(truncateString(device.getModelNumber(), 255));
             entity.setGenericName(truncateString(device.getGenericName(), 255));
             entity.setManufacturerName(truncateString(device.getManufacturerName(), 255));
             entity.setDeviceClass(truncateString(device.getDeviceClass(), 10));
         }
         
-        // 从MDR文本中提取描述和行动
-        if (src.getMdrText() != null && !src.getMdrText().isEmpty()) {
-            StringBuilder description = new StringBuilder();
-            StringBuilder action = new StringBuilder();
-            
-            for (Map<String, Object> textItem : src.getMdrText()) {
-                if (textItem.containsKey("text_type_code") && textItem.containsKey("text")) {
-                    String textType = textItem.get("text_type_code").toString();
-                    String text = textItem.get("text").toString();
-                    
-                    if ("NARRATIVE_1".equals(textType) || "DESCRIPTION".equals(textType)) {
-                        if (description.length() > 0) description.append(" ");
-                        description.append(text);
-                    } else if ("ACTION".equals(textType) || "REMEDIAL_ACTION".equals(textType)) {
-                        if (action.length() > 0) action.append(" ");
-                        action.append(text);
-                    }
-                }
-            }
-            
-            entity.setMdrTextDescription(description.length() > 0 ? description.toString() : null);
-            entity.setMdrTextAction(action.length() > 0 ? action.toString() : null);
-        }
         
         // 计算风险等级
         RiskLevel calculatedRiskLevel = RiskLevelUtil.calculateRiskLevelByEventType(src.getEventType());

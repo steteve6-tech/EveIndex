@@ -133,7 +133,7 @@
             </div>
             
             <div v-if="latestRiskData.length === 0 && !latestRiskDataLoading" class="empty-state">
-              <a-empty description="暂无风险数据" />
+              <a-empty description="暂无高风险数据" />
             </div>
           </div>
         </a-card>
@@ -1510,18 +1510,22 @@ const loadLatestRiskData = async () => {
   try {
     // console.log('加载最新风险数据...')
     
-    // 获取最新的3条相关数据，按发布时间排序
+    // 获取最新的相关数据，按发布时间排序，然后过滤出高风险数据
     const result = await getCrawlerData({ 
       page: 0, 
-      size: 3, 
+      size: 100, // 获取更多数据以便过滤出高风险数据
       related: true,
       sortBy: 'publishDate',
       sortDirection: 'desc'
     }) as any
     
     if (result && result.data) {
-      latestRiskData.value = (result.data as any).content || []
-      // console.log('最新风险数据加载成功:', latestRiskData.value)
+      const allData = (result.data as any).content || []
+      // 只保留高风险数据，并限制为最新的3条
+      latestRiskData.value = allData
+        .filter((item: any) => item.riskLevel === 'HIGH')
+        .slice(0, 3)
+      // console.log('最新高风险数据加载成功:', latestRiskData.value)
     } else {
       // console.error('获取最新风险数据失败')
       latestRiskData.value = []
@@ -1537,7 +1541,7 @@ const loadLatestRiskData = async () => {
 // 刷新最新风险数据
 const refreshLatestRiskData = async () => {
   await loadLatestRiskData()
-  message.success('最新风险数据刷新成功')
+  message.success('最新高风险数据刷新成功')
 }
 
 // 处理国家选择变化

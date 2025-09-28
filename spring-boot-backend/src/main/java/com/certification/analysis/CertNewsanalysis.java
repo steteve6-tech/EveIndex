@@ -132,7 +132,6 @@ public class CertNewsanalysis {
                             
                             // 升级为高风险
                             data.setRiskLevel(CertNewsData.RiskLevel.HIGH);
-                            data.setRiskDescription("根据关键词匹配自动升级为高风险");
                             
                             // 保存更新
                             crawlerDataRepository.save(data);
@@ -256,7 +255,7 @@ public class CertNewsanalysis {
                         // 如果标记为相关，同时设置为高风险
                         if (isRelated) {
                             try {
-                                boolean riskUpdateSuccess = updateRiskLevel(data.getId(), RiskLevel.HIGH, "自动处理时设置为高风险");
+                                boolean riskUpdateSuccess = updateRiskLevel(data.getId(), RiskLevel.HIGH);
                                 if (riskUpdateSuccess) {
                                     riskProcessedCount++;
                                     log.debug("已将相关数据 {} 设置为高风险", data.getId());
@@ -527,7 +526,7 @@ public class CertNewsanalysis {
     /**
      * 更新风险等级
      */
-    private boolean updateRiskLevel(String id, RiskLevel riskLevel, String reason) {
+    private boolean updateRiskLevel(String id, RiskLevel riskLevel) {
         try {
             // 查找数据
             var optionalData = crawlerDataRepository.findById(id);
@@ -544,7 +543,7 @@ public class CertNewsanalysis {
             // 保存更新
             crawlerDataRepository.save(data);
             
-            log.debug("更新数据 {} 风险等级为: {}, 原因: {}", id, riskLevel, reason);
+            log.debug("更新数据 {} 风险等级为: {}", id, riskLevel);
             return true;
             
         } catch (Exception e) {

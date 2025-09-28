@@ -43,8 +43,7 @@ public class    DeviceRegistrationRecord {
     @Schema(description = "主要标识符（US: K_number+pma_number, EU: udi_di）")
     private String registrationNumber;
 
-    @Lob
-    @Column(name = "fei_number", columnDefinition = "TEXT")
+    @Column(name = "fei_number", length = 50)
     @Schema(description = "次要标识符（US: fei_number, EU: basic_udi_di）")
     private String feiNumber;
 
@@ -66,14 +65,10 @@ public class    DeviceRegistrationRecord {
     private String proprietaryName;
 
     @Lob
-    @Column(name = "device_class", columnDefinition = "TEXT")
+    @Column(name = "device_class", columnDefinition = "LONGTEXT")
     @Schema(description = "设备类别")
     private String deviceClass;
 
-    @Lob
-    @Column(name = "risk_class", columnDefinition = "TEXT")
-    @Schema(description = "风险等级")
-    private String riskClass;
 
     // ========== 状态信息（两个数据源都有） ==========
     @Column(name = "status_code", length = 100)

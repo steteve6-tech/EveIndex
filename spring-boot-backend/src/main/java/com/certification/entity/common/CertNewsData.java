@@ -27,10 +27,9 @@ import java.util.List;
 @Schema(description = "爬虫数据实体")
 public class CertNewsData {
 
-    @Schema(description = "数据ID", example = "b7e6c2e2-8c2a-4e2a-9b1a-2e4e2c2a8c2a")
+    @Schema(description = "数据ID", example = "SGS_1735123456789")
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(length = 36)
+    @Column(length = 50)
     private String id;
 
     /**
@@ -55,13 +54,13 @@ public class CertNewsData {
     /**
      * 内容摘要
      */
-    @Column(name = "summary")
+    @Column(name = "summary", columnDefinition = "LONGTEXT")
     private String summary;
     
     /**
      * 详细内容
      */
-    @Column(name = "content", columnDefinition = "TEXT")
+    @Column(name = "content", columnDefinition = "LONGTEXT")
     private String content;
     
     /**
@@ -159,15 +158,8 @@ public class CertNewsData {
     @Schema(description = "风险等级", example = "HIGH")
     @Enumerated(EnumType.STRING)
     @Column(name = "risk_level")
-    private RiskLevel riskLevel = RiskLevel.NONE;
+    private RiskLevel riskLevel = RiskLevel.MEDIUM;
     
-    /**
-     * 风险说明
-     * 风险等级的详细说明
-     */
-    @Schema(description = "风险说明", example = "该标准涉及产品安全要求")
-    @Column(name = "risk_description", columnDefinition = "TEXT")
-    private String riskDescription;
     
     /**
      * 创建时间

@@ -1247,7 +1247,7 @@ const editData = (record: any) => {
     content: record.content || '',
     url: record.url || '',
     publishDate: record.publishDate ? dayjs(record.publishDate) : null,
-    related: record.related,
+    related: record.related === null ? null : record.related,
     riskLevel: record.riskLevel || 'NONE',
     remarks: record.remarks || ''
   })
@@ -1303,15 +1303,19 @@ const handleRiskSave = async () => {
       riskLevel: riskForm.riskLevel
     })
     
-    if (result && result.data) {
-      message.success('风险等级设置成功')
+    console.log('风险等级设置API响应:', result)
+    
+    if (result && result.success) {
+      message.success(result.message || '风险等级设置成功')
       showRiskModal.value = false
       loadData()
       // 刷新关键词统计
       await loadKeywordStats()
       handleRiskCancel()
     } else {
-      message.error('风险等级设置失败')
+      const errorMsg = (result && result.error) || '风险等级设置失败'
+      console.error('风险等级设置失败:', errorMsg)
+      message.error(errorMsg)
     }
   } catch (error) {
     console.error('设置风险等级失败:', error)

@@ -77,10 +77,6 @@ public class Device510K {
     @Column(name = "jd_country", length = 20)
     private String jdCountry;
 
-    // 设备URL
-    @Column(name = "device_url", length = 512)
-    private String deviceUrl;
-
     // 爬取时间
     @Column(name = "crawl_time")
     private LocalDateTime crawlTime;
@@ -88,20 +84,4 @@ public class Device510K {
     // 数据状态
     @Column(name = "data_status", length = 20)
     private String dataStatus;
-
-    // 决定日期
-    @Column(name = "decision_date")
-    private LocalDate decisionDate;
-
-    // 产品代码
-    @Column(name = "product_code", length = 50)
-    private String productCode;
-
-    // 法规编号
-    @Column(name = "regulation_number", length = 50)
-    private String regulationNumber;
-
-    // OpenFDA数据
-    @Column(name = "openfda", columnDefinition = "TEXT")
-    private String openfda;
 }

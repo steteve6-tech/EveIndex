@@ -21,7 +21,7 @@
     <!-- 数据统计卡片 -->
     <div class="stats-section">
       <a-row :gutter="16">
-        <a-col :span="4">
+        <a-col :span="3.5">
           <a-card class="stat-card">
             <a-statistic
               title="高风险数据总数"
@@ -34,10 +34,27 @@
             </a-statistic>
           </a-card>
         </a-col>
-        <a-col :span="4">
+
+
+
+        <a-col :span="3.5">
           <a-card class="stat-card">
             <a-statistic
-              title="上市前通告高风险"
+                title="注册记录高风险"
+                :value="statistics.registrationHighRisk"
+                :value-style="{ color: '#ff7a45' }"
+            >
+              <template #prefix>
+                <ExperimentOutlined style="color: #ff7a45" />
+              </template>
+            </a-statistic>
+          </a-card>
+        </a-col>
+
+        <a-col :span="3.5">
+          <a-card class="stat-card">
+            <a-statistic
+              title="申请记录高风险"
               :value="statistics.device510KHighRisk"
               :value-style="{ color: '#ff7a45' }"
             >
@@ -47,10 +64,16 @@
             </a-statistic>
           </a-card>
         </a-col>
-        <a-col :span="4">
+
+
+
+
+
+
+        <a-col :span="3.5">
           <a-card class="stat-card">
             <a-statistic
-              title="召回高风险"
+              title="召回记录高风险"
               :value="statistics.recallHighRisk"
               :value-style="{ color: '#ff7875' }"
             >
@@ -63,7 +86,7 @@
         <a-col :span="4">
           <a-card class="stat-card">
             <a-statistic
-              title="事件高风险"
+              title="不良事件高风险"
               :value="statistics.eventHighRisk"
               :value-style="{ color: '#ff4d4f' }"
             >
@@ -73,7 +96,7 @@
             </a-statistic>
           </a-card>
         </a-col>
-        <a-col :span="4">
+        <a-col :span="3.5">
           <a-card class="stat-card">
             <a-statistic
               title="指导文档高风险"
@@ -86,7 +109,7 @@
             </a-statistic>
           </a-card>
         </a-col>
-        <a-col :span="4">
+        <a-col :span="3.5">
           <a-card class="stat-card">
             <a-statistic
               title="海关案例高风险"
@@ -125,7 +148,7 @@
               </a-statistic>
               <div class="country-detail-stats">
                 <div class="detail-item" v-if="countryData.device510K && countryData.device510K > 0">
-                  <span class="label">上市前通告:</span>
+                  <span class="label">申请记录:</span>
                   <span class="value">{{ countryData.device510K }}</span>
                 </div>
                 <div class="detail-item" v-if="countryData.recall && countryData.recall > 0">
@@ -228,7 +251,7 @@
             <a-col :span="4">
               <a-card class="data-type-card">
                 <a-statistic
-                  title="上市前通告"
+                  title="申请记录"
                   :value="selectedCountryData.device510K"
                   :value-style="{ color: '#ff7a45' }"
                 >
@@ -1375,9 +1398,9 @@ const availableTabs = computed(() => {
   
   const allTabs = [
     { key: 'registration', label: '注册记录' },
-    { key: 'device510k', label: '上市前通告' },
+    { key: 'device510k', label: '申请记录' },
     { key: 'recall', label: '召回记录' },
-    { key: 'event', label: '事件报告' },
+    { key: 'event', label: '不良事件' },
     { key: 'guidance', label: '指导文档' },
     { key: 'customs', label: '海关案例' }
   ]

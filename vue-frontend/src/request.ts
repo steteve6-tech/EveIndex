@@ -3,7 +3,7 @@ import { message } from 'ant-design-vue'
 
 // 创建axios实例
 const request = axios.create({
-  baseURL: '', // 使用相对路径，让 Vite 代理处理
+  baseURL: '/api', // 使用 /api 前缀，让 Vite 代理转发到后端
   timeout: 60000, // 增加到60秒，特别是AI处理接口需要更长时间
   headers: {
     'Content-Type': 'application/json',
@@ -102,7 +102,7 @@ request.interceptors.response.use(
 
 // 为AI处理接口创建专门的请求实例，设置更长的超时时间
 const aiRequest = axios.create({
-  baseURL: '', // 使用相对路径，让 Vite 代理处理
+  baseURL: '/api', // 使用 /api 前缀，让 Vite 代理转发到后端
   timeout: 300000, // 5分钟超时，AI处理需要更长时间
   headers: {
     'Content-Type': 'application/json',

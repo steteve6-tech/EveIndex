@@ -74,16 +74,16 @@ public class Country {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createTime;
     
-    // 关联关系
-    @OneToMany(mappedBy = "country", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<ProductRegistration> productRegistrations;
+    // 关联关系 - 已删除相关实体类的引用
+    // @OneToMany(mappedBy = "country", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    // private List<ProductRegistration> productRegistrations;
     
-    @OneToMany(mappedBy = "country", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<ProductCategoryCode> productCategoryCodes;
+    // @OneToMany(mappedBy = "country", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    // private List<ProductCategoryCode> productCategoryCodes;
     
-    @OneToMany(mappedBy = "country", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<ProductRecall> productRecalls;
+    // @OneToMany(mappedBy = "country", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    // private List<ProductRecall> productRecalls;
     
-    @OneToMany(mappedBy = "country", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<RegulationNotice> regulationNotices;
+    // @OneToMany(mappedBy = "country", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    // private List<RegulationNotice> regulationNotices;
 }

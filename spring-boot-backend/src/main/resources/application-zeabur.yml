@@ -64,10 +64,10 @@ spring:
             enable: true
             required: true
 
-  # JPA配置
+  # JPA配置 - 改为validate模式防止数据丢失
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate  # 从update改为validate，防止意外删除表或数据
     show-sql: false
     properties:
       hibernate:

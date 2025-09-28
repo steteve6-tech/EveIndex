@@ -1,266 +1,40 @@
 ## 一、高优先级法规修正关键词
 ### 欧盟（EU）- RED资安与标准
-EN 18031-1
-EN 18031-2
-EN 18031-3
+18031
 RED cybersecurity
-Article 3(3)(d)(e)(f)
-Delegated Reg. (EU) 2022/30
-OJEU harmonised standards
-EN 300 328
-EN 301 893
-EN 301 489-1
-EN 301 489-17
-EN 62311
-EN IEC 62368-1
-
-### 中国 - RoHS与无线
-GB/T 39560
-GB 26572-2025
-SJ/T 11364
-中国RoHS
-有害物质限制
-SRRC 型号核准
-CMIIT ID
-无线电发射设备 型号核准
-
-### 韩国 - 标识更新
-KC（RRA）
-적합등록
-적합인증
-국립전파연구원
-무선설비
-
-
-## 二、分市场核心监测关键词（含中英文/在地语）
-### 1. 全海外（有害物）
-RoHS 2.0
-RoHS 3
-Restriction of Hazardous Substances
-IEC 62321
-有害物質限制
-
-### 2. 中国（China）
 China RoHS
-GB/T 39560
-CMIIT ID
-SRRC
-型号核准
-有害物質限制
-GB 26572-2025
-SJ/T 11364
-
-### 3. 美国（USA）
-FCC ID
-Equipment Authorization
-Part 15B
-Part 15C
-Part 15E
-SDoC
-KDB 447498
-KDB 996369
-module integration
-permissive change
-
-### 4. 印度（India）
-WPC ETA
-Equipment Type Approval
-Self-declaration
-自我聲明
-進口備案
+Restriction of Hazardous Substances
 2.4 GHz
 5 GHz
 6 GHz
-
-### 5. 泰国（Thailand）
-NBTC Type Approval
-NBTC TS 1035-2562
 Wi-Fi 6E
 Wi-Fi 7
-公告
-公聽
 Class A
-Class B
-FCC 15.407
-ETSI 接受
-5.925–6.425 GHz
-
-### 6. 欧盟（EU）
-CE RED 2014/53/EU
-Harmonised standards
-協調標準
 Notified Body
-EU DoC
-EN 300 328
-EN 301 893
-EN 301 489-1
-EN 301 489-17
-EN 62311
-EN IEC 62368-1
-
-### 7. 新加坡（Singapore）
-IMDA Equipment Registration
-IMDA TS SRD
-短距無線
-技術規範
-表列頻段
-功率
-評估清單
-
-### 8. 日本（Japan）
-TELEC
-MIC 技術基準適合証明
-工事設計認証
-電波法
-特定無線設備
-2.4 GHz 技術基準
-5 GHz 技術基準
-6 GHz 技術基準
-
-### 9. 台湾（Taiwan）
-NCC 低功率射頻電機
-LP0002 技術規範
-型式認證
-審驗合格標籤
-6 GHz 擴頻
-6 GHz 公告
-
-### 10. 澳大利亚（Australia）
-RCM
-ACMA Supplier’s Declaration
-Radiocommunications LIPD Class Licence
-電磁相容
-電氣安全
-AS/NZS CISPR 32
 EESS
 ERAC
-
-### 11. 韩国（Korea）
-KC Conformity
-적합등록
-적합인증
-국립전파연구원
-무선설비
-EMC
-전기안전
-無線/EMC/電安標準
-
-### 12. 智利（Chile）
-SUBTEL Homologación
-Resolución
-RLAN
-Wi-Fi 6E
-Certificación
-頻段
-功率
-
-### 13. 马来西亚（Malaysia）
-SIRIM Type Approval
-MCMC Type Approval
+Electrical Safety
 e-ComM
 SRD
-認證
-登錄
-Wi-Fi 6E
-Wi-Fi 7
-
-### 14. 阿联酋（UAE）
-TDRA Type Approval
-Registration Certificate
-Declaration of Conformity Card
-DoC Card
-零售展示卡
-UAE RoHS
 ECAS
 EQM
-Cabinet Decision No. 10 of 2017
 MoIAT
-
-### 15. 秘鲁（Peru）
-MTC Homologación
-Equipos de telecomunicaciones
-Wi-Fi 6E
-Resolución
-Procedimiento
-
-### 16. 南非（South Africa）
-ICASA Type Approval
-Equipment Authorisation
-NRCS LOA
-VC 8055
-標籤規範
-SANS/IEC 62368-1
-
-### 17. 以色列（Israel）
-MoC Type Approval
-Importing communications equipment
-SII 安規 SI 62368-1
-通訊設備核准
-標準機構
-頻段
-功率
-安規轉版
-
-### 18. 印尼（Indonesia）
-SDPPI Type Approval
-Kominfo Type Approval
-Postel
-Wi-Fi 6E
-KEPDIRJEN 161/2022
-認證
-公告
-6 GHz 規範
-
-
-## 三、通用爬虫场景关键词（可组合使用）
-### 1. 官方动态监测
-notice
 announcement
-公告
-通知
-草案
-公聽
-2024
-2025
-2026
-
-### 2. 法规更新监测
-harmonised
-列入協調標準
-相容性聲明
-DoC
 Declaration of Conformity
-Notified Body
-NB
-技術通告
-標準更新
-
-### 3. 频段/功率监测
-5.925-6.425 GHz
 6GHz
 6E
-Wi-Fi 6E
-Wi-Fi 7
 WLAN
-SRD
-RLAN
-限值
-发射功率
+limit value
 EIRP
 PSD
-頻率核配
-表列頻段
-
-### 4. 模组整合与配件安全
-module integration
-permissive change
-組件 認證 延伸
-62368-1
-電源適配器 安規
-外接電源供應器
+IEC 62368-1
+技術規範
+型式認證
+電磁相容
 電氣安全
-EMC
-RF暴露
+標籤規範
+標準更新
+标准更新
 """
 
     # 写入TXT文件（编码为UTF-8，确保中文/特殊字符正常显示）

@@ -299,14 +299,9 @@ public class D_510K {
             // 提取字段（根据HTML结构）
             // 第0列：Device Name（带链接）
             String deviceName = "";
-            String deviceUrl = "";
             Element deviceNameLink = cols.get(0).select("a").first();
             if (deviceNameLink != null) {
                 deviceName = deviceNameLink.text().trim();
-                deviceUrl = deviceNameLink.attr("href");
-                if (!deviceUrl.startsWith("http")) {
-                    deviceUrl = "https://www.accessdata.fda.gov" + deviceUrl;
-                }
             } else {
                 deviceName = cols.get(0).text().trim();
             }
@@ -327,7 +322,6 @@ public class D_510K {
             record.put("deviceName", deviceName);
             record.put("applicant", applicant);
             record.put("kNumber", kNumber);
-            record.put("deviceUrl", deviceUrl);
             
             // 设置其他字段
             record.put("dataSource", "FDA 510K Database");
@@ -336,8 +330,8 @@ public class D_510K {
             record.put("crawlTime", LocalDateTime.now());
             record.put("dataStatus", "ACTIVE");
             
-            log.debug("解析记录: 设备名称={}, 申请人={}, K号={}, 设备URL={}", 
-                     deviceName, applicant, kNumber, deviceUrl);
+            log.debug("解析记录: 设备名称={}, 申请人={}, K号={}", 
+                     deviceName, applicant, kNumber);
             
             return record;
             
@@ -398,13 +392,11 @@ public class D_510K {
         String deviceName = truncateString((String) data.get("deviceName"), 255);
         String applicant = truncateString((String) data.get("applicant"), 255);
         String kNumber = truncateString((String) data.get("kNumber"), 32);
-        String deviceUrl = truncateString((String) data.get("deviceUrl"), 512);
         String tradeName = truncateString((String) data.get("tradeName"), 255);
         
         record.setDeviceName(deviceName);
         record.setApplicant(applicant);
         record.setKNumber(kNumber);
-        record.setDeviceUrl(deviceUrl);
         record.setDataSource((String) data.get("dataSource"));
         record.setCountryCode((String) data.get("countryCode"));
         record.setJdCountry((String) data.get("jdCountry"));

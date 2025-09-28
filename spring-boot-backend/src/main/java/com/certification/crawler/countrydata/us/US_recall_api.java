@@ -472,14 +472,14 @@ public class US_recall_api {
             }
             params.put("limit", String.valueOf(currentLimit));
             params.put("skip", String.valueOf(skip));
-
-            // 添加时间范围参数
-            if (dateFrom != null && dateTo != null) {
-                String dateRange = String.format("event_date_initiated:[%s TO %s]", dateFrom, dateTo);
-                String currentSearch = searchTerm != null && !searchTerm.isEmpty() ?
-                    searchTerm + " AND " + dateRange : dateRange;
-                params.put("search", currentSearch);
-            }
+//
+//            // 添加时间范围参数
+//            if (dateFrom != null && dateTo != null) {
+//                String dateRange = String.format("event_date_initiated:[%s TO %s]", dateFrom, dateTo);
+//                String currentSearch = searchTerm != null && !searchTerm.isEmpty() ?
+//                    searchTerm + " AND " + dateRange : dateRange;
+//                params.put("search", currentSearch);
+//            }
 
             try {
                 FDAResponse response = fetchData("/device/recall.json", params);

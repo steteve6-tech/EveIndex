@@ -42,7 +42,6 @@ public class DeviceRegistrationConverter {
         record.setDeviceName(extractFirstFromList(usData, "device_names"));
         record.setProprietaryName(extractFirstFromList(usData, "proprietary_names"));
         record.setDeviceClass(extractFirstFromList(usData, "device_classes"));
-        record.setRiskClass(getStringValue(usData, "risk_class"));
         
         // 状态信息
         record.setStatusCode(getStringValue(usData, "status_code"));
@@ -74,7 +73,6 @@ public class DeviceRegistrationConverter {
         record.setDeviceName(getStringValue(euData, "trade_name"));
         record.setProprietaryName(getStringValue(euData, "trade_name"));
         record.setDeviceClass(getStringValue(euData, "device_class"));
-        record.setRiskClass(getStringValue(euData, "risk_class"));
         
         // 状态信息
         record.setStatusCode(getStringValue(euData, "status_code"));

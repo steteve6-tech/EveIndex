@@ -366,7 +366,7 @@
                 <a-space size="large">
                   <span class="stat-item">
                     <span class="stat-label">总处理：</span>
-                    <span class="stat-value">{{ lastAutoProcessResult.totalProcessed }} 条</span>
+                    <span class="stat-value">{{ lastAutoProcessResult.totalData || lastAutoProcessResult.totalProcessed }} 条</span>
                   </span>
                   <span class="stat-item">
                     <span class="stat-label">相关：</span>
@@ -517,9 +517,9 @@
                   <a-button type="link" size="small" @click="editRiskLevel(item)">
                     编辑风险等级 <EditOutlined />
                   </a-button>
-                  <a-button type="link" size="small" @click="sendEmail(item)">
-                    发送邮件 <MailOutlined />
-                  </a-button>
+<!--                  <a-button type="link" size="small" @click="sendEmail(item)">-->
+<!--                    发送邮件 <MailOutlined />-->
+<!--                  </a-button>-->
                   <a-popconfirm
                     title="确定要删除这条新闻吗？"
                     ok-text="确定"
@@ -608,9 +608,9 @@
                      <a-button type="link" size="small" @click="editRiskLevel(item)">
                        编辑风险等级
                      </a-button>
-                     <a-button type="link" size="small" @click="sendEmail(item)">
-                       发送邮件
-                     </a-button>
+<!--                     <a-button type="link" size="small" @click="sendEmail(item)">-->
+<!--                       发送邮件-->
+<!--                     </a-button>-->
                      <a-popconfirm
                        title="确定要删除这条新闻吗？"
                        ok-text="确定"
@@ -858,47 +858,25 @@
        <div class="keyword-management">
          <!-- 说明文字 -->
          <div class="keyword-header">
-           <p>请在下方文本框中输入关键词，每行一个关键词。系统将根据这些关键词自动判断数据的相关性。</p>
+           <p>管理关键词列表，系统将根据这些关键词自动判断数据的相关性。关键词会同步保存到前端和文件中。</p>
            <a-space>
              <a-button @click="initializeDefaultKeywords" type="primary">
-               初始化默认关键词
+               从文件初始化关键词
              </a-button>
-             <a-button @click="loadKeywords" type="default">
+             <a-button @click="loadKeywords" type="default" :loading="keywordsLoading">
                刷新关键词
              </a-button>
-             <a-button @click="migrateFromLocalStorage" type="dashed">
-               迁移localStorage关键词
-             </a-button>
-<!--             <a-button @click="setAsLocalKeywords" type="dashed">-->
-<!--               设为本地关键词-->
-<!--             </a-button>-->
-<!--             <a-button @click="clearLocalKeywords" type="dashed" danger>-->
-<!--               清空本地关键词-->
-<!--             </a-button>-->
            </a-space>
          </div>
          
          <!-- 关键词列表显示区域 -->
          <div class="keyword-list-section">
            <div class="keyword-list-header">
-             <h4>关键词列表</h4>
+             <h4>关键词列表 ({{ keywordCount }} 个)</h4>
              <a-space>
-               <a-button @click="refreshKeywordCounts" :loading="loadingCounts" size="small">
-                 刷新匹配数量
-               </a-button>
                <a-button @click="showAddKeywordInput = !showAddKeywordInput" type="dashed" size="small">
                  {{ showAddKeywordInput ? '取消添加' : '添加关键词' }}
                </a-button>
-               <a-popconfirm
-                 title="确定要删除所有0条匹配的关键词吗？"
-                 ok-text="确定删除"
-                 cancel-text="取消"
-                 @confirm="handleDeleteZeroMatchKeywords"
-               >
-                 <a-button type="primary" danger size="small" :loading="deletingZeroMatch">
-                   删除0匹配关键词
-                 </a-button>
-               </a-popconfirm>
              </a-space>
            </div>
            
@@ -923,36 +901,39 @@
            <!-- 关键词列表 -->
            <div class="keyword-list">
              <a-list
-               :data-source="keywordListWithCounts"
-               :loading="loadingCounts"
+               :data-source="keywords"
+               :loading="keywordsLoading"
                size="small"
                :pagination="{ pageSize: 20, showSizeChanger: true, showQuickJumper: true }"
              >
                <template #renderItem="{ item }">
                  <a-list-item>
                    <template #actions>
-                     <a-button 
-                       type="link" 
-                       size="small" 
-                       danger 
-                       @click="removeKeyword(item.keyword)"
-                     >
-                       删除
-                     </a-button>
+                     <a-space>
+                       <a-button 
+                         type="link" 
+                         size="small" 
+                         @click="viewKeywordMatch(item)"
+                       >
+                         查看匹配
+                       </a-button>
+                       <a-button 
+                         type="link" 
+                         size="small" 
+                         danger 
+                         @click="removeKeyword(item)"
+                       >
+                         删除
+                       </a-button>
+                     </a-space>
                    </template>
                    
                    <a-list-item-meta>
                      <template #title>
-                       <a-space>
-                         <span>{{ item.keyword }}</span>
-                         <a-tag :color="getMatchCountColor(item.matchCount)" class="match-count-tag">
-                           {{ item.matchCount }} 条匹配
-                         </a-tag>
-                       </a-space>
+                       <span>{{ item }}</span>
                      </template>
                      <template #description>
-                       <span v-if="item.description">{{ item.description }}</span>
-                       <span v-else class="no-description">暂无描述</span>
+                       <span class="keyword-description">关键词</span>
                      </template>
                    </a-list-item-meta>
                  </a-list-item>
@@ -966,11 +947,125 @@
            <a-space>
              <a-tag color="blue">总关键词数：{{ keywordCount }}</a-tag>
              <a-tag color="green">有效关键词：{{ validKeywordCount }}</a-tag>
-             <a-tag v-if="keywordSource === 'file'" color="blue">使用文件关键词</a-tag>
-             <a-tag v-else-if="keywordSource === 'database'" color="purple">使用数据库关键词</a-tag>
-             <a-tag v-else color="default">使用文本框关键词</a-tag>
+             <a-tag color="purple">同步到文件</a-tag>
            </a-space>
          </div>
+       </div>
+     </a-modal>
+
+     <!-- 关键词匹配情况模态框 -->
+     <a-modal
+       v-model:open="keywordMatchModalVisible"
+       :title="`关键词匹配情况 - ${selectedKeywordForMatch}`"
+       width="1000px"
+       @cancel="closeKeywordMatchModal"
+       :footer="null"
+     >
+       <div v-if="loadingMatchDetails" class="loading-container">
+         <a-spin size="large" />
+         <p>正在加载匹配情况...</p>
+       </div>
+       
+       <div v-else-if="keywordMatchDetails" class="keyword-match-details">
+         <!-- 匹配统计 -->
+         <div class="match-stats">
+           <a-row :gutter="16">
+             <a-col :span="6">
+               <a-statistic
+                 title="总匹配数"
+                 :value="keywordMatchDetails.totalMatches"
+                 :value-style="{ color: '#1890ff' }"
+               />
+             </a-col>
+             <a-col :span="6">
+               <a-statistic
+                 title="高风险"
+                 :value="keywordMatchDetails.riskLevelStats?.highRisk || 0"
+                 :value-style="{ color: '#ff4d4f' }"
+               />
+             </a-col>
+             <a-col :span="6">
+               <a-statistic
+                 title="中风险"
+                 :value="keywordMatchDetails.riskLevelStats?.mediumRisk || 0"
+                 :value-style="{ color: '#faad14' }"
+               />
+             </a-col>
+             <a-col :span="6">
+               <a-statistic
+                 title="低风险"
+                 :value="keywordMatchDetails.riskLevelStats?.lowRisk || 0"
+                 :value-style="{ color: '#52c41a' }"
+               />
+             </a-col>
+           </a-row>
+         </div>
+         
+         <!-- 国家分布 -->
+         <div v-if="keywordMatchDetails.countryStats" class="country-stats">
+           <h4>国家分布</h4>
+           <a-space wrap>
+               <a-tag 
+                 v-for="(count, country) in keywordMatchDetails.countryStats" 
+                 :key="country"
+                 :color="getCountryColor(String(country))"
+               >
+                 {{ getCountryName(String(country)) }}: {{ count }}
+               </a-tag>
+           </a-space>
+         </div>
+         
+         <!-- 数据源分布 -->
+         <div v-if="keywordMatchDetails.sourceStats" class="source-stats">
+           <h4>数据源分布</h4>
+           <a-space wrap>
+             <a-tag 
+               v-for="(count, source) in keywordMatchDetails.sourceStats" 
+               :key="source"
+               color="blue"
+             >
+               {{ source }}: {{ count }}
+             </a-tag>
+           </a-space>
+         </div>
+         
+         <!-- 匹配详情列表 -->
+         <div v-if="keywordMatchDetails.matchDetails" class="match-details">
+           <h4>匹配详情 (显示前20条)</h4>
+           <a-list
+             :data-source="keywordMatchDetails.matchDetails.slice(0, 20)"
+             size="small"
+             :pagination="{ pageSize: 10, showSizeChanger: true }"
+           >
+             <template #renderItem="{ item }">
+               <a-list-item>
+                 <a-list-item-meta>
+                   <template #title>
+                     <a-space>
+                       <span>{{ item.title }}</span>
+                       <a-tag :color="getRiskLevelColor(item.riskLevel)">
+                         {{ getRiskLevelText(item.riskLevel) }}
+                       </a-tag>
+                     </a-space>
+                   </template>
+                   <template #description>
+                     <a-space>
+                       <a-tag :color="getCountryColor(String(item.country))">
+                         {{ getCountryName(String(item.country)) }}
+                       </a-tag>
+                       <a-tag color="blue">{{ item.sourceName }}</a-tag>
+                       <span>{{ item.publishDate }}</span>
+                     </a-space>
+                   </template>
+                 </a-list-item-meta>
+               </a-list-item>
+             </template>
+           </a-list>
+         </div>
+       </div>
+       
+       <div v-else class="no-match-data">
+         <a-empty description="暂无匹配数据" />
        </div>
      </a-modal>
 
@@ -982,7 +1077,15 @@
 import { ref, reactive, onMounted, computed, h } from 'vue'
 import { message, Modal } from 'ant-design-vue'
 import { getCrawlerData, updateCrawlerDataRiskLevel, sendEmail as sendEmailAPI, deleteCrawlerData, getAllSourceNames, autoUpdateCountry, getCountryDistribution, batchUpdateCrawlerDataRiskLevel, setAllDataToMediumRisk, getRiskLevelStatistics } from '@/api/pachongshujuguanli'
-import { getAllKeywords, addKeyword, deleteKeyword, initializeKeywords, autoProcessRelated as autoProcessRelatedAPI, getFileKeywords, migrateKeywordsFromLocalStorage, getKeywordsWithMatchCounts, deleteZeroMatchKeywords } from '@/api/keywordguanli'
+import { 
+  getFileKeywords, 
+  saveKeywordsToFile, 
+  addKeywordToFile, 
+  deleteKeywordFromFile, 
+  initializeKeywordsFromFile,
+  getKeywordMatchDetails,
+  autoProcessRelated as autoProcessRelatedAPI
+} from '@/api/keywordguanli'
 
 import {
   SearchOutlined,
@@ -1048,17 +1151,14 @@ const processingMethod = ref('keyword') // 默认使用关键词匹配
 
 // 关键词管理相关
 const keywordModalVisible = ref(false)
-const keywords = ref<any[]>([])
+const keywords = ref<string[]>([]) // 前端关键词列表
 const keywordsLoading = ref(false)
-const keywordsText = ref('')
-const keywordListWithCounts = ref<any[]>([])
-const loadingCounts = ref(false)
 const showAddKeywordInput = ref(false)
 const newKeyword = ref('')
-const newKeywordDescription = ref('')
-const deletingZeroMatch = ref(false)
-const fileKeywords = ref<string[]>([]) // 文件关键词列表
-const useFileKeywords = ref<boolean>(false) // 是否使用文件关键词
+const keywordMatchModalVisible = ref(false)
+const selectedKeywordForMatch = ref('')
+const keywordMatchDetails = ref<any>(null)
+const loadingMatchDetails = ref(false)
 
 // 自动处理相关
 const lastAutoProcessTime = ref<string>('') // 上次自动处理时间
@@ -1095,22 +1195,12 @@ const emailForm = reactive({
 
 // 关键词统计计算属性
 const keywordCount = computed(() => {
-  if (!keywordsText.value) return 0
-  return keywordsText.value.split('\n').filter(line => line.trim()).length
+  return keywords.value.length
 })
 
 const validKeywordCount = computed(() => {
-  if (!keywordsText.value) return 0
-  return keywordsText.value.split('\n').filter(line => line.trim().length > 0).length
+  return keywords.value.filter(keyword => keyword && keyword.trim().length > 0).length
 })
-
-// 获取匹配数量颜色
-const getMatchCountColor = (count: number) => {
-  if (count === 0) return 'default'
-  if (count <= 5) return 'green'
-  if (count <= 20) return 'orange'
-  return 'red'
-}
 
 
 // 添加新关键词
@@ -1120,23 +1210,40 @@ const addNewKeyword = async () => {
     return
   }
   
+  const trimmedKeyword = newKeyword.value.trim()
+  
+  // 检查是否已存在
+  if (keywords.value.includes(trimmedKeyword)) {
+    message.warning('关键词已存在')
+    return
+  }
+  
   try {
-    const result = await addKeyword({
-      keyword: newKeyword.value.trim(),
-      description: newKeywordDescription.value || '用户添加的关键词'
-    })
+    // 添加到前端列表
+    keywords.value.push(trimmedKeyword)
     
-    if (result && result.data && result.data.success) {
+    // 同步到文件
+    const result = await addKeywordToFile(trimmedKeyword)
+    
+    if (result && result.success) {
       message.success('关键词添加成功')
       newKeyword.value = ''
-      newKeywordDescription.value = ''
       showAddKeywordInput.value = false
-      await refreshKeywordCounts()
     } else {
-      // message.error(result?.data?.error || '添加关键词失败')
+      // 如果文件同步失败，从前端列表中移除
+      const index = keywords.value.indexOf(trimmedKeyword)
+      if (index > -1) {
+        keywords.value.splice(index, 1)
+      }
+      message.error('关键词添加到文件失败')
     }
   } catch (error) {
     console.error('添加关键词失败:', error)
+    // 如果文件同步失败，从前端列表中移除
+    const index = keywords.value.indexOf(trimmedKeyword)
+    if (index > -1) {
+      keywords.value.splice(index, 1)
+    }
     message.error('添加关键词失败')
   }
 }
@@ -1144,105 +1251,69 @@ const addNewKeyword = async () => {
 // 取消添加关键词
 const cancelAddKeyword = () => {
   newKeyword.value = ''
-  newKeywordDescription.value = ''
   showAddKeywordInput.value = false
 }
 
 // 删除关键词
 const removeKeyword = async (keyword: string) => {
   try {
-    const result = await deleteKeyword({ keyword })
+    // 从前端列表中移除
+    const index = keywords.value.indexOf(keyword)
+    if (index > -1) {
+      keywords.value.splice(index, 1)
+    }
     
-    if (result && result.data && result.data.success) {
+    // 从文件中删除
+    const result = await deleteKeywordFromFile(keyword)
+    
+    if (result && result.success) {
       message.success('关键词删除成功')
-      await refreshKeywordCounts()
     } else {
-      // message.error(result?.data?.error || '删除关键词失败')
+      // 如果文件删除失败，恢复前端列表
+      keywords.value.splice(index, 0, keyword)
+      message.error('关键词从文件删除失败')
     }
   } catch (error) {
     console.error('删除关键词失败:', error)
+    // 如果文件删除失败，恢复前端列表
+    const index = keywords.value.indexOf(keyword)
+    if (index === -1) {
+      keywords.value.push(keyword)
+    }
     message.error('删除关键词失败')
   }
 }
 
-// 删除所有0匹配的关键词
-const handleDeleteZeroMatchKeywords = async () => {
-  deletingZeroMatch.value = true
+// 查看关键词匹配情况
+const viewKeywordMatch = async (keyword: string) => {
+  selectedKeywordForMatch.value = keyword
+  keywordMatchModalVisible.value = true
+  loadingMatchDetails.value = true
+  
   try {
-    const result = await deleteZeroMatchKeywords()
+    const result = await getKeywordMatchDetails(keyword)
     
-    if (result && result.data && result.data.success) {
-      const deletedCount = result.data.deletedCount || 0
-      if (deletedCount > 0) {
-        message.success(`成功删除 ${deletedCount} 个0匹配的关键词`)
-        console.log('删除的关键词:', result.data.deletedKeywords)
-      } else {
-        message.info('没有找到0条匹配的关键词')
-      }
+    if (result && result.success) {
+      keywordMatchDetails.value = result
     } else {
-      // message.error(result?.data?.error || '删除0匹配关键词失败')
+      message.error('获取关键词匹配情况失败')
+      keywordMatchDetails.value = null
     }
-    
-    // 刷新关键词列表
-    await refreshKeywordCounts()
   } catch (error) {
-    console.error('删除0匹配关键词失败:', error)
-    message.error('删除0匹配关键词失败')
+    console.error('获取关键词匹配情况失败:', error)
+    message.error('获取关键词匹配情况失败')
+    keywordMatchDetails.value = null
   } finally {
-    deletingZeroMatch.value = false
+    loadingMatchDetails.value = false
   }
 }
 
-// 刷新关键词匹配数量
-const refreshKeywordCounts = async () => {
-  loadingCounts.value = true
-  try {
-    console.log('开始刷新关键词匹配数量...')
-    const result = await getKeywordsWithMatchCounts()
-    console.log('关键词匹配数量API响应:', result)
-    
-    // 处理新的API响应格式
-    let keywordsWithCounts = null
-    if (result && result.success && result.keywords) {
-      // 新格式: {success: true, keywords: [...], total: number}
-      keywordsWithCounts = result.keywords
-    } else if (result && result.success && result.data) {
-      // 兼容旧格式: {success: true, data: [...]}
-      keywordsWithCounts = Array.isArray(result.data) ? result.data : (result.data.keywords || [])
-    } else if (result && result.data && result.data.success) {
-      // 格式: {data: {success: true, keywords: [...]}}
-      keywordsWithCounts = result.data.keywords || []
-    } else if (result && result.data && result.data.keywords) {
-      // 格式: {data: {keywords: [...]}}
-      keywordsWithCounts = result.data.keywords || []
-    }
-    
-    if (keywordsWithCounts && Array.isArray(keywordsWithCounts)) {
-      keywordListWithCounts.value = keywordsWithCounts
-      console.log('刷新关键词匹配数量成功，数量:', keywordsWithCounts.length)
-      message.success('关键词匹配数量刷新成功')
-    } else {
-      console.error('关键词匹配数量数据格式错误:', result)
-      message.error('刷新关键词匹配数量失败：数据格式错误')
-    }
-  } catch (error) {
-    console.error('刷新关键词匹配数量失败:', error)
-    message.error('刷新关键词匹配数量失败')
-  } finally {
-    loadingCounts.value = false
-  }
+// 关闭关键词匹配详情模态框
+const closeKeywordMatchModal = () => {
+  keywordMatchModalVisible.value = false
+  selectedKeywordForMatch.value = ''
+  keywordMatchDetails.value = null
 }
-
-// 关键词来源计算属性
-const keywordSource = computed(() => {
-  if (useFileKeywords.value && fileKeywords.value.length > 0) {
-    return 'file'
-  } else if (keywords.value.length > 0) {
-    return 'database'
-  } else {
-    return 'textbox'
-  }
-})
 
 // 统计数据
 const stats = reactive({
@@ -1916,50 +1987,30 @@ const handleBatchUpdateRiskLevel = async () => {
 const autoProcess = async () => {
   autoProcessing.value = true
   try {
-    let currentKeywords = []
-    
-    // 暂时只使用本地关键词，跳过数据库关键词获取
-    console.log('暂时只使用本地关键词进行自动处理...')
-    
-    // 优先使用文件关键词（如果已设置）
-    if (useFileKeywords.value && fileKeywords.value.length > 0) {
-      currentKeywords = fileKeywords.value.filter(keyword => keyword && keyword.trim())
-      console.log('使用文件关键词:', currentKeywords)
-    }
-    
-    // 如果没有本地关键词，尝试使用当前文本框中的关键词
-    if (currentKeywords.length === 0) {
-      currentKeywords = keywordsText.value.split('\n').filter(line => line.trim())
-      console.log('使用文本框关键词:', currentKeywords)
-    }
-    
-    // 如果仍然没有关键词，尝试使用本地关键词数组
-    if (currentKeywords.length === 0 && keywords.value.length > 0) {
-      currentKeywords = keywords.value.map((item: any) => item.keyword || item).filter((keyword: string) => keyword && keyword.trim())
-      console.log('使用本地关键词数组:', currentKeywords)
-    }
+    // 使用前端关键词列表
+    const currentKeywords = keywords.value.filter(keyword => keyword && keyword.trim())
     
     if (currentKeywords.length === 0) {
       message.warning('请先在关键词管理中设置关键词')
       return
     }
     
-    console.log('使用的关键词列表:', currentKeywords)
+    console.log('使用前端关键词列表进行自动处理:', currentKeywords)
     
     // 调用自动处理API，传递关键词列表
     const result = await autoProcessRelatedAPI({
       keywords: currentKeywords
     })
     
-    if (result && result.data && result.data.success) {
-      const totalProcessed = result.data.totalProcessed || 0
-      const relatedCount = result.data.relatedCount || 0
-      const unrelatedCount = result.data.unrelatedCount || 0
-      const unchangedCount = result.data.unchangedCount || 0
-      const usedKeywords = result.data.usedKeywords || currentKeywords.length
+    if (result && result.success) {
+      const totalProcessed = result.totalProcessed || 0
+      const relatedCount = result.relatedCount || 0
+      const unrelatedCount = result.unrelatedCount || 0
+      const unchangedCount = result.unchangedCount || 0
+      const usedKeywords = result.usedKeywords || currentKeywords.length
       
       // 后端现在会自动设置相关数据为高风险，获取风险处理计数
-      const riskProcessedCount = result.data.riskProcessedCount || 0
+      const riskProcessedCount = result.riskProcessedCount || 0
       
       // 更新自动处理时间和结果
       const now = new Date()
@@ -1971,6 +2022,7 @@ const autoProcess = async () => {
       // 保存本次自动处理结果
       lastAutoProcessResult.value = {
         totalProcessed,
+        totalData: result.totalData, // 总的中风险数据数量
         relatedCount,
         unrelatedCount,
         unchangedCount,
@@ -1987,7 +2039,7 @@ const autoProcess = async () => {
       Modal.info({
         title: '自动处理完成',
         content: h('div', [
-          h('p', `总处理数据: ${totalProcessed} 条`),
+          h('p', `总中风险数据: ${result.totalData || totalProcessed} 条`),
           h('p', `标记为相关: ${relatedCount} 条`),
           h('p', `标记为不相关: ${unrelatedCount} 条`),
           h('p', `未变更数据: ${unchangedCount} 条`),
@@ -2183,48 +2235,21 @@ const showKeywordModal = () => {
 const loadKeywords = async () => {
   keywordsLoading.value = true
   try {
-    const result = await getAllKeywords()
-    console.log('关键词API响应:', result)
+    const result = await getFileKeywords()
+    console.log('从文件加载关键词API响应:', result)
     
-    // 处理新的API响应格式: {success: true, keywords: [...], total: number}
-    let keywordsData = null
     if (result && result.success && result.keywords) {
-      // 新格式: {success: true, keywords: [...], total: number}
-      keywordsData = result.keywords
-    } else if (result && result.success && result.data) {
-      // 兼容旧格式: {success: true, data: [...]}
-      keywordsData = Array.isArray(result.data) ? result.data : (result.data.keywords || [])
-    } else if (result && result.data && result.data.success) {
-      // 格式: {data: {success: true, keywords: [...]}}
-      keywordsData = result.data.keywords || []
-    } else if (result && result.data && result.data.keywords) {
-      // 格式: {data: {keywords: [...]}}
-      keywordsData = result.data.keywords || []
-    }
-    
-    if (keywordsData && Array.isArray(keywordsData)) {
-      keywords.value = keywordsData
-      // 将关键词数组转换为文本形式，处理新的对象格式
-      keywordsText.value = keywordsData.map(item => {
-        if (typeof item === 'string') {
-          return item
-        } else if (item && typeof item === 'object') {
-          // 新格式: {id, keyword, description, enabled, sortOrder, createdTime, updatedTime}
-          return item.keyword || item.name || item.text || JSON.stringify(item)
-        }
-        return String(item)
-      }).join('\n')
-      console.log('加载关键词成功，数量:', keywordsData.length)
-      
-      // 同时加载匹配数量
-      await refreshKeywordCounts()
+      keywords.value = result.keywords
+      console.log('从文件加载关键词成功，数量:', result.keywords.length)
     } else {
-      console.error('关键词数据格式错误:', result)
-      message.error('加载关键词失败：数据格式错误')
+      console.error('从文件加载关键词失败:', result)
+      message.error('从文件加载关键词失败')
+      keywords.value = []
     }
   } catch (error) {
-    console.error('加载关键词失败:', error)
-    message.error('加载关键词失败')
+    console.error('从文件加载关键词失败:', error)
+    message.error('从文件加载关键词失败')
+    keywords.value = []
   } finally {
     keywordsLoading.value = false
   }
@@ -2232,100 +2257,53 @@ const loadKeywords = async () => {
 
 const saveKeywords = async () => {
   try {
-    // 将文本转换为关键词数组
-    const keywordLines = keywordsText.value.split('\n').filter(line => line.trim())
-    const keywordsArray = keywordLines.map(keyword => keyword.trim())
-    
-    if (keywordsArray.length === 0) {
+    if (keywords.value.length === 0) {
       message.warning('请输入至少一个关键词')
       return false
     }
     
     // 显示保存进度
-    message.loading('正在保存关键词到数据库...', 0)
+    message.loading('正在保存关键词到文件...', 0)
     
-    // 批量保存关键词到数据库
-    let successCount = 0
-    let errorCount = 0
-    const errors = []
-    
-    for (const keyword of keywordsArray) {
-      try {
-        const result = await addKeyword({ keyword, description: '' })
-        if (result && result.success) {
-          successCount++
-        } else {
-          errorCount++
-          errors.push(`${keyword}: ${result?.message || '保存失败'}`)
-        }
-      } catch (error) {
-        errorCount++
-        errors.push(`${keyword}: ${error.message || '保存失败'}`)
-      }
-    }
+    // 保存关键词到文件
+    const result = await saveKeywordsToFile(keywords.value)
     
     // 关闭加载提示
     message.destroy()
     
-    // 重新加载关键词列表
-    await loadKeywords()
-    
-    // 显示保存结果
-    if (errorCount === 0) {
-      Modal.success({
-        title: '数据库保存成功',
-        content: h('div', [
-          h('p', { style: 'margin-bottom: 8px;' }, `总计保存: ${successCount} 个关键词`),
-          h('p', { style: 'color: #52c41a; margin-bottom: 4px;' }, `✓ 已保存到数据库`),
-          h('p', { style: 'color: #1890ff; margin-bottom: 4px;' }, `✓ 自动处理将使用数据库关键词`),
-          h('p', { style: 'margin-top: 12px; font-size: 12px; color: #666;' }, 
-            '关键词已保存到数据库，所有用户共享使用')
-        ]),
-        okText: '确定'
-      })
+    if (result && result.success) {
+      message.success('关键词保存到文件成功')
+      console.log('关键词已保存到文件:', keywords.value)
+      return true // 返回true表示保存成功，模态框会关闭
     } else {
-      Modal.warning({
-        title: '部分保存成功',
-        content: h('div', [
-          h('p', { style: 'margin-bottom: 8px;' }, `成功: ${successCount} 个，失败: ${errorCount} 个`),
-          h('p', { style: 'color: #faad14; margin-bottom: 8px;' }, '失败的关键词:'),
-          h('ul', { style: 'margin-left: 20px; max-height: 200px; overflow-y: auto;' }, 
-            errors.map(error => h('li', { style: 'margin-bottom: 4px;' }, error))
-          )
-        ]),
-        okText: '确定'
-      })
+      message.error('保存关键词到文件失败')
+      return false // 返回false表示保存失败，模态框不会关闭
     }
     
-    console.log('关键词已保存到数据库:', keywordsArray)
-    return true // 返回true表示保存成功，模态框会关闭
-    
   } catch (error) {
-    console.error('保存关键词到数据库失败:', error)
-    message.error('保存关键词到数据库失败')
+    console.error('保存关键词到文件失败:', error)
+    message.error('保存关键词到文件失败')
     return false // 返回false表示保存失败，模态框不会关闭
   }
 }
 
 const initializeDefaultKeywords = async () => {
   try {
-    console.log('开始初始化关键词...')
-    const result = await initializeKeywords()
-    console.log('关键词初始化API响应:', result)
+    console.log('开始从文件初始化关键词...')
+    const result = await initializeKeywordsFromFile()
+    console.log('从文件初始化关键词API响应:', result)
     
-    if (result && result.success) {
-      console.log('初始化成功，显示成功消息')
-      message.success(result.message || '初始化关键词成功')
-      await loadKeywords()
+    if (result && result.success && result.keywords) {
+      keywords.value = result.keywords
+      console.log('从文件初始化关键词成功，数量:', result.keywords.length)
+      message.success(result.message || '从文件初始化关键词成功')
     } else {
-      console.log('初始化失败，显示错误消息')
-      console.log('result:', result)
-      console.log('result.success:', result?.success)
-      message.error((result && result.error) || '初始化关键词失败')
+      console.log('从文件初始化关键词失败:', result)
+      message.error((result && result.error) || '从文件初始化关键词失败')
     }
   } catch (error) {
-    console.error('初始化关键词失败:', error)
-    message.error('初始化关键词失败')
+    console.error('从文件初始化关键词失败:', error)
+    message.error('从文件初始化关键词失败')
   }
 }
 
@@ -2341,77 +2319,9 @@ const handleSaveKeywords = async () => {
 const closeKeywordModal = () => {
   keywordModalVisible.value = false
   newKeyword.value = ''
-  newKeywordDescription.value = ''
-  keywordsText.value = ''
+  showAddKeywordInput.value = false
 }
 
-// 文件关键词管理方法
-const loadFileKeywords = async () => {
-  try {
-    const result = await getFileKeywords()
-    if (result) {
-      if (result.success !== false && result.keywords) {
-        fileKeywords.value = result.keywords || []
-        useFileKeywords.value = fileKeywords.value.length > 0
-        console.log('加载文件关键词成功:', fileKeywords.value.length, '个')
-      } else {
-        console.warn('加载文件关键词失败:', result.error || '未知错误')
-        fileKeywords.value = []
-        useFileKeywords.value = false
-      }
-    } else {
-      console.warn('加载文件关键词失败: 无响应数据')
-      fileKeywords.value = []
-      useFileKeywords.value = false
-    }
-  } catch (error) {
-    console.error('加载文件关键词失败:', error)
-    fileKeywords.value = []
-    useFileKeywords.value = false
-  }
-}
-
-const migrateFromLocalStorage = async () => {
-  try {
-    // 获取localStorage中的关键词
-    const savedKeywords = localStorage.getItem('localKeywords')
-    if (!savedKeywords) {
-      message.warning('没有找到localStorage中的关键词')
-      return
-    }
-    
-    const keywordsArray = savedKeywords.split('\n').filter(line => line.trim())
-    if (keywordsArray.length === 0) {
-      message.warning('localStorage中没有有效的关键词')
-      return
-    }
-    
-    // 迁移到文件
-    const result = await migrateKeywordsFromLocalStorage(keywordsArray)
-    if (result) {
-      if (result.success !== false) {
-        message.success(`成功迁移 ${result.migratedCount} 个关键词到文件`)
-        
-        // 更新本地状态
-        fileKeywords.value = keywordsArray
-        useFileKeywords.value = true
-        
-        // 清除localStorage
-        localStorage.removeItem('localKeywords')
-        localStorage.removeItem('useLocalKeywords')
-        
-        console.log('关键词迁移完成')
-      } else {
-        message.error(result.error || '迁移失败')
-      }
-    } else {
-      message.error('迁移失败: 无响应数据')
-    }
-  } catch (error) {
-    console.error('迁移关键词失败:', error)
-    message.error('迁移关键词失败')
-  }
-}
 
 const sendEmail = (item: any) => {
   emailItem.value = item
@@ -2747,8 +2657,12 @@ const loadAutoProcessInfo = () => {
 onMounted(async () => {
   loadSearchHistory()
   
-  // 加载文件关键词
-  await loadFileKeywords()
+  // 加载关键词
+  try {
+    await loadKeywords()
+  } catch (error) {
+    console.error('❌ 关键词加载失败:', error)
+  }
   
   // 加载自动处理时间信息
   loadAutoProcessInfo()
@@ -3378,4 +3292,40 @@ onMounted(async () => {
   color: #999;
   font-style: italic;
 }
+
+/* 关键词匹配详情样式 */
+.keyword-match-details {
+  padding: 16px 0;
+}
+
+.match-stats {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.country-stats,
+.source-stats {
+  margin-bottom: 16px;
+}
+
+.country-stats h4,
+.source-stats h4,
+.match-details h4 {
+  margin-bottom: 12px;
+  color: #1890ff;
+  font-weight: 500;
+}
+
+.match-details {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.no-match-data {
+  text-align: center;
+  padding: 40px;
+}
 </style>
+

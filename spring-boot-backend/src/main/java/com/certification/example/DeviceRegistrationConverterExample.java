@@ -34,7 +34,6 @@ public class DeviceRegistrationConverterExample {
         usData.put("device_classes", "[\"Class III\", \"Class III\"]");
         usData.put("regulation_numbers", "[\"21 CFR 870.3610\", \"21 CFR 870.3605\"]");
         usData.put("product_codes", "[\"DXY\", \"LWS\"]");
-        usData.put("risk_class", "Class III");
         usData.put("status_code", "Active");
         usData.put("reg_expiry_year", "2025");
 
@@ -55,7 +54,6 @@ public class DeviceRegistrationConverterExample {
         euData.put("manufacturer_full_address", "Route du Molliau 31, 1131 Tolochenaz, Switzerland");
         euData.put("trade_name", "Medtronic Pacemaker");
         euData.put("device_class", "Class III");
-        euData.put("risk_class", "Class III");
         euData.put("status_code", "Active");
         euData.put("reg_expiry_year", "2025");
         euData.put("regulation_number", "MDR 2017/745");

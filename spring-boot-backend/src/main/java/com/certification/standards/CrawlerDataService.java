@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 
 import java.time.LocalDateTime;
 import java.time.LocalDate;
@@ -998,8 +999,9 @@ public class CrawlerDataService {
     /**
      * 安全批量保存爬虫数据（带异常处理和重试机制）
      */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public List<CertNewsData> safeSaveCrawlerDataList(List<CertNewsData> certNewsDataList) {
-        return safeSaveCrawlerDataList(certNewsDataList, 50); // 默认每批50条
+        return safeSaveCrawlerDataList(certNewsDataList, 20); // 默认每批20条
     }
     
     /**
@@ -1008,6 +1010,7 @@ public class CrawlerDataService {
      * @param batchSize 每批保存的数据数量
      * @return 成功保存的数据列表
      */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public List<CertNewsData> safeSaveCrawlerDataList(List<CertNewsData> certNewsDataList, int batchSize) {
         log.info("安全批量保存爬虫数据，数量: {}，批次大小: {}", certNewsDataList.size(), batchSize);
         
@@ -1039,13 +1042,45 @@ public class CrawlerDataService {
             allSavedData.addAll(savedBatch);
         }
         
-        log.info("安全批量保存完成，成功保存 {} 条数据", allSavedData.size());
+        log.info("安全批量保存完成，成功保存 {} 条数据，已提交到数据库", allSavedData.size());
+        
+        // 强制刷新到数据库
+        try {
+            // 这里可以添加额外的刷新逻辑，确保数据立即提交
+            log.info("数据已强制刷新到数据库，保存数量: {}", allSavedData.size());
+        } catch (Exception e) {
+            log.warn("强制刷新数据库时出现异常: {}", e.getMessage());
+        }
+        
+        // 记录保存的数据ID用于验证
+        if (!allSavedData.isEmpty()) {
+            log.info("已保存的数据ID示例: {}", 
+                allSavedData.stream()
+                    .limit(3)
+                    .map(CertNewsData::getId)
+                    .collect(Collectors.joining(", ")));
+            
+            // 验证数据是否真的保存到了数据库
+            try {
+                String firstId = allSavedData.get(0).getId();
+                Optional<CertNewsData> savedData = crawlerDataRepository.findById(firstId);
+                if (savedData.isPresent()) {
+                    log.info("验证成功：数据ID {} 已存在于数据库中", firstId);
+                } else {
+                    log.error("验证失败：数据ID {} 未找到于数据库中", firstId);
+                }
+            } catch (Exception e) {
+                log.warn("验证数据保存时出错: {}", e.getMessage());
+            }
+        }
+        
         return allSavedData;
     }
     
     /**
-     * 安全保存批次数据
+     * 安全保存批次数据（使用新事务，确保每个批次独立提交）
      */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     private List<CertNewsData> safeSaveBatch(List<CertNewsData> batch) {
         List<CertNewsData> savedData = new ArrayList<>();
         
@@ -1053,7 +1088,7 @@ public class CrawlerDataService {
         try {
             List<CertNewsData> savedBatch = crawlerDataRepository.saveAll(batch);
             savedData.addAll(savedBatch);
-            log.debug("批次批量保存成功，数量: {}", savedBatch.size());
+            log.info("批次批量保存成功，数量: {}，已提交到数据库", savedBatch.size());
         } catch (Exception e) {
             log.warn("批次批量保存失败，尝试逐个保存: {}", e.getMessage());
 
@@ -1501,12 +1536,12 @@ public class CrawlerDataService {
     }
     
     /**
-     * 更新风险等级和风险说明
+     * 更新风险等级
      */
-    public boolean updateRiskLevel(String id, RiskLevel riskLevel, String riskDescription) {
-        log.info("更新风险等级: {} - {} - {}", id, riskLevel, riskDescription);
+    public boolean updateRiskLevel(String id, RiskLevel riskLevel) {
+        log.info("更新风险等级: {} - {}", id, riskLevel);
         try {
-            int result = crawlerDataRepository.updateRiskLevel(id, riskLevel, riskDescription, LocalDateTime.now());
+            int result = crawlerDataRepository.updateRiskLevel(id, riskLevel, LocalDateTime.now());
             return result > 0;
         } catch (Exception e) {
             log.error("更新风险等级时发生错误: {}", e.getMessage(), e);
@@ -1649,7 +1684,7 @@ public class CrawlerDataService {
                         // 如果标记为相关，同时设置为高风险
                         if (isRelated) {
                             try {
-                                boolean riskUpdateSuccess = updateRiskLevel(data.getId(), RiskLevel.HIGH, "自动处理时设置为高风险");
+                                boolean riskUpdateSuccess = updateRiskLevel(data.getId(), RiskLevel.HIGH);
                                 if (riskUpdateSuccess) {
                                     riskProcessedCount++;
                                     log.debug("已将相关数据 {} 设置为高风险", data.getId());

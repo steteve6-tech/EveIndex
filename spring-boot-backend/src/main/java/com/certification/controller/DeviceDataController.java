@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -1592,7 +1593,7 @@ public class DeviceDataController {
     /**
      * 根据实体类型批量更新实体
      */
-    private int batchUpdateEntityByType(String entityType, List<Long> ids, String riskLevel, String keywords) {
+    private int batchUpdateEntityByType(String entityType, List<? extends Number> ids, String riskLevel, String keywords) {
         try {
             RiskLevel riskLevelEnum = RiskLevel.valueOf(riskLevel.toUpperCase());
             
@@ -1735,99 +1736,252 @@ public class DeviceDataController {
     }
 
     // 批量更新方法
-    private int batchUpdateDevice510K(List<Long> ids, RiskLevel riskLevel, String keywords) {
+    @Transactional
+    private int batchUpdateDevice510K(List<? extends Number> ids, RiskLevel riskLevel, String keywords) {
         try {
-            List<Device510K> devices = device510KRepository.findAllById(ids);
-            for (Device510K device : devices) {
+            log.info("开始批量更新Device510K，数量: {}, 风险等级: {}", ids.size(), riskLevel);
+            
+            // 转换ID类型，确保都是Long类型
+            List<Long> longIds = ids.stream()
+                    .map(id -> {
+                        if (id instanceof Integer) {
+                            return ((Integer) id).longValue();
+                        } else if (id instanceof Long) {
+                            return (Long) id;
+                        } else {
+                            return id.longValue();
+                        }
+                    })
+                    .collect(java.util.stream.Collectors.toList());
+            
+            // 批量查询
+            List<Device510K> devices = device510KRepository.findAllById(longIds);
+            log.info("找到 {} 条Device510K记录需要更新", devices.size());
+            
+            if (devices.isEmpty()) {
+                log.warn("没有找到需要更新的Device510K记录");
+                return 0;
+            }
+            
+            // 批量更新
+            devices.forEach(device -> {
                 device.setRiskLevel(riskLevel);
-                // 无论keywords是否为null，都要设置（允许清空关键词）
                 device.setKeywords(keywords);
-            }
-            device510KRepository.saveAll(devices);
-            return devices.size();
+            });
+            
+            // 批量保存
+            List<Device510K> savedDevices = device510KRepository.saveAll(devices);
+            log.info("成功批量更新Device510K: {} 条记录", savedDevices.size());
+            
+            return savedDevices.size();
         } catch (Exception e) {
-            log.error("批量更新Device510K失败: error={}", e.getMessage());
-            return 0;
+            log.error("批量更新Device510K失败: error={}", e.getMessage(), e);
+            throw new RuntimeException("批量更新Device510K失败", e);
         }
     }
 
-    private int batchUpdateDeviceEventReport(List<Long> ids, RiskLevel riskLevel, String keywords) {
+    @Transactional
+    private int batchUpdateDeviceEventReport(List<? extends Number> ids, RiskLevel riskLevel, String keywords) {
         try {
-            List<DeviceEventReport> events = deviceEventReportRepository.findAllById(ids);
-            for (DeviceEventReport event : events) {
+            log.info("开始批量更新DeviceEventReport，数量: {}, 风险等级: {}", ids.size(), riskLevel);
+            
+            // 转换ID类型，确保都是Long类型
+            List<Long> longIds = ids.stream()
+                    .map(id -> {
+                        if (id instanceof Integer) {
+                            return ((Integer) id).longValue();
+                        } else if (id instanceof Long) {
+                            return (Long) id;
+                        } else {
+                            return id.longValue();
+                        }
+                    })
+                    .collect(java.util.stream.Collectors.toList());
+            
+            List<DeviceEventReport> events = deviceEventReportRepository.findAllById(longIds);
+            log.info("找到 {} 条DeviceEventReport记录需要更新", events.size());
+            
+            if (events.isEmpty()) {
+                log.warn("没有找到需要更新的DeviceEventReport记录");
+                return 0;
+            }
+            
+            events.forEach(event -> {
                 event.setRiskLevel(riskLevel);
-                // 无论keywords是否为null，都要设置（允许清空关键词）
                 event.setKeywords(keywords);
-            }
-            deviceEventReportRepository.saveAll(events);
-            return events.size();
+            });
+            
+            List<DeviceEventReport> savedEvents = deviceEventReportRepository.saveAll(events);
+            log.info("成功批量更新DeviceEventReport: {} 条记录", savedEvents.size());
+            
+            return savedEvents.size();
         } catch (Exception e) {
-            log.error("批量更新DeviceEventReport失败: error={}", e.getMessage());
-            return 0;
+            log.error("批量更新DeviceEventReport失败: error={}", e.getMessage(), e);
+            throw new RuntimeException("批量更新DeviceEventReport失败", e);
         }
     }
 
-    private int batchUpdateDeviceRecallRecord(List<Long> ids, RiskLevel riskLevel, String keywords) {
+    @Transactional
+    private int batchUpdateDeviceRecallRecord(List<? extends Number> ids, RiskLevel riskLevel, String keywords) {
         try {
-            List<DeviceRecallRecord> recalls = deviceRecallRecordRepository.findAllById(ids);
-            for (DeviceRecallRecord recall : recalls) {
+            log.info("开始批量更新DeviceRecallRecord，数量: {}, 风险等级: {}", ids.size(), riskLevel);
+            
+            // 转换ID类型，确保都是Long类型
+            List<Long> longIds = ids.stream()
+                    .map(id -> {
+                        if (id instanceof Integer) {
+                            return ((Integer) id).longValue();
+                        } else if (id instanceof Long) {
+                            return (Long) id;
+                        } else {
+                            return id.longValue();
+                        }
+                    })
+                    .collect(java.util.stream.Collectors.toList());
+            
+            List<DeviceRecallRecord> recalls = deviceRecallRecordRepository.findAllById(longIds);
+            log.info("找到 {} 条DeviceRecallRecord记录需要更新", recalls.size());
+            
+            if (recalls.isEmpty()) {
+                log.warn("没有找到需要更新的DeviceRecallRecord记录");
+                return 0;
+            }
+            
+            recalls.forEach(recall -> {
                 recall.setRiskLevel(riskLevel);
-                // 无论keywords是否为null，都要设置（允许清空关键词）
                 recall.setKeywords(keywords);
-            }
-            deviceRecallRecordRepository.saveAll(recalls);
-            return recalls.size();
+            });
+            
+            List<DeviceRecallRecord> savedRecalls = deviceRecallRecordRepository.saveAll(recalls);
+            log.info("成功批量更新DeviceRecallRecord: {} 条记录", savedRecalls.size());
+            
+            return savedRecalls.size();
         } catch (Exception e) {
-            log.error("批量更新DeviceRecallRecord失败: error={}", e.getMessage());
-            return 0;
+            log.error("批量更新DeviceRecallRecord失败: error={}", e.getMessage(), e);
+            throw new RuntimeException("批量更新DeviceRecallRecord失败", e);
         }
     }
 
-    private int batchUpdateDeviceRegistrationRecord(List<Long> ids, RiskLevel riskLevel, String keywords) {
+    @Transactional
+    private int batchUpdateDeviceRegistrationRecord(List<? extends Number> ids, RiskLevel riskLevel, String keywords) {
         try {
-            List<DeviceRegistrationRecord> registrations = deviceRegistrationRecordRepository.findAllById(ids);
-            for (DeviceRegistrationRecord registration : registrations) {
+            log.info("开始批量更新DeviceRegistrationRecord，数量: {}, 风险等级: {}", ids.size(), riskLevel);
+            
+            // 转换ID类型，确保都是Long类型
+            List<Long> longIds = ids.stream()
+                    .map(id -> {
+                        if (id instanceof Integer) {
+                            return ((Integer) id).longValue();
+                        } else if (id instanceof Long) {
+                            return (Long) id;
+                        } else {
+                            return id.longValue();
+                        }
+                    })
+                    .collect(java.util.stream.Collectors.toList());
+            
+            List<DeviceRegistrationRecord> registrations = deviceRegistrationRecordRepository.findAllById(longIds);
+            log.info("找到 {} 条DeviceRegistrationRecord记录需要更新", registrations.size());
+            
+            if (registrations.isEmpty()) {
+                log.warn("没有找到需要更新的DeviceRegistrationRecord记录");
+                return 0;
+            }
+            
+            registrations.forEach(registration -> {
                 registration.setRiskLevel(riskLevel);
-                // 无论keywords是否为null，都要设置（允许清空关键词）
                 registration.setKeywords(keywords);
-            }
-            deviceRegistrationRecordRepository.saveAll(registrations);
-            return registrations.size();
+            });
+            
+            List<DeviceRegistrationRecord> savedRegistrations = deviceRegistrationRecordRepository.saveAll(registrations);
+            log.info("成功批量更新DeviceRegistrationRecord: {} 条记录", savedRegistrations.size());
+            
+            return savedRegistrations.size();
         } catch (Exception e) {
-            log.error("批量更新DeviceRegistrationRecord失败: error={}", e.getMessage());
-            return 0;
+            log.error("批量更新DeviceRegistrationRecord失败: error={}", e.getMessage(), e);
+            throw new RuntimeException("批量更新DeviceRegistrationRecord失败", e);
         }
     }
 
-    private int batchUpdateCustomsCase(List<Long> ids, RiskLevel riskLevel, String keywords) {
+    @Transactional
+    private int batchUpdateCustomsCase(List<? extends Number> ids, RiskLevel riskLevel, String keywords) {
         try {
-            List<CustomsCase> cases = customsCaseRepository.findAllById(ids);
-            for (CustomsCase caseItem : cases) {
+            log.info("开始批量更新CustomsCase，数量: {}, 风险等级: {}", ids.size(), riskLevel);
+            
+            // 转换ID类型，确保都是Long类型
+            List<Long> longIds = ids.stream()
+                    .map(id -> {
+                        if (id instanceof Integer) {
+                            return ((Integer) id).longValue();
+                        } else if (id instanceof Long) {
+                            return (Long) id;
+                        } else {
+                            return id.longValue();
+                        }
+                    })
+                    .collect(java.util.stream.Collectors.toList());
+            
+            List<CustomsCase> cases = customsCaseRepository.findAllById(longIds);
+            log.info("找到 {} 条CustomsCase记录需要更新", cases.size());
+            
+            if (cases.isEmpty()) {
+                log.warn("没有找到需要更新的CustomsCase记录");
+                return 0;
+            }
+            
+            cases.forEach(caseItem -> {
                 caseItem.setRiskLevel(riskLevel);
-                // 无论keywords是否为null，都要设置（允许清空关键词）
                 caseItem.setKeywords(keywords);
-            }
-            customsCaseRepository.saveAll(cases);
-            return cases.size();
+            });
+            
+            List<CustomsCase> savedCases = customsCaseRepository.saveAll(cases);
+            log.info("成功批量更新CustomsCase: {} 条记录", savedCases.size());
+            
+            return savedCases.size();
         } catch (Exception e) {
-            log.error("批量更新CustomsCase失败: error={}", e.getMessage());
-            return 0;
+            log.error("批量更新CustomsCase失败: error={}", e.getMessage(), e);
+            throw new RuntimeException("批量更新CustomsCase失败", e);
         }
     }
 
-    private int batchUpdateGuidanceDocument(List<Long> ids, RiskLevel riskLevel, String keywords) {
+    @Transactional
+    private int batchUpdateGuidanceDocument(List<? extends Number> ids, RiskLevel riskLevel, String keywords) {
         try {
-            List<GuidanceDocument> documents = guidanceDocumentRepository.findAllById(ids);
-            for (GuidanceDocument document : documents) {
-                document.setRiskLevel(riskLevel);
-                // 无论keywords是否为null，都要设置（允许清空关键词）
-                document.setKeywords(keywords);
+            log.info("开始批量更新GuidanceDocument，数量: {}, 风险等级: {}", ids.size(), riskLevel);
+            
+            // 转换ID类型，确保都是Long类型
+            List<Long> longIds = ids.stream()
+                    .map(id -> {
+                        if (id instanceof Integer) {
+                            return ((Integer) id).longValue();
+                        } else if (id instanceof Long) {
+                            return (Long) id;
+                        } else {
+                            return id.longValue();
+                        }
+                    })
+                    .collect(java.util.stream.Collectors.toList());
+            
+            List<GuidanceDocument> documents = guidanceDocumentRepository.findAllById(longIds);
+            log.info("找到 {} 条GuidanceDocument记录需要更新", documents.size());
+            
+            if (documents.isEmpty()) {
+                log.warn("没有找到需要更新的GuidanceDocument记录");
+                return 0;
             }
-            guidanceDocumentRepository.saveAll(documents);
-            return documents.size();
+            
+            documents.forEach(document -> {
+                document.setRiskLevel(riskLevel);
+                document.setKeywords(keywords);
+            });
+            
+            List<GuidanceDocument> savedDocuments = guidanceDocumentRepository.saveAll(documents);
+            log.info("成功批量更新GuidanceDocument: {} 条记录", savedDocuments.size());
+            
+            return savedDocuments.size();
         } catch (Exception e) {
-            log.error("批量更新GuidanceDocument失败: error={}", e.getMessage());
-            return 0;
+            log.error("批量更新GuidanceDocument失败: error={}", e.getMessage(), e);
+            throw new RuntimeException("批量更新GuidanceDocument失败", e);
         }
     }
     
@@ -1841,17 +1995,13 @@ public class DeviceDataController {
         map.put("deviceName", device.getDeviceName());
         map.put("applicant", device.getApplicant());
         map.put("dateReceived", device.getDateReceived());
-        map.put("decisionDate", device.getDecisionDate());
         map.put("deviceClass", device.getDeviceClass());
-        map.put("productCode", device.getProductCode());
-        map.put("regulationNumber", device.getRegulationNumber());
         map.put("riskLevel", device.getRiskLevel());
         map.put("keywords", device.getKeywords());
         map.put("tradeName", device.getTradeName());
         map.put("kNumber", device.getKNumber());
         map.put("dataSource", device.getDataSource());
         map.put("jdCountry", device.getJdCountry());
-        map.put("deviceUrl", device.getDeviceUrl());
         map.put("crawlTime", device.getCrawlTime());
         map.put("dataStatus", device.getDataStatus());
         map.put("createTime", device.getCreateTime());
@@ -1868,9 +2018,7 @@ public class DeviceDataController {
         map.put("manufacturerName", event.getManufacturerName());
         map.put("dateReceived", event.getDateReceived());
         map.put("genericName", event.getGenericName());
-        map.put("eventType", event.getEventType());
         map.put("dateOfEvent", event.getDateOfEvent());
-        map.put("mdrTextDescription", event.getMdrTextDescription());
         map.put("riskLevel", event.getRiskLevel());
         map.put("keywords", event.getKeywords());
         map.put("jdCountry", event.getJdCountry());
@@ -1904,7 +2052,6 @@ public class DeviceDataController {
         map.put("registrationNumber", registration.getRegistrationNumber());
         map.put("deviceClass", registration.getDeviceClass());
         map.put("proprietaryName", registration.getProprietaryName());
-        map.put("riskClass", registration.getRiskClass());
         map.put("statusCode", registration.getStatusCode());
         map.put("createdDate", registration.getCreatedDate());
         map.put("riskLevel", registration.getRiskLevel());

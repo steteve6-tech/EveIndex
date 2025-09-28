@@ -434,10 +434,6 @@ public class Eu_registration {
             entity.setProprietaryName(src.getTradeName());
         }
 
-        // 设置风险等级
-        if (src.getRiskClass() != null && src.getRiskClass().getCode() != null) {
-            entity.setRiskClass(src.getRiskClass().getCode());
-        }
 
         // 设置状态信息
         if (src.getDeviceStatusType() != null && src.getDeviceStatusType().getCode() != null) {

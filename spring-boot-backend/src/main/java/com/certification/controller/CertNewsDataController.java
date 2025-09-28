@@ -488,9 +488,6 @@ public class CertNewsDataController {
             if (certNewsData.getRiskLevel() != null) {
                 existingData.setRiskLevel(certNewsData.getRiskLevel());
             }
-            if (certNewsData.getRiskDescription() != null) {
-                existingData.setRiskDescription(certNewsData.getRiskDescription());
-            }
             if (certNewsData.getRemarks() != null) {
                 existingData.setRemarks(certNewsData.getRemarks());
             }

@@ -17,7 +17,6 @@ public interface Device510KRepository extends JpaRepository<Device510K, Long> {
     @Query("select d from Device510K d where d.kNumber = :kNumber")
     Optional<Device510K> findByKNumber(@Param("kNumber") String kNumber);
 
-    List<Device510K> findByProductCode(String productCode);
 
     List<Device510K> findByApplicantContaining(String applicant);
 
@@ -61,8 +60,4 @@ public interface Device510KRepository extends JpaRepository<Device510K, Long> {
      */
     long countByRiskLevel(CertNewsData.RiskLevel riskLevel);
 
-    /**
-     * 根据OpenFDA数据模糊查询
-     */
-    List<Device510K> findByOpenfdaContaining(String openfda);
 }

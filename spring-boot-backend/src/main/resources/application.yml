@@ -96,10 +96,10 @@ spring:
             enable: true
             required: true
 
-  # JPA配置
+  # JPA配置 - 临时改为none模式解决启动问题
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none  # 临时改为none，避免模式验证问题
     show-sql: false
     properties:
       hibernate:

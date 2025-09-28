@@ -1,6 +1,6 @@
 package com.certification.service;
 
-import com.certification.entity.notification.Notification;
+// import com.certification.entity.notification.Notification; // 已删除
 // import com.certification.entity.notification.SystemLog; // 已删除
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;

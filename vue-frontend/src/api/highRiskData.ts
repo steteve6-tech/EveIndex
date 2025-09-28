@@ -30,14 +30,14 @@ export const RISK_LEVEL_COLOR_MAP = {
 
 // 获取高风险数据统计
 export async function getHighRiskStatistics() {
-  return request('/api/high-risk-data/statistics', {
+  return request('/high-risk-data/statistics', {
     method: 'GET'
   })
 }
 
 // 按国家获取高风险数据统计
 export async function getHighRiskStatisticsByCountry() {
-  return request('/api/high-risk-data/statistics/by-country', {
+  return request('/high-risk-data/statistics/by-country', {
     method: 'GET'
   })
 }
@@ -51,7 +51,7 @@ export async function getHighRiskData(params?: {
   sortBy?: string
   sortDir?: string
 }) {
-  return request('/api/high-risk-data/search', {
+  return request('/high-risk-data/search', {
     method: 'GET',
     params
   })
@@ -68,7 +68,7 @@ export async function getHighRiskDataByType(
     country?: string
   }
 ) {
-  return request(`/api/high-risk-data/${dataType}`, {
+  return request(`/high-risk-data/${dataType}`, {
     method: 'GET',
     params
   })
@@ -76,7 +76,7 @@ export async function getHighRiskDataByType(
 
 // 更新风险等级
 export async function updateRiskLevel(dataType: string, id: number, riskLevel: string) {
-  return request(`/api/high-risk-data/${dataType}/${id}/risk-level`, {
+  return request(`/high-risk-data/${dataType}/${id}/risk-level`, {
     method: 'PUT',
     data: { riskLevel }
   })
@@ -84,7 +84,7 @@ export async function updateRiskLevel(dataType: string, id: number, riskLevel: s
 
 // 批量更新风险等级
 export async function batchUpdateRiskLevel(ids: number[], riskLevel: string) {
-  return request('/api/high-risk-data/batch/risk-level', {
+  return request('/high-risk-data/batch/risk-level', {
     method: 'PUT',
     data: { ids, riskLevel }
   })
