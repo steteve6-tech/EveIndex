@@ -774,6 +774,7 @@ import {
 import { getCrawlerData, updateCrawlerDataRiskLevel, updateCrawlerDataFull, deleteCrawlerData, getRiskLevelStatistics } from '@/api/pachongshujuguanli'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
+import { PerformanceOptimizer } from '@/utils/performanceOptimizer'
 
 // 路由实例
 const route = useRoute()
@@ -1078,6 +1079,17 @@ const loadData = async () => {
 
 const updateStatistics = async (totalFromBackend?: number) => {
   try {
+    // 检查缓存
+    const cacheKey = 'high-risk-statistics'
+    const cachedData = PerformanceOptimizer.getCache(cacheKey)
+    if (cachedData) {
+      console.log('📊 使用缓存的高风险统计数据')
+      statistics.total = cachedData.total
+      statistics.todayCount = cachedData.todayCount
+      statistics.countryCount = cachedData.countryCount
+      return
+    }
+
     // 获取高风险数据统计
     const result = await getRiskLevelStatistics() as any
     
@@ -1102,7 +1114,7 @@ const updateStatistics = async (totalFromBackend?: number) => {
           console.log('🔍 当前数据不够，查询所有高风险数据的国家分布...')
           const allHighRiskResult = await getCrawlerData({
             page: 0,
-            size: 1000, // 获取更多数据用于统计
+            size: 500, // 减少数据量
             riskLevel: 'HIGH'
           }) as any
           
@@ -1121,10 +1133,14 @@ const updateStatistics = async (totalFromBackend?: number) => {
       }
       
       statistics.countryCount = uniqueCountries.size
-      console.log('🌍 高风险数据涉及国家数量:', statistics.countryCount, '国家列表:', Array.from(uniqueCountries))
-      
-      // TODO: 实现今日新增高风险数据统计
       statistics.todayCount = 0 // 暂时设为0，需要后端支持按日期筛选的高风险数据统计
+      
+      // 缓存结果
+      PerformanceOptimizer.setCache(cacheKey, {
+        total: statistics.total,
+        todayCount: statistics.todayCount,
+        countryCount: statistics.countryCount
+      }, 3 * 60 * 1000) // 3分钟缓存
       
       console.log('📊 高风险数据统计:', {
         total: statistics.total,
@@ -1136,42 +1152,15 @@ const updateStatistics = async (totalFromBackend?: number) => {
       const highRiskData = crawlerDataList.value.filter(item => item.riskLevel === 'HIGH')
       statistics.total = totalFromBackend ?? highRiskData.length
       
-      // 直接从高风险数据计算国家数量（更加精确和高效）
+      // 直接从高风险数据计算国家数量
       const uniqueCountries = new Set<string>()
-      
-      // 从当前加载的高风险数据中统计国家
       highRiskData.forEach(item => {
         if (item.country && item.country.trim()) {
           uniqueCountries.add(item.country.trim())
         }
       })
       
-      // 如果当前数据不够，尝试从所有高风险数据中计算
-      if (uniqueCountries.size === 0 || crawlerDataList.value.length < 50) {
-        try {
-          console.log('🔍 当前数据不够，查询所有高风险数据的国家分布...')
-          const allHighRiskResult = await getCrawlerData({
-            page: 0,
-            size: 1000, // 获取更多数据用于统计
-            riskLevel: 'HIGH'
-          }) as any
-          
-          if (allHighRiskResult && allHighRiskResult.data && allHighRiskResult.data.content) {
-            const allHighRiskData = allHighRiskResult.data.content
-            allHighRiskData.forEach((item: any) => {
-              if (item.country && item.country.trim()) {
-                uniqueCountries.add(item.country.trim())
-              }
-            })
-            console.log('🌍 从所有高风险数据中统计到 {} 个国家', uniqueCountries.size)
-          }
-        } catch (error) {
-          console.warn('⚠️ 查询所有高风险数据失败，使用当前数据:', error)
-        }
-      }
-      
       statistics.countryCount = uniqueCountries.size
-      console.log('🌍 高风险数据涉及国家数量:', statistics.countryCount, '国家列表:', Array.from(uniqueCountries))
       statistics.todayCount = 0
     }
   } catch (error) {

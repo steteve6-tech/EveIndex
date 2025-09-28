@@ -379,6 +379,7 @@ import {
 } from '@/api/biaozhunguanli'
 import { getCrawlerData } from '@/api/pachongshujuguanli'
 import { updateRiskLevel } from '@/api/highRiskData'
+import { PerformanceOptimizer } from '@/utils/performanceOptimizer'
 // 暂时注释掉不存在的API导入
 // import { getCountryRiskTrends, getCountryRiskRanking, initializeBaselineData } from '@/api/countryRiskStatistics'
 
@@ -546,33 +547,27 @@ const countryRiskColumns = [
 const refresh = async () => {
   loading.value = true
   try {
-    // 加载统计数据
-    await loadStatistics()
+    console.log('🚀 开始刷新Dashboard数据...')
     
-    // 加载最新相关数据
-    await loadRecentStandards()
+    // 并行加载数据，提高效率
+    const promises = [
+      loadStatistics(),
+      loadRecentStandards(),
+      loadUpcomingStandards(),
+      loadRiskLevelStats(),
+      loadCountryRiskStats(),
+      loadRiskTrendData(),
+      loadDailyCountryRiskStats(),
+      loadLatestRiskData()
+    ]
     
-    // 加载高风险相关数据
-    await loadUpcomingStandards()
+    // 等待所有数据加载完成
+    await Promise.allSettled(promises)
     
-    // 加载风险等级统计
-    await loadRiskLevelStats()
-    
-    // 加载国家风险统计
-    await loadCountryRiskStats()
-    
-    // 加载风险趋势数据
-    await loadRiskTrendData()
-    
-    // 加载每日国家高风险数据统计
-    await loadDailyCountryRiskStats()
-    
-    // 加载最新风险数据
-    await loadLatestRiskData()
-    
+    console.log('✅ Dashboard数据刷新完成')
     message.success('刷新成功')
   } catch (error) {
-    // console.error('刷新失败:', error)
+    console.error('刷新失败:', error)
     message.error('刷新失败')
   } finally {
     loading.value = false
@@ -598,37 +593,37 @@ const updateData = async () => {
 
 
 
-// 加载统计数据
+// 加载统计数据 - 优化版本
 const loadStatistics = async () => {
   try {
-    // console.log('=== 开始加载相关数据统计 ===')
+    // 检查缓存
+    const cacheKey = 'dashboard-statistics'
+    const cachedData = PerformanceOptimizer.getCache(cacheKey)
+    if (cachedData) {
+      console.log('📊 使用缓存的统计数据')
+      stats.value[0].value = cachedData.highCount
+      stats.value[1].value = cachedData.mediumCount
+      stats.value[2].value = cachedData.lowCount
+      stats.value[3].value = cachedData.total
+      return
+    }
+
+    console.log('=== 开始加载相关数据统计 ===')
     
-    // 获取所有相关数据
-    // console.log('1. 获取所有相关数据...')
+    // 减少数据量，只获取必要的统计信息
     const allDataResult = await getCrawlerData({ 
       page: 0, 
-      size: 10000, 
+      size: 1000, // 从10000减少到1000
       related: true 
     }) as any
-    // console.log('所有相关数据API返回:', allDataResult)
     
-    // 正确处理API返回的数据结构
     const allData = (allDataResult?.data as any)?.content || []
-    // console.log('所有相关数据数量:', allData.length, '数据列表:', allData.slice(0, 5))
+    console.log('所有相关数据数量:', allData.length)
     
     // 手动计算各风险等级数量
-    // console.log('2. 手动计算各风险等级数量...')
     const highCount = allData.filter((item: any) => item.riskLevel === 'HIGH').length
     const mediumCount = allData.filter((item: any) => item.riskLevel === 'MEDIUM').length
     const lowCount = allData.filter((item: any) => item.riskLevel === 'LOW').length
-    
-    // console.log('手动计算结果:', { 
-    //   highCount, 
-    //   mediumCount, 
-    //   lowCount, 
-    //   total: allData.length,
-    //   allData: allData.slice(0, 5) // 只显示前5条用于调试
-    // })
     
     // 更新统计数据
     stats.value[0].value = highCount
@@ -636,14 +631,20 @@ const loadStatistics = async () => {
     stats.value[2].value = lowCount
     stats.value[3].value = allData.length
     
-    // console.log('=== 最终统计数据 ===')
-    // console.log({
-    //   highCount,
-    //   mediumCount,
-    //   lowCount,
-    //   total: allData.length,
-    //   stats: stats.value
-    // })
+    // 缓存结果
+    PerformanceOptimizer.setCache(cacheKey, {
+      highCount,
+      mediumCount,
+      lowCount,
+      total: allData.length
+    }, 3 * 60 * 1000) // 3分钟缓存
+    
+    console.log('=== 最终统计数据 ===', {
+      highCount,
+      mediumCount,
+      lowCount,
+      total: allData.length
+    })
     
   } catch (error) {
     console.error('加载统计数据失败:', error)
@@ -748,15 +749,24 @@ const loadRiskLevelStats = async () => {
   }
 }
 
-// 加载国家风险统计数据
+// 加载国家风险统计数据 - 优化版本
 const loadCountryRiskStats = async () => {
   try {
-    // console.log('=== 开始加载国家风险统计 ===')
+    // 检查缓存
+    const cacheKey = 'country-risk-stats'
+    const cachedData = PerformanceOptimizer.getCache(cacheKey)
+    if (cachedData) {
+      console.log('📊 使用缓存的国家风险统计数据')
+      countryRiskStats.value = cachedData
+      return
+    }
+
+    console.log('=== 开始加载国家风险统计 ===')
     
-    // 获取所有相关数据
+    // 减少数据量，只获取必要的统计信息
     const result = await getCrawlerData({ 
       page: 0, 
-      size: 10000, 
+      size: 2000, // 从10000减少到2000
       related: true 
     }) as any
     
@@ -912,9 +922,12 @@ const loadCountryRiskStats = async () => {
       // })
       
       countryRiskStats.value = countryList
+      
+      // 缓存结果
+      PerformanceOptimizer.setCache(cacheKey, countryList, 5 * 60 * 1000) // 5分钟缓存
     }
   } catch (error) {
-    // console.error('加载国家风险统计失败:', error)
+    console.error('加载国家风险统计失败:', error)
   }
 }
 
