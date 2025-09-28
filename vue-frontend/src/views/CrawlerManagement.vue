@@ -1412,17 +1412,15 @@ import dayjs from 'dayjs';
 import {
   BugOutlined,
   ReloadOutlined,
-  EyeOutlined,
   ThunderboltOutlined,
   SearchOutlined,
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   FileTextOutlined,
-  BarChartOutlined,
-  LineChartOutlined,
-  MinusOutlined
+  BarChartOutlined
 } from '@ant-design/icons-vue';
+import { PerformanceOptimizer } from '@/utils/performanceOptimizer';
 // 移除后端API调用，改为前端本地管理
 
 // 响应式数据
@@ -1666,15 +1664,7 @@ const averageKeywordLength = computed(() => {
   return totalLength / keywords.value.length;
 });
 
-const maxKeywordLength = computed(() => {
-  if (keywords.value.length === 0) return 0;
-  return Math.max(...keywords.value.map(keyword => keyword.length));
-});
-
-const minKeywordLength = computed(() => {
-  if (keywords.value.length === 0) return 0;
-  return Math.min(...keywords.value.map(keyword => keyword.length));
-});
+// 移除了未使用的计算属性
 
 // 方法
 const showTestInterface = (crawler: any) => {
@@ -1839,73 +1829,7 @@ const executeTest = async () => {
   }
 };
 
-const resetCrawlerParams = (crawler: any) => {
-  switch (crawler.key) {
-    case 'd510k':
-      crawler.testParams = {
-        deviceName: '',
-        applicantName: '',
-        dateFrom: null,
-        dateTo: null,
-        maxPages: 5
-      };
-      break;
-    case 'devent':
-      crawler.testParams = {
-        brandName: '',
-        manufacturer: '',
-        modelNumber: '',
-        dateFrom: null,
-        dateTo: null,
-        maxPages: 5
-      };
-      break;
-    case 'drecall':
-      crawler.testParams = {
-        productName: '',
-        reasonForRecall: '',
-        recallingFirm: '',
-        dateFrom: null,
-        dateTo: null,
-        maxPages: 5,
-        useKeywordList: false,
-        inputKeywords: '',
-        selectedKeywords: []
-      };
-      break;
-    case 'dregistration':
-      crawler.testParams = {
-        establishmentName: '',
-        proprietaryName: '',
-        ownerOperatorName: '',
-        maxPages: 5
-      };
-      break;
-    case 'unicrawl':
-      crawler.testParams = {
-        totalCount: 50,
-        dateFrom: null,
-        dateTo: null,
-        inputKeywords: '',
-        maxPages: 0
-      };
-      break;
-    case 'customs-case':
-      crawler.testParams = {
-        hsCode: '9018',
-        maxRecords: 10,
-        batchSize: 10,
-        startDate: null
-      };
-      break;
-    case 'guidance':
-      crawler.testParams = {
-        maxRecords: 10
-      };
-      break;
-  }
-  message.success('参数已重置');
-};
+// 移除了未使用的resetCrawlerParams函数
 
 
 const resetTestParams = () => {
@@ -2121,11 +2045,23 @@ const testAllCrawlers = async () => {
   testAllLoading.value = true;
   
   try {
-    const promises = usaCrawlers.value.map(crawler => quickTest(crawler));
-    await Promise.all(promises);
+    console.log('🚀 开始批量测试所有爬虫...')
     
-    const successCount = usaCrawlers.value.filter(c => c.status === 'available').length;
-    message.success(`所有爬虫快速测试完成！成功: ${successCount}/${usaCrawlers.value.length}`);
+    // 使用Promise.allSettled来避免单个失败影响整体
+    const promises = usaCrawlers.value.map(crawler => quickTest(crawler));
+    const results = await Promise.allSettled(promises);
+    
+    // 统计结果
+    const successCount = results.filter(result => result.status === 'fulfilled').length
+    const failedCount = results.filter(result => result.status === 'rejected').length
+    
+    console.log(`✅ 批量测试完成: 成功 ${successCount}, 失败 ${failedCount}`)
+    
+    if (failedCount === 0) {
+      message.success(`所有爬虫快速测试完成！成功: ${successCount}/${usaCrawlers.value.length}`);
+    } else {
+      message.warning(`批量测试完成！成功: ${successCount}, 失败: ${failedCount}`);
+    }
     
   } catch (error) {
     console.error('批量测试失败:', error);
@@ -2144,14 +2080,28 @@ const batchQuickTest = async () => {
   batchTestLoading.value = true;
   
   try {
+    console.log(`🚀 开始批量测试选中的 ${selectedCrawlers.value.length} 个爬虫...`)
+    
     const selectedCrawlerObjects = usaCrawlers.value.filter(c => 
       selectedCrawlers.value.includes(c.key)
     );
     
+    // 使用Promise.allSettled来避免单个失败影响整体
     const promises = selectedCrawlerObjects.map(crawler => quickTest(crawler));
-    await Promise.all(promises);
+    const results = await Promise.allSettled(promises);
     
-    message.success(`批量快速测试完成！共测试 ${selectedCrawlers.value.length} 个爬虫`);
+    // 统计结果
+    const successCount = results.filter(result => result.status === 'fulfilled').length
+    const failedCount = results.filter(result => result.status === 'rejected').length
+    
+    console.log(`✅ 批量测试完成: 成功 ${successCount}, 失败 ${failedCount}`)
+    
+    if (failedCount === 0) {
+      message.success(`批量快速测试完成！共测试 ${selectedCrawlers.value.length} 个爬虫，全部成功`);
+    } else {
+      message.warning(`批量快速测试完成！成功: ${successCount}, 失败: ${failedCount}`);
+    }
+    
     clearSelection();
     
   } catch (error) {
@@ -2162,14 +2112,19 @@ const batchQuickTest = async () => {
   }
 };
 
+// 节流刷新状态函数
+const throttledRefreshStatus = PerformanceOptimizer.throttle(async () => {
+  console.log('🔄 执行状态刷新...')
+  // 这里可以调用状态检查API
+  await new Promise(resolve => setTimeout(resolve, 500)); // 减少延迟
+  message.success('状态刷新完成');
+}, 2000) // 2秒内只能执行一次
+
 const refreshAllStatus = async () => {
   refreshLoading.value = true;
   
   try {
-    // 这里可以调用状态检查API
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    message.success('状态刷新完成');
+    await throttledRefreshStatus();
   } catch (error) {
     console.error('刷新状态失败:', error);
     message.error('刷新状态失败');
@@ -2178,10 +2133,7 @@ const refreshAllStatus = async () => {
   }
 };
 
-const viewCrawlerDetails = (crawler: any) => {
-  selectedCrawler.value = crawler;
-  crawlerDetailModalVisible.value = true;
-};
+// 移除了未使用的viewCrawlerDetails函数
 
 const handleCrawlerSelect = (crawlerKey: string, checked: boolean) => {
   if (checked) {
@@ -2226,13 +2178,29 @@ const getStatusText = (status: string) => {
   }
 };
 
-// 关键词管理方法 - 改为前端本地管理
+// 关键词管理方法 - 优化版本
 const refreshKeywords = async () => {
+  // 检查缓存
+  const cacheKey = 'crawler-keywords'
+  const cachedData = PerformanceOptimizer.getCache(cacheKey)
+  if (cachedData) {
+    console.log('📊 使用缓存的关键词数据')
+    keywords.value = cachedData
+    message.success(`成功加载 ${keywords.value.length} 个关键词（来自缓存）`)
+    return
+  }
+
   keywordLoading.value = true;
   try {
-    // 模拟加载延迟
-    await new Promise(resolve => setTimeout(resolve, 500));
-    message.success(`成功加载 ${keywords.value.length} 个关键词`);
+    console.log('🔄 开始刷新关键词数据...')
+    // 模拟加载延迟，但减少时间
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // 缓存关键词数据
+    PerformanceOptimizer.setCache(cacheKey, keywords.value, 10 * 60 * 1000) // 10分钟缓存
+    
+    message.success(`成功加载 ${keywords.value.length} 个关键词`)
+    console.log('✅ 关键词数据刷新完成')
   } catch (error: any) {
     console.error('加载关键词失败:', error);
     message.error('加载关键词失败: ' + error.message);
@@ -2359,13 +2327,26 @@ const handleBatchKeywordUpdate = async () => {
   
   batchKeywordLoading.value = true;
   try {
+    console.log('🔄 开始批量更新关键词...')
+    
     // 去重处理
     const uniqueKeywords = [...new Set(validKeywords)];
     
+    // 批量处理关键词
+    PerformanceOptimizer.batchProcess(uniqueKeywords, 50, (batch) => {
+      console.log(`处理关键词批次: ${batch.length} 个`)
+    });
+    
     // 更新本地列表
     keywords.value = uniqueKeywords;
+    
+    // 清除缓存，因为数据已更新
+    PerformanceOptimizer.clearCache('crawler-keywords')
+    
     message.success(`批量更新成功，共 ${uniqueKeywords.length} 个关键词`);
     batchKeywordModalVisible.value = false;
+    
+    console.log('✅ 批量关键词更新完成')
   } catch (error: any) {
     console.error('批量更新失败:', error);
     message.error('批量更新失败: ' + error.message);
@@ -2383,9 +2364,16 @@ const clearAllKeywords = () => {
     cancelText: '取消',
     onOk: async () => {
       try {
+        console.log('🗑️ 开始清空所有关键词...')
+        
         // 清空本地列表
         keywords.value = [];
+        
+        // 清除相关缓存
+        PerformanceOptimizer.clearCache('crawler-keywords')
+        
         message.success('所有关键词已清空');
+        console.log('✅ 关键词清空完成')
       } catch (error: any) {
         console.error('清空关键词失败:', error);
         message.error('清空关键词失败: ' + error.message);
@@ -2394,8 +2382,14 @@ const clearAllKeywords = () => {
   });
 };
 
+// 防抖搜索函数
+const debouncedKeywordSearch = PerformanceOptimizer.debounce(() => {
+  console.log('🔍 执行关键词搜索:', keywordSearchText.value)
+}, 300)
+
 const handleKeywordSearch = () => {
-  // 搜索逻辑已在计算属性中处理
+  // 使用防抖搜索
+  debouncedKeywordSearch()
 };
 
 const getOriginalKeywordIndex = (filteredIndex: number) => {
@@ -2407,9 +2401,21 @@ const getOriginalKeywordIndex = (filteredIndex: number) => {
 
 // 生命周期
 onMounted(() => {
-  console.log('美国爬虫管理系统初始化完成');
-  // 关键词已在前端初始化，无需从后端加载
-  console.log(`初始化关键词列表，共 ${keywords.value.length} 个关键词`);
+  console.log('🚀 美国爬虫管理系统初始化完成');
+  
+  // 初始化关键词缓存
+  const cacheKey = 'crawler-keywords'
+  const cachedKeywords = PerformanceOptimizer.getCache(cacheKey)
+  if (cachedKeywords) {
+    console.log('📊 从缓存加载关键词数据')
+    keywords.value = cachedKeywords
+  } else {
+    // 缓存初始关键词数据
+    PerformanceOptimizer.setCache(cacheKey, keywords.value, 10 * 60 * 1000)
+    console.log(`📝 初始化关键词列表，共 ${keywords.value.length} 个关键词`)
+  }
+  
+  console.log('✅ 爬虫管理系统初始化完成')
 });
 </script>
 
