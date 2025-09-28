@@ -12,9 +12,9 @@ services:
     dockerfile: Dockerfile.zeabur
     env:
       - SPRING_PROFILES_ACTIVE=zeabur
-      - SPRING_DATASOURCE_URL=jdbc:mysql://sjc1.clusters.zeabur.com:32188/zeabur?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&autoReconnect=true&failOverReadOnly=false&maxReconnects=3
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=lSA1WT05oPUMyb746xzQ8EcwBRY932aq
+      - SPRING_DATASOURCE_URL=${{mysql.DATABASE_URL}}
+      - SPRING_DATASOURCE_USERNAME=${{mysql.USERNAME}}
+      - SPRING_DATASOURCE_PASSWORD=${{mysql.PASSWORD}}
       # - SPRING_DATA_REDIS_HOST=${REDIS_HOST:localhost}
       # - SPRING_DATA_REDIS_PORT=${REDIS_PORT:6379}
       - VOLCENGINE_ACCESS_KEY=${VOLCENGINE_ACCESS_KEY:}
@@ -49,7 +49,7 @@ services:
     env:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - MYSQL_DATABASE=common_db
-      - MYSQL_USER=${MYSQL_USERNAME}
+      - MYSQL_USER=app_user
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
 
   # Redis缓存
