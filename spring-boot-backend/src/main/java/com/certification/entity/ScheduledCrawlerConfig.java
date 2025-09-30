@@ -104,9 +104,8 @@ public class ScheduledCrawlerConfig {
      * 最后执行状态
      */
     @Schema(description = "最后执行状态")
-    @Enumerated(EnumType.STRING)
     @Column(name = "last_execution_status", length = 20)
-    private ExecutionStatus lastExecutionStatus;
+    private String lastExecutionStatus;
 
     /**
      * 最后执行结果信息
@@ -159,13 +158,13 @@ public class ScheduledCrawlerConfig {
     private Integer deleted = 0;
 
     /**
-     * 执行状态枚举
+     * 执行状态常量
      */
-    public enum ExecutionStatus {
-        SUCCESS,
-        FAILED,
-        RUNNING,
-        PENDING,
-        CANCELLED
+    public static class ExecutionStatus {
+        public static final String SUCCESS = "SUCCESS";
+        public static final String FAILED = "FAILED";
+        public static final String RUNNING = "RUNNING";
+        public static final String PENDING = "PENDING";
+        public static final String CANCELLED = "CANCELLED";
     }
 }

@@ -175,7 +175,7 @@ public class DeviceDataScheduledService {
 
         LocalDateTime startTime = LocalDateTime.now();
         String resultMessage = "";
-        ScheduledCrawlerConfig.ExecutionStatus status = ScheduledCrawlerConfig.ExecutionStatus.FAILED;
+        String status = ScheduledCrawlerConfig.ExecutionStatus.FAILED;
 
         try {
             // 解析爬取参数

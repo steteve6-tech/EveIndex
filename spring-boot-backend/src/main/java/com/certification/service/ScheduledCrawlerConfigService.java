@@ -135,7 +135,7 @@ public class ScheduledCrawlerConfigService {
     /**
      * 更新执行状态
      */
-    public void updateExecutionStatus(Long id, ScheduledCrawlerConfig.ExecutionStatus status, 
+    public void updateExecutionStatus(Long id, String status, 
                                     String result, LocalDateTime executionTime) {
         Optional<ScheduledCrawlerConfig> config = configRepository.findById(id);
         if (config.isPresent()) {
@@ -145,9 +145,9 @@ public class ScheduledCrawlerConfigService {
             configEntity.setLastExecutionResult(result);
             configEntity.setExecutionCount(configEntity.getExecutionCount() + 1);
             
-            if (status == ScheduledCrawlerConfig.ExecutionStatus.SUCCESS) {
+            if (ScheduledCrawlerConfig.ExecutionStatus.SUCCESS.equals(status)) {
                 configEntity.setSuccessCount(configEntity.getSuccessCount() + 1);
-            } else if (status == ScheduledCrawlerConfig.ExecutionStatus.FAILED) {
+            } else if (ScheduledCrawlerConfig.ExecutionStatus.FAILED.equals(status)) {
                 configEntity.setFailureCount(configEntity.getFailureCount() + 1);
             }
             
