@@ -1,6 +1,8 @@
 package com.certification.crawler.countrydata.us;
 
+import com.certification.config.MedcertCrawlerConfig;
 import com.certification.entity.common.CustomsCase;
+import com.certification.exception.AllDataDuplicateException;
 import com.certification.repository.common.CustomsCaseRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +21,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,19 +31,19 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
-public class CustomsCaseCrawler {
+public class US_CustomsCase {
     
     // 基础URL
     private static final String BASE_URL = "https://rulings.cbp.gov/search";
     private static final String API_URL = "https://rulings.cbp.gov/api/search";
     // 日期格式化器（页面日期格式为M/d/yyyy，如6/23/2025）
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("M/d/yyyy");
-    // 等待时间
-    private static final int WAIT_TIMEOUT_SECONDS = 30;
-    private static final int PAGE_LOAD_TIMEOUT_SECONDS = 60;
 
     @Autowired
     private CustomsCaseRepository customsCaseRepository;
+    
+    @Autowired
+    private MedcertCrawlerConfig crawlerConfig;
 
     private HttpClient httpClient;
 
@@ -54,7 +55,7 @@ public class CustomsCaseCrawler {
             log.info("正在初始化HttpClient...");
             
             httpClient = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofSeconds(30))
+                    .connectTimeout(Duration.ofSeconds(crawlerConfig.getTimeout().getWaitTimeoutSeconds()))
                     .build();
             
             log.info("HttpClient初始化成功！");
@@ -63,6 +64,35 @@ public class CustomsCaseCrawler {
             log.error("HttpClient 初始化失败：" + e.getMessage());
             throw new RuntimeException("无法初始化HttpClient", e);
         }
+    }
+    
+    /**
+     * 带重试机制的HTTP请求执行
+     */
+    private <T> T executeWithRetry(java.util.function.Supplier<T> operation, String operationName) {
+        Exception lastException = null;
+        
+        for (int attempt = 1; attempt <= crawlerConfig.getRetry().getMaxAttempts(); attempt++) {
+            try {
+                log.debug("执行{}操作，第{}次尝试", operationName, attempt);
+                return operation.get();
+            } catch (Exception e) {
+                lastException = e;
+                log.warn("{}操作第{}次尝试失败: {}", operationName, attempt, e.getMessage());
+                
+                if (attempt < crawlerConfig.getRetry().getMaxAttempts()) {
+                    try {
+                        Thread.sleep(crawlerConfig.getRetry().getDelayMilliseconds());
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("操作被中断", ie);
+                    }
+                }
+            }
+        }
+        
+        log.error("{}操作失败，已重试{}次", operationName, crawlerConfig.getRetry().getMaxAttempts());
+        throw new RuntimeException(operationName + "操作失败", lastException);
     }
 
     /**
@@ -86,6 +116,8 @@ public class CustomsCaseCrawler {
             if (startDate != null) {
                 log.info("开始日期: " + startDate.format(DATE_FORMATTER));
             }
+            
+            long startTime = System.currentTimeMillis();
             
             // 分页爬取逻辑
             int currentPage = 1;
@@ -195,9 +227,17 @@ public class CustomsCaseCrawler {
                 saveToDatabase(allRecords);
             }
             
+            long endTime = System.currentTimeMillis();
+            long duration = endTime - startTime;
+            
             log.info("=== 爬取完成 ===");
             log.info("总共爬取到 " + allRecords.size() + " 条记录，共 " + (currentPage - 1) + " 页");
+            log.info("耗时: " + (duration / 1000.0) + " 秒");
             
+        } catch (AllDataDuplicateException e) {
+            log.warn("爬取完成 - 所有数据均为重复数据: " + e.getMessage());
+            // 重新抛出异常，让调用者知道所有数据都是重复的
+            throw e;
         } catch (Exception e) {
             log.error("爬取过程中发生错误: " + e.getMessage());
             e.printStackTrace();
@@ -233,21 +273,29 @@ public class CustomsCaseCrawler {
      * 保存数据到数据库
      */
     private void saveToDatabase(List<CustomsCase> records) {
+        if (records == null || records.isEmpty()) {
+            log.info("没有数据需要保存");
+            return;
+        }
+        
+        log.info("开始保存 " + records.size() + " 条记录到数据库");
+        
         int savedCount = 0;
         int skippedCount = 0;
+        List<String> skippedRecords = new ArrayList<>();
         
         for (CustomsCase record : records) {
             try {
                 // 检查是否已存在相同的记录
                 if (customsCaseRepository.existsByCaseNumberAndCaseDate(record.getCaseNumber(), record.getCaseDate())) {
-                    log.info("跳过已存在的记录: " + record.getCaseNumber());
+                    skippedRecords.add(record.getCaseNumber());
                     skippedCount++;
                     continue;
                 }
                 
                 // 保存到数据库
                 CustomsCase savedRecord = customsCaseRepository.save(record);
-                log.info("成功保存记录: " + savedRecord.getCaseNumber() + " (ID: " + savedRecord.getId() + ")");
+                log.debug("成功保存记录: " + savedRecord.getCaseNumber() + " (ID: " + savedRecord.getId() + ")");
                 savedCount++;
                 
             } catch (Exception e) {
@@ -255,12 +303,22 @@ public class CustomsCaseCrawler {
             }
         }
         
+        // 优化日志输出
+        if (skippedCount > 0) {
+            if (skippedCount <= 5) {
+                log.info("跳过已存在的记录: " + String.join(", ", skippedRecords));
+            } else {
+                log.info("跳过已存在的记录: " + skippedCount + " 条 (示例: " + 
+                    String.join(", ", skippedRecords.subList(0, Math.min(3, skippedRecords.size()))) + "...)");
+            }
+        }
+        
         log.info("数据库保存完成 - 新增: " + savedCount + " 条，跳过: " + skippedCount + " 条");
         
-        // 如果所有数据都是重复的，抛出异常停止爬取
+        // 如果所有数据都是重复的，使用自定义异常而不是RuntimeException
         if (savedCount == 0 && skippedCount > 0) {
-            log.info("批次数据全部重复，停止爬取");
-            throw new RuntimeException("批次数据全部重复，停止爬取");
+            log.warn("批次数据全部重复，停止爬取");
+            throw new AllDataDuplicateException("批次数据全部重复，停止爬取。跳过记录数: " + skippedCount);
         }
     }
 
@@ -455,91 +513,4 @@ public class CustomsCaseCrawler {
         return records;
     }
 
-    /**
-     * 主方法 - 用于测试CBP爬虫
-     */
-    public static void main(String[] args) {
-        System.out.println("=== CBP Customs Case Crawler 测试 (HttpClient版本) ===");
-        
-        try {
-            // 创建爬虫实例（注意：这里不能使用@Autowired，所以需要手动创建）
-            CustomsCaseCrawler crawler = new CustomsCaseCrawler();
-            
-            // 检查命令行参数
-            if (args.length > 0 && "keywords".equals(args[0])) {
-                // 关键词测试模式
-                System.out.println("模式: 关键词列表爬取测试");
-                
-                String keywordsStr = args.length > 1 ? args[1] : "9018,9021,9022";
-                String[] keywordArray = keywordsStr.split(",");
-                List<String> keywords = Arrays.asList(keywordArray);
-                
-                System.out.println("测试参数:");
-                System.out.println("- 关键词列表: " + keywords);
-                System.out.println("- 最大记录数: 5");
-                System.out.println("- 批次大小: 10");
-                System.out.println();
-                
-                // 测试HttpClient初始化
-                System.out.println("正在测试HttpClient初始化...");
-                crawler.initHttpClient();
-                System.out.println("✅ HttpClient初始化成功！");
-                
-                // 测试关键词爬取
-                System.out.println("\n=== 开始测试关键词爬取 ===");
-                String result = crawler.crawlWithKeywords(keywords, 5, 10);
-                System.out.println("关键词爬取结果: " + result);
-                
-            } else {
-                // 原有测试模式
-                String searchTerm = "9018";            // 搜索关键词（根据fetch请求使用HS编码）
-                int maxRecords = 5;                    // 最大记录数（减少数量以便快速测试）
-                int batchSize = 30;                    // 批次大小（根据fetch请求调整）
-                
-                System.out.println("测试参数:");
-                System.out.println("- 搜索关键词: " + searchTerm);
-                System.out.println("- 最大记录数: " + maxRecords);
-                System.out.println("- 批次大小: " + batchSize);
-                System.out.println();
-                
-                // 测试HttpClient初始化
-                System.out.println("正在测试HttpClient初始化...");
-                crawler.initHttpClient();
-                System.out.println("✅ HttpClient初始化成功！");
-                
-                // 测试API爬取
-                System.out.println("\n=== 开始测试API爬取 ===");
-                List<CustomsCase> results = crawler.crawlAndSaveCustomsCases(searchTerm, maxRecords, batchSize);
-                System.out.println("API爬取到 " + results.size() + " 条记录");
-                
-                // 显示前3条解析结果
-                for (int i = 0; i < Math.min(3, results.size()); i++) {
-                    CustomsCase record = results.get(i);
-                    System.out.println("\n--- 记录 " + (i + 1) + " ---");
-                    System.out.println("日期: " + record.getCaseDate());
-                    System.out.println("HS编码: " + record.getHsCodeUsed());
-                    System.out.println("描述: " + (record.getRulingResult() != null ? 
-                        (record.getRulingResult().length() > 100 ? 
-                            record.getRulingResult().substring(0, 100) + "..." : 
-                            record.getRulingResult()) : "无"));
-                    System.out.println("链接: " + record.getCaseNumber());
-                    System.out.println("违规类型: " + record.getViolationType());
-                    System.out.println("数据源: " + record.getDataSource());
-                    System.out.println("国家: " + record.getJdCountry());
-                }
-                
-                if (results.size() > 3) {
-                    System.out.println("\n... 还有 " + (results.size() - 3) + " 条记录");
-                }
-                
-                System.out.println("\n✅ API爬取测试完成！");
-            }
-            
-        } catch (Exception e) {
-            System.err.println("❌ 测试过程中发生错误: " + e.getMessage());
-            e.printStackTrace();
-        }
-        
-        System.out.println("\n=== 测试完成 ===");
-    }
 }

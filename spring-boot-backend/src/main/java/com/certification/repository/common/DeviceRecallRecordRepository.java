@@ -51,4 +51,29 @@ public interface DeviceRecallRecordRepository extends JpaRepository<DeviceRecall
      * 统计指定风险等级的记录数量
      */
     long countByRiskLevel(CertNewsData.RiskLevel riskLevel);
+
+    /**
+     * 根据关键词搜索（支持多个字段）
+     */
+    @Query("SELECT d FROM DeviceRecallRecord d WHERE " +
+           "(d.productDescription LIKE %:keyword% OR " +
+           "d.recallingFirm LIKE %:keyword% OR " +
+           "d.deviceName LIKE %:keyword%) " +
+           "AND (:countryCode IS NULL OR d.jdCountry = :countryCode)")
+    List<DeviceRecallRecord> findByKeywordAndCountry(@Param("keyword") String keyword, @Param("countryCode") String countryCode);
+
+    /**
+     * 根据关键词搜索（支持多个字段，分页）
+     */
+    @Query("SELECT d FROM DeviceRecallRecord d WHERE " +
+           "(d.productDescription LIKE %:keyword% OR " +
+           "d.recallingFirm LIKE %:keyword% OR " +
+           "d.deviceName LIKE %:keyword%) " +
+           "AND (:countryCode IS NULL OR d.jdCountry = :countryCode)")
+    org.springframework.data.domain.Page<DeviceRecallRecord> findByKeywordAndCountry(@Param("keyword") String keyword, @Param("countryCode") String countryCode, org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * 根据国家搜索
+     */
+    List<DeviceRecallRecord> findByJdCountry(String jdCountry);
 }

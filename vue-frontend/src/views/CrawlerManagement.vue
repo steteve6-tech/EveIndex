@@ -3,8 +3,8 @@
       <!-- 页面头部 -->
       <div class="page-header">
         <div class="header-content">
-        <h1>🕷️ 美国爬虫管理系统</h1>
-        <p>管理美国FDA相关数据爬虫，支持参数化测试和批量操作</p>
+        <h1>🕷️ 爬虫管理系统</h1>
+        <p>管理美国FDA和欧盟相关数据爬虫，支持参数化爬取和批量操作</p>
         </div>
         <div class="header-actions">
           <a-space>
@@ -12,7 +12,7 @@
               <template #icon>
               <BugOutlined />
               </template>
-            测试所有爬虫
+            爬取所有爬虫
             </a-button>
           <a-button @click="refreshAllStatus" :loading="refreshLoading" v-if="activeTab === 'crawlers'">
               <template #icon>
@@ -51,6 +51,7 @@
             <a-tag color="red">停止: {{ usaStoppedCount }}</a-tag>
                   </a-space>
                 </template>
+        
 
             <!-- 美国爬虫列表 -->
         <div class="crawler-list">
@@ -107,7 +108,7 @@
                   <template #icon>
                     <BugOutlined />
                   </template>
-                    测试
+                    爬取
                 </a-button>
                 </div>
               </div>
@@ -117,7 +118,7 @@
             <!-- 加载遮罩 -->
             <div v-if="crawler.testing" class="loading-overlay">
               <a-spin size="large" />
-              <span class="loading-text">测试中...</span>
+              <span class="loading-text">爬取中...</span>
             </div>
           </div>
         </div>
@@ -135,7 +136,7 @@
               <template #icon>
                 <ThunderboltOutlined />
               </template>
-              批量快速测试
+              批量快速爬取
             </a-button>
             <a-button @click="clearSelection">
               清空选择
@@ -145,10 +146,10 @@
     </a-card>
     </div>
 
-    <!-- Knif4j风格测试界面 -->
+    <!-- Knif4j风格爬取界面 -->
     <a-modal
       v-model:open="testInterfaceVisible"
-      :title="`${selectedCrawler?.displayName || ''} - API测试`"
+      :title="`${selectedCrawler?.displayName || ''} - API爬取`"
       width="1200px"
       :footer="null"
       class="knif4j-modal"
@@ -176,51 +177,32 @@
         <div class="params-section">
           <h4>请求参数</h4>
           <div class="params-form">
-            <!-- D_510K 参数 -->
-            <template v-if="selectedCrawler.key === 'd510k'">
-              <!-- 关键词来源选择 -->
+            <!-- US_510K 参数 -->
+            <template v-if="selectedCrawler.key === 'us510k'">
+              <!-- 关键词列表按钮 -->
               <a-row :gutter="16">
                 <a-col :span="24">
-                  <a-form-item label="关键词来源">
-                    <a-radio-group v-model:value="testParams.keywordSource" @change="(e: any) => console.log('D_510K关键词来源变化:', e.target.value)">
-                      <a-radio value="manual">手动输入关键词</a-radio>
-                      <a-radio value="list">使用关键词列表</a-radio>
-                    </a-radio-group>
-                  </a-form-item>
-                </a-col>
-              </a-row>
-
-              <!-- 手动输入关键词 -->
-              <a-row v-if="testParams.keywordSource === 'manual'" :gutter="16">
-                <a-col :span="24">
-                  <a-form-item label="手动输入关键词">
-                    <a-textarea
-                      v-model:value="testParams.inputKeywords"
-                      placeholder="请输入关键词，每行一个，如：&#10;Pacemaker&#10;Medtronic&#10;Cardiac"
-                      :rows="3"
-                      allow-clear
-                    />
-                  </a-form-item>
-                </a-col>
-              </a-row>
-
-              <!-- 使用关键词列表 -->
-              <a-row v-if="testParams.keywordSource === 'list'" :gutter="16">
-                <a-col :span="24">
-                  <a-form-item label="关键词列表">
-                    <div style="padding: 12px; background: #f5f5f5; border-radius: 6px;">
-                      <div style="margin-bottom: 8px;">
-                        <a-tag color="blue">将使用所有 {{ keywordOptions.length }} 个关键词</a-tag>
-                        <a-button type="link" size="small" @click="refreshKeywords" :loading="keywordLoading" style="margin-left: 8px;">
+                  <a-form-item label="关键词设置">
+                    <a-space>
+                      <a-button 
+                        :type="testParams.useKeywords ? 'primary' : 'default'"
+                        @click="testParams.useKeywords = !testParams.useKeywords"
+                        :icon="testParams.useKeywords ? h(CheckOutlined) : h(PlusOutlined)"
+                      >
+                        {{ testParams.useKeywords ? '已启用关键词列表' : '使用关键词列表' }}
+                      </a-button>
+                      <a-button type="link" size="small" @click="refreshKeywords" :loading="keywordLoading">
                           <template #icon>
                             <ReloadOutlined />
                           </template>
                           刷新关键词列表
                         </a-button>
-                      </div>
-                      <div style="max-height: 120px; overflow-y: auto;">
-                        <a-tag v-for="option in keywordOptions" :key="option.value" style="margin: 2px;">
-                          {{ option.value }}
+                    </a-space>
+                    <div v-if="testParams.useKeywords" style="margin-top: 8px;">
+                      <a-tag color="blue">将使用所有 {{ keywordOptions.length }} 个关键词</a-tag>
+                      <div style="max-height: 150px; overflow-y: auto; margin-top: 8px; padding: 8px; background: #f5f5f5; border-radius: 4px;">
+                        <a-tag v-for="keyword in keywordOptions" :key="keyword.value" style="margin: 2px;">
+                          {{ keyword.label }}
                         </a-tag>
                       </div>
                     </div>
@@ -229,7 +211,7 @@
               </a-row>
 
               <a-row :gutter="16">
-                <a-col :span="12">
+                <a-col :span="8">
                   <a-form-item label="设备名称">
                     <a-input
                       v-model:value="testParams.deviceName"
@@ -237,7 +219,7 @@
                     />
                   </a-form-item>
                 </a-col>
-                <a-col :span="12">
+                <a-col :span="8">
                   <a-form-item label="申请人名称">
                     <a-input
                       v-model:value="testParams.applicantName"
@@ -245,84 +227,43 @@
                     />
                   </a-form-item>
                 </a-col>
-              </a-row>
-              <a-row :gutter="16">
                 <a-col :span="8">
-                  <a-form-item label="决策日期开始">
-                    <a-date-picker
-                      v-model:value="testParams.dateFrom"
-                      format="YYYY-MM-DD"
-                      style="width: 100%"
-                    />
-                  </a-form-item>
-                </a-col>
-                <a-col :span="8">
-                  <a-form-item label="决策日期结束">
-                    <a-date-picker
-                      v-model:value="testParams.dateTo"
-                      format="YYYY-MM-DD"
-                      style="width: 100%"
-                    />
-                  </a-form-item>
-                </a-col>
-                <a-col :span="8">
-                  <a-form-item label="最大页数">
-                    <a-input-number
-                      v-model:value="testParams.maxPages"
-                      :min="1"
-                      :max="50"
-                      style="width: 100%"
+                  <a-form-item label="贸易名称">
+                    <a-input
+                      v-model:value="testParams.tradeName"
+                      placeholder="如：Trade Name"
                     />
                   </a-form-item>
                 </a-col>
               </a-row>
             </template>
 
-            <!-- D_event 参数 -->
-            <template v-else-if="selectedCrawler.key === 'devent'">
-              <!-- 关键词来源选择 -->
+            <!-- US_event 参数 -->
+            <template v-else-if="selectedCrawler.key === 'usevent'">
+              <!-- 关键词列表按钮 -->
               <a-row :gutter="16">
                 <a-col :span="24">
-                  <a-form-item label="关键词来源">
-                    <a-radio-group v-model:value="testParams.keywordSource" @change="(e: any) => console.log('D_event关键词来源变化:', e.target.value)">
-                      <a-radio value="manual">手动输入关键词</a-radio>
-                      <a-radio value="list">使用关键词列表</a-radio>
-                    </a-radio-group>
-                  </a-form-item>
-                </a-col>
-              </a-row>
-
-              <!-- 手动输入关键词 -->
-              <a-row v-if="testParams.keywordSource === 'manual'" :gutter="16">
-                <a-col :span="24">
-                  <a-form-item label="手动输入关键词">
-                    <a-textarea
-                      v-model:value="testParams.inputKeywords"
-                      placeholder="请输入关键词，每行一个，如：&#10;Medtronic&#10;Pacemaker&#10;Cardiac"
-                      :rows="3"
-                      allow-clear
-                    />
-                  </a-form-item>
-                </a-col>
-              </a-row>
-
-              <!-- 使用关键词列表 -->
-              <a-row v-if="testParams.keywordSource === 'list'" :gutter="16">
-                <a-col :span="24">
-                  <a-form-item label="关键词列表">
-                    <div style="padding: 12px; background: #f5f5f5; border-radius: 6px;">
-                      <div style="margin-bottom: 8px;">
-                        <a-tag color="blue">将使用所有 {{ keywordOptions.length }} 个关键词</a-tag>
-                        <a-button type="link" size="small" @click="refreshKeywords" :loading="keywordLoading" style="margin-left: 8px;">
+                  <a-form-item label="关键词设置">
+                    <a-space>
+                      <a-button 
+                        :type="testParams.useKeywords ? 'primary' : 'default'"
+                        @click="testParams.useKeywords = !testParams.useKeywords"
+                        :icon="testParams.useKeywords ? h(CheckOutlined) : h(PlusOutlined)"
+                      >
+                        {{ testParams.useKeywords ? '已启用关键词列表' : '使用关键词列表' }}
+                      </a-button>
+                      <a-button type="link" size="small" @click="refreshKeywords" :loading="keywordLoading">
                           <template #icon>
                             <ReloadOutlined />
                           </template>
                           刷新关键词列表
                         </a-button>
-                      </div>
-                      <div style="max-height: 120px; overflow-y: auto;">
-                        <a-tag v-for="option in keywordOptions" :key="option.value" style="margin: 2px;">
-                          {{ option.value }}
+                    </a-space>
+                    <div v-if="testParams.useKeywords" style="margin-top: 8px;">
+                      <a-tag color="blue">将使用所有 {{ keywordOptions.length }} 个关键词</a-tag>
+                      <div style="max-height: 150px; overflow-y: auto; margin-top: 8px; padding: 8px; background: #f5f5f5; border-radius: 4px;">
+                        <a-tag v-for="keyword in keywordOptions" :key="keyword.value" style="margin: 2px;">
+                          {{ keyword.label }}
                         </a-tag>
                       </div>
                     </div>
@@ -332,10 +273,10 @@
 
               <a-row :gutter="16">
                 <a-col :span="8">
-                  <a-form-item label="品牌名称">
+                  <a-form-item label="设备名称">
                     <a-input
-                      v-model:value="testParams.brandName"
-                      placeholder="如：Medtronic"
+                      v-model:value="testParams.deviceName"
+                      placeholder="如：Pacemaker"
                     />
                   </a-form-item>
                 </a-col>
@@ -348,65 +289,50 @@
                   </a-form-item>
                 </a-col>
                 <a-col :span="8">
-                  <a-form-item label="型号">
+                  <a-form-item label="产品问题">
                     <a-input
-                      v-model:value="testParams.modelNumber"
-                      placeholder="如：Model 123"
-                    />
-                  </a-form-item>
-                </a-col>
-              </a-row>
-              <a-row :gutter="16">
-                <a-col :span="8">
-                  <a-form-item label="报告接收日期开始">
-                    <a-date-picker
-                      v-model:value="testParams.dateFrom"
-                      format="YYYY-MM-DD"
-                      style="width: 100%"
-                    />
-                  </a-form-item>
-                </a-col>
-                <a-col :span="8">
-                  <a-form-item label="报告接收日期结束">
-                    <a-date-picker
-                      v-model:value="testParams.dateTo"
-                      format="YYYY-MM-DD"
-                      style="width: 100%"
-                    />
-                  </a-form-item>
-                </a-col>
-                <a-col :span="8">
-                  <a-form-item label="最大页数">
-                    <a-input-number
-                      v-model:value="testParams.maxPages"
-                      :min="1"
-                      :max="50"
-                      style="width: 100%"
+                      v-model:value="testParams.productProblem"
+                      placeholder="如：Product Problem"
                     />
                   </a-form-item>
                 </a-col>
               </a-row>
             </template>
 
-            <!-- D_recall 参数 -->
-            <template v-else-if="selectedCrawler.key === 'drecall'">
+            <!-- US_recall 参数 -->
+            <template v-else-if="selectedCrawler.key === 'usrecall'">
+              <!-- 关键词列表按钮 -->
               <a-row :gutter="16">
-                <a-col :span="8">
-                  <a-form-item label="产品名称">
-                    <a-input
-                      v-model:value="testParams.productName"
-                      placeholder="如：Pacemaker"
-                    />
+                <a-col :span="24">
+                  <a-form-item label="关键词设置">
+                    <a-space>
+                      <a-button 
+                        :type="testParams.useKeywords ? 'primary' : 'default'"
+                        @click="testParams.useKeywords = !testParams.useKeywords"
+                        :icon="testParams.useKeywords ? h(CheckOutlined) : h(PlusOutlined)"
+                      >
+                        {{ testParams.useKeywords ? '已启用关键词列表' : '使用关键词列表' }}
+                      </a-button>
+                      <a-button type="link" size="small" @click="refreshKeywords" :loading="keywordLoading">
+                        <template #icon>
+                          <ReloadOutlined />
+                        </template>
+                        刷新关键词列表
+                      </a-button>
+                    </a-space>
+                    <div v-if="testParams.useKeywords" style="margin-top: 8px;">
+                      <a-tag color="blue">将使用所有 {{ keywordOptions.length }} 个关键词</a-tag>
+                      <div style="max-height: 150px; overflow-y: auto; margin-top: 8px; padding: 8px; background: #f5f5f5; border-radius: 4px;">
+                        <a-tag v-for="keyword in keywordOptions" :key="keyword.value" style="margin: 2px;">
+                          {{ keyword.label }}
+                        </a-tag>
+                      </div>
+                    </div>
                   </a-form-item>
                 </a-col>
-                <a-col :span="8">
-                  <a-form-item label="召回原因">
-                    <a-input
-                      v-model:value="testParams.reasonForRecall"
-                      placeholder="如：Software Defect"
-                    />
-                  </a-form-item>
-                </a-col>
+              </a-row>
+
+              <a-row :gutter="16">
                 <a-col :span="8">
                   <a-form-item label="召回公司">
                     <a-input
@@ -415,161 +341,76 @@
                     />
                   </a-form-item>
                 </a-col>
-              </a-row>
-              <a-row :gutter="16">
                 <a-col :span="8">
-                  <a-form-item label="召回日期开始">
-                    <a-date-picker
-                      v-model:value="testParams.dateFrom"
-                      format="YYYY-MM-DD"
-                      style="width: 100%"
+                  <a-form-item label="品牌名称">
+                    <a-input
+                      v-model:value="testParams.brandName"
+                      placeholder="如：Medtronic"
                     />
                   </a-form-item>
                 </a-col>
                 <a-col :span="8">
-                  <a-form-item label="召回日期结束">
-                    <a-date-picker
-                      v-model:value="testParams.dateTo"
-                      format="YYYY-MM-DD"
-                      style="width: 100%"
-                    />
-                  </a-form-item>
-                </a-col>
-                <a-col :span="8">
-                  <a-form-item label="最大页数">
-                    <a-input-number
-                      v-model:value="testParams.maxPages"
-                      :min="1"
-                      :max="50"
-                      style="width: 100%"
+                  <a-form-item label="产品描述">
+                    <a-input
+                      v-model:value="testParams.productDescription"
+                      placeholder="如：Product Description"
                     />
                   </a-form-item>
                 </a-col>
               </a-row>
-              
-              <!-- 关键词来源选择 -->
-              <a-row :gutter="16">
-                <a-col :span="24">
-                  <a-form-item label="关键词来源">
-                    <a-radio-group v-model:value="testParams.keywordSource" @change="(e: any) => console.log('D_recall关键词来源变化:', e.target.value)">
-                      <a-radio value="manual">手动输入关键词</a-radio>
-                      <a-radio value="list">使用关键词列表</a-radio>
-                    </a-radio-group>
-                  </a-form-item>
-                </a-col>
-              </a-row>
-              
-              <!-- 手动输入关键词 -->
-              <a-row v-if="testParams.keywordSource === 'manual'" :gutter="16">
-                <a-col :span="24">
-                  <a-form-item label="输入关键词">
-                    <a-textarea
-                      v-model:value="testParams.inputKeywords"
-                      placeholder="请输入关键词，每行一个，如：&#10;Pacemaker&#10;Defibrillator&#10;Stent"
-                      :rows="4"
-                      style="width: 100%"
-                    />
-                  </a-form-item>
-                </a-col>
-              </a-row>
-              
-              <!-- 使用关键词列表 -->
-              <a-row v-if="testParams.keywordSource === 'list'" :gutter="16">
-                <a-col :span="24">
-                  <a-form-item label="关键词列表">
-                    <div style="padding: 12px; background: #f5f5f5; border-radius: 6px;">
-                      <div style="margin-bottom: 8px;">
-                        <a-tag color="blue">将使用所有 {{ keywordOptions.length }} 个关键词</a-tag>
-                        <a-button type="link" size="small" @click="refreshKeywords" :loading="keywordLoading" style="margin-left: 8px;">
-                          <template #icon>
-                            <ReloadOutlined />
-                          </template>
-                          刷新关键词列表
-                        </a-button>
-                      </div>
-                      <div style="max-height: 120px; overflow-y: auto;">
-                        <a-tag v-for="option in keywordOptions" :key="option.value" style="margin: 2px;">
-                          {{ option.value }}
-                        </a-tag>
-                      </div>
-                    </div>
-                  </a-form-item>
-                </a-col>
-              </a-row>
-              
             </template>
 
-            <!-- D_registration 参数 -->
-            <template v-else-if="selectedCrawler.key === 'dregistration'">
-              <!-- 关键词来源选择 -->
+            <!-- US_registration 参数 -->
+            <template v-else-if="selectedCrawler.key === 'usregistration'">
+              <!-- 关键词列表按钮 -->
               <a-row :gutter="16">
                 <a-col :span="24">
-                  <a-form-item label="关键词来源">
-                    <a-radio-group v-model:value="testParams.keywordSource" @change="(e: any) => console.log('D_registration关键词来源变化:', e.target.value)">
-                      <a-radio value="manual">手动输入关键词</a-radio>
-                      <a-radio value="list">使用关键词列表</a-radio>
-                    </a-radio-group>
-                  </a-form-item>
-                </a-col>
-              </a-row>
-
-              <!-- 手动输入关键词 -->
-              <a-row v-if="testParams.keywordSource === 'manual'" :gutter="16">
-                <a-col :span="24">
-                  <a-form-item label="手动输入关键词">
-                    <a-textarea
-                      v-model:value="testParams.inputKeywords"
-                      placeholder="请输入关键词，每行一个，如：&#10;Medtronic&#10;Pacemaker&#10;Cardiac"
-                      :rows="3"
-                      allow-clear
-                    />
-                  </a-form-item>
-                </a-col>
-              </a-row>
-
-              <!-- 使用关键词列表 -->
-              <a-row v-if="testParams.keywordSource === 'list'" :gutter="16">
-                <a-col :span="24">
-                  <a-form-item label="关键词列表">
-                    <div style="padding: 12px; background: #f5f5f5; border-radius: 6px;">
-                      <div style="margin-bottom: 8px;">
-                        <a-tag color="blue">将使用所有 {{ keywordOptions.length }} 个关键词</a-tag>
-                        <a-button type="link" size="small" @click="refreshKeywords" :loading="keywordLoading" style="margin-left: 8px;">
+                  <a-form-item label="关键词设置">
+                    <a-space>
+                      <a-button 
+                        :type="testParams.useKeywords ? 'primary' : 'default'"
+                        @click="testParams.useKeywords = !testParams.useKeywords"
+                        :icon="testParams.useKeywords ? h(CheckOutlined) : h(PlusOutlined)"
+                      >
+                        {{ testParams.useKeywords ? '已启用关键词列表' : '使用关键词列表' }}
+                      </a-button>
+                      <a-button type="link" size="small" @click="refreshKeywords" :loading="keywordLoading">
                           <template #icon>
                             <ReloadOutlined />
                           </template>
                           刷新关键词列表
                         </a-button>
-                      </div>
-                      <div style="max-height: 120px; overflow-y: auto;">
-                        <a-tag v-for="option in keywordOptions" :key="option.value" style="margin: 2px;">
-                          {{ option.value }}
+                    </a-space>
+                    <div v-if="testParams.useKeywords" style="margin-top: 8px;">
+                      <a-tag color="blue">将使用所有 {{ keywordOptions.length }} 个关键词</a-tag>
+                      <div style="max-height: 150px; overflow-y: auto; margin-top: 8px; padding: 8px; background: #f5f5f5; border-radius: 4px;">
+                        <a-tag v-for="keyword in keywordOptions" :key="keyword.value" style="margin: 2px;">
+                          {{ keyword.label }}
                         </a-tag>
                       </div>
                     </div>
                   </a-form-item>
                 </a-col>
               </a-row>
-
-              <a-row :gutter="16">
-                <a-col :span="8">
-                  <a-form-item label="机构/贸易名称">
+              <a-row :gutter="16" style="width: 100%;">
+                <a-col :span="8" :xs="24" :sm="12" :md="8">
+                  <a-form-item label="机构/贸易名称" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
                     <a-input
                       v-model:value="testParams.establishmentName"
                       placeholder="如：Medtronic Inc"
                     />
                   </a-form-item>
                 </a-col>
-                <a-col :span="8">
-                  <a-form-item label="专有名称">
+                <a-col :span="8" :xs="24" :sm="12" :md="8">
+                  <a-form-item label="专有名称" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
                     <a-input
                       v-model:value="testParams.proprietaryName"
                       placeholder="如：Pacemaker"
                     />
                   </a-form-item>
                 </a-col>
-                <a-col :span="8">
-                  <a-form-item label="所有者/经营者名称">
+                <a-col :span="8" :xs="24" :sm="12" :md="8">
+                  <a-form-item label="所有者/经营者名称" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
                     <a-input
                       v-model:value="testParams.ownerOperatorName"
                       placeholder="如：Medtronic Inc"
@@ -577,18 +418,32 @@
                   </a-form-item>
                 </a-col>
               </a-row>
-              <a-row :gutter="16">
-                <a-col :span="8">
-                  <a-form-item label="最大页数">
-                    <a-input-number
-                      v-model:value="testParams.maxPages"
-                      :min="1"
-                      :max="50"
-                      style="width: 100%"
-                    />
-                  </a-form-item>
-                </a-col>
-              </a-row>
+<!--              <a-row :gutter="24">-->
+<!--                <a-col :span="8">-->
+<!--                  <a-form-item label="机构/贸易名称">-->
+<!--                    <a-input-->
+<!--                      v-model:value="testParams.establishmentName"-->
+<!--                      placeholder="如：Medtronic Inc"-->
+<!--                    />-->
+<!--                  </a-form-item>-->
+<!--                </a-col>-->
+<!--                <a-col :span="8">-->
+<!--                  <a-form-item label="专有名称">-->
+<!--                    <a-input-->
+<!--                      v-model:value="testParams.proprietaryName"-->
+<!--                      placeholder="如：Pacemaker"-->
+<!--                    />-->
+<!--                  </a-form-item>-->
+<!--                </a-col>-->
+<!--                <a-col :span="8">-->
+<!--                  <a-form-item label="所有者/经营者名称">-->
+<!--                    <a-input-->
+<!--                      v-model:value="testParams.ownerOperatorName"-->
+<!--                      placeholder="如：Medtronic Inc"-->
+<!--                    />-->
+<!--                  </a-form-item>-->
+<!--                </a-col>-->
+<!--              </a-row>-->
             </template>
 
             <!-- unicrawl 参数 -->
@@ -606,75 +461,49 @@
                   </a-form-item>
                 </a-col>
                 <a-col :span="6">
-                  <a-form-item label="开始日期">
+                  <!-- <a-form-item label="开始日期">
                     <a-date-picker
                       v-model:value="testParams.dateFrom"
                       placeholder="YYYY-MM-DD"
                       style="width: 100%"
                       format="YYYY-MM-DD"
                     />
-                  </a-form-item>
+                  </a-form-item> -->
                 </a-col>
                 <a-col :span="6">
-                  <a-form-item label="结束日期">
+                  <!-- <a-form-item label="结束日期">
                     <a-date-picker
                       v-model:value="testParams.dateTo"
                       placeholder="YYYY-MM-DD"
                       style="width: 100%"
                       format="YYYY-MM-DD"
                     />
-                  </a-form-item>
-                </a-col>
-                <a-col :span="6">
-                  <a-form-item label="最大页数">
-                    <a-input-number
-                      v-model:value="testParams.maxPages"
-                      :min="0"
-                      :max="100"
-                      placeholder="0表示爬取所有"
-                      style="width: 100%"
-                    />
-                  </a-form-item>
+                  </a-form-item> -->
                 </a-col>
               </a-row>
               <a-row :gutter="16">
                 <a-col :span="24">
-                  <a-form-item label="关键词来源">
-                    <a-radio-group v-model:value="testParams.keywordSource">
-                      <a-radio value="manual">手动输入关键词</a-radio>
-                      <a-radio value="list">使用关键词列表</a-radio>
-                    </a-radio-group>
-                  </a-form-item>
-                </a-col>
-              </a-row>
-              <a-row :gutter="16" v-if="testParams.keywordSource === 'manual'">
-                <a-col :span="24">
-                  <a-form-item label="输入关键词">
-                    <a-textarea
-                      v-model:value="testParams.inputKeywords"
-                      placeholder="输入关键词，每行一个，留空则使用文件关键词"
-                      :rows="3"
-                      style="width: 100%"
-                    />
-                  </a-form-item>
-                </a-col>
-              </a-row>
-              <a-row :gutter="16" v-if="testParams.keywordSource === 'list'">
-                <a-col :span="24">
-                  <a-form-item label="关键词列表">
-                    <div style="padding: 12px; background: #f5f5f5; border-radius: 6px;">
-                      <div style="margin-bottom: 8px;">
-                        <a-tag color="blue">将使用所有 {{ keywordOptions.length }} 个关键词</a-tag>
-                        <a-button type="link" size="small" @click="refreshKeywords" :loading="keywordLoading" style="margin-left: 8px;">
+                  <a-form-item label="关键词设置">
+                    <a-space>
+                      <a-button 
+                        :type="testParams.useKeywords ? 'primary' : 'default'"
+                        @click="testParams.useKeywords = !testParams.useKeywords"
+                        :icon="testParams.useKeywords ? h(CheckOutlined) : h(PlusOutlined)"
+                      >
+                        {{ testParams.useKeywords ? '已启用关键词列表' : '使用关键词列表' }}
+                      </a-button>
+                      <a-button type="link" size="small" @click="refreshKeywords" :loading="keywordLoading">
                           <template #icon>
                             <ReloadOutlined />
                           </template>
                           刷新关键词列表
                         </a-button>
-                      </div>
-                      <div style="max-height: 120px; overflow-y: auto;">
-                        <a-tag v-for="option in keywordOptions" :key="option.value" style="margin: 2px;">
-                          {{ option.value }}
+                    </a-space>
+                    <div v-if="testParams.useKeywords" style="margin-top: 8px;">
+                      <a-tag color="blue">将使用所有 {{ keywordOptions.length }} 个关键词</a-tag>
+                      <div style="max-height: 150px; overflow-y: auto; margin-top: 8px; padding: 8px; background: #f5f5f5; border-radius: 4px;">
+                        <a-tag v-for="keyword in keywordOptions" :key="keyword.value" style="margin: 2px;">
+                          {{ keyword.label }}
                         </a-tag>
                       </div>
                     </div>
@@ -695,48 +524,289 @@
                   </a-form-item>
                 </a-col>
                 <a-col :span="6">
-                  <a-form-item label="最大记录数">
-                    <a-input-number
-                      v-model:value="testParams.maxRecords"
-                      :min="1"
-                      :max="1000"
-                      style="width: 100%"
-                    />
-                  </a-form-item>
-                </a-col>
-                <a-col :span="6">
-                  <a-form-item label="批次大小">
-                    <a-input-number
-                      v-model:value="testParams.batchSize"
-                      :min="1"
-                      :max="100"
-                      style="width: 100%"
-                    />
-                  </a-form-item>
-                </a-col>
-                <a-col :span="6">
-                  <a-form-item label="开始日期">
+                  <!-- <a-form-item label="开始日期">
                     <a-date-picker
                       v-model:value="testParams.startDate"
                       format="MM/DD/YYYY"
                       style="width: 100%"
                     />
-                  </a-form-item>
+                  </a-form-item> -->
                 </a-col>
               </a-row>
             </template>
 
             <!-- GuidanceCrawler 参数 -->
             <template v-else-if="selectedCrawler.key === 'guidance'">
+              <!-- Guidance爬虫不需要额外参数，默认爬取所有数据 -->
+            </template>
+
+            <!-- EU_CustomCase 参数 -->
+            <template v-else-if="selectedCrawler.key === 'eu-custom-case'">
               <a-row :gutter="16">
                 <a-col :span="8">
+                  <a-form-item label="TARIC编码">
+                    <a-input
+                      v-model:value="testParams.taricCode"
+                      placeholder="如：9018"
+                    />
+                  </a-form-item>
+                </a-col>
+<!--                <a-col :span="8">-->
+<!--                  <a-form-item label="最大记录数">-->
+<!--                    <a-input-number-->
+<!--                      v-model:value="testParams.maxRecords"-->
+<!--                      :min="-1"-->
+<!--                      placeholder="-1表示爬取所有数据"-->
+<!--                      style="width: 100%"-->
+<!--                    />-->
+<!--                  </a-form-item>-->
+<!--                </a-col>-->
+<!--                <a-col :span="8">-->
+<!--                  <a-form-item label="批次大小">-->
+<!--                    <a-input-number-->
+<!--                      v-model:value="testParams.batchSize"-->
+<!--                      :min="1"-->
+<!--                      placeholder="如：100"-->
+<!--                      style="width: 100%"-->
+<!--                    />-->
+<!--                  </a-form-item>-->
+<!--                </a-col>-->
+              </a-row>
+              <!-- 关键词列表按钮 -->
+              <a-row :gutter="16">
+<!--                <a-col :span="24">-->
+<!--                  <a-form-item label="TARIC编码设置">-->
+<!--                    <a-space>-->
+<!--                      <a-button -->
+<!--                        :type="testParams.useKeywords ? 'primary' : 'default'"-->
+<!--                        @click="testParams.useKeywords = !testParams.useKeywords"-->
+<!--                        :icon="testParams.useKeywords ? h(CheckOutlined) : h(PlusOutlined)"-->
+<!--                      >-->
+<!--                        {{ testParams.useKeywords ? '已启用TARIC编码列表' : '使用TARIC编码列表' }}-->
+<!--                      </a-button>-->
+<!--                      <a-button type="link" size="small" @click="refreshTaricCodes" :loading="keywordLoading">-->
+<!--                          <template #icon>-->
+<!--                            <ReloadOutlined />-->
+<!--                          </template>-->
+<!--                          刷新TARIC编码列表-->
+<!--                        </a-button>-->
+<!--                    </a-space>-->
+<!--                    <div v-if="testParams.useKeywords" style="margin-top: 8px;">-->
+<!--                      <a-tag color="blue">将使用所有 {{ taricCodeOptions.length }} 个TARIC编码</a-tag>-->
+<!--                      <div style="max-height: 150px; overflow-y: auto; margin-top: 8px; padding: 8px; background: #f5f5f5; border-radius: 4px;">-->
+<!--                        <a-tag v-for="code in taricCodeOptions" :key="code.value" style="margin: 2px;">-->
+<!--                          {{ code.label }}-->
+<!--                        </a-tag>-->
+<!--                      </div>-->
+<!--                    </div>-->
+<!--                  </a-form-item>-->
+<!--                </a-col>-->
+              </a-row>
+            </template>
+
+            <!-- EU_Guidance 参数 -->
+            <template v-else-if="selectedCrawler.key === 'eu-guidance'">
+              <a-row :gutter="16">
+<!--                <a-col :span="8">-->
+<!--                  <a-form-item label="最大页数">-->
+<!--                    <a-input-number-->
+<!--                      v-model:value="testParams.maxPages"-->
+<!--                      :min="0"-->
+<!--                      placeholder="0表示爬取所有页"-->
+<!--                      style="width: 100%"-->
+<!--                    />-->
+<!--                  </a-form-item>-->
+<!--                </a-col>-->
+<!--                <a-col :span="8">-->
+<!--                  <a-form-item label="最大记录数">-->
+<!--                    <a-input-number-->
+<!--                      v-model:value="testParams.maxRecords"-->
+<!--                      :min="-1"-->
+<!--                      placeholder="-1表示爬取所有数据"-->
+<!--                      style="width: 100%"-->
+<!--                    />-->
+<!--                  </a-form-item>-->
+<!--                </a-col>-->
+<!--                <a-col :span="8">-->
+<!--                  <a-form-item label="批次大小">-->
+<!--                    <a-input-number-->
+<!--                      v-model:value="testParams.batchSize"-->
+<!--                      :min="1"-->
+<!--                      placeholder="如：100"-->
+<!--                      style="width: 100%"-->
+<!--                    />-->
+<!--                  </a-form-item>-->
+<!--                </a-col>-->
+              </a-row>
+            </template>
+
+            <!-- EU_Recall 参数 -->
+            <template v-else-if="selectedCrawler.key === 'eu-recall'">
+              <a-row :gutter="16">
+                <a-col :span="8">
+                  <a-form-item label="搜索关键词">
+                    <a-input
+                      v-model:value="testParams.searchKeyword"
+                      placeholder="如：medical device"
+                    />
+                  </a-form-item>
+                </a-col>
+<!--                <a-col :span="8">-->
+<!--                  <a-form-item label="最大记录数">-->
+<!--                    <a-input-number-->
+<!--                      v-model:value="testParams.maxRecords"-->
+<!--                      :min="-1"-->
+<!--                      placeholder="-1表示爬取所有数据"-->
+<!--                      style="width: 100%"-->
+<!--                    />-->
+<!--                  </a-form-item>-->
+<!--                </a-col>-->
+<!--                <a-col :span="8">-->
+<!--                  <a-form-item label="批次大小">-->
+<!--                    <a-input-number-->
+<!--                      v-model:value="testParams.batchSize"-->
+<!--                      :min="1"-->
+<!--                      placeholder="如：50"-->
+<!--                      style="width: 100%"-->
+<!--                    />-->
+<!--                  </a-form-item>-->
+<!--                </a-col>-->
+<!--              </a-row>-->
+<!--              <a-row :gutter="16">-->
+<!--                <a-col :span="12">-->
+<!--                  <a-form-item label="开始日期">-->
+<!--                    <a-date-picker-->
+<!--                      v-model:value="testParams.dateFrom"-->
+<!--                      placeholder="yyyy-MM-dd"-->
+<!--                      style="width: 100%"-->
+<!--                      format="YYYY-MM-DD"-->
+<!--                    />-->
+<!--                  </a-form-item>-->
+<!--                </a-col>-->
+<!--                <a-col :span="12">-->
+<!--                  <a-form-item label="结束日期">-->
+<!--                    <a-date-picker-->
+<!--                      v-model:value="testParams.dateTo"-->
+<!--                      placeholder="yyyy-MM-dd"-->
+<!--                      style="width: 100%"-->
+<!--                      format="YYYY-MM-DD"-->
+<!--                    />-->
+<!--                  </a-form-item>-->
+<!--                </a-col>-->
+              </a-row>
+              <!-- 关键词列表按钮 -->
+              <a-row :gutter="16">
+                <a-col :span="24">
+                  <a-form-item label="关键词设置">
+                    <a-space>
+                      <a-button 
+                        :type="testParams.useKeywords ? 'primary' : 'default'"
+                        @click="testParams.useKeywords = !testParams.useKeywords"
+                        :icon="testParams.useKeywords ? h(CheckOutlined) : h(PlusOutlined)"
+                      >
+                        {{ testParams.useKeywords ? '已启用关键词列表' : '使用关键词列表' }}
+                      </a-button>
+                      <a-button type="link" size="small" @click="refreshKeywords" :loading="keywordLoading">
+                          <template #icon>
+                            <ReloadOutlined />
+                          </template>
+                          刷新关键词列表
+                        </a-button>
+                    </a-space>
+                    <div v-if="testParams.useKeywords" style="margin-top: 8px;">
+                      <a-tag color="blue">将使用所有 {{ keywordOptions.length }} 个关键词</a-tag>
+                      <div style="max-height: 150px; overflow-y: auto; margin-top: 8px; padding: 8px; background: #f5f5f5; border-radius: 4px;">
+                        <a-tag v-for="keyword in keywordOptions" :key="keyword.value" style="margin: 2px;">
+                          {{ keyword.label }}
+                        </a-tag>
+                      </div>
+                    </div>
+                  </a-form-item>
+                </a-col>
+              </a-row>
+            </template>
+
+            <!-- EU_Registration 参数 -->
+            <template v-else-if="selectedCrawler.key === 'eu-registration'">
+              <a-row :gutter="16">
+                <a-col :span="8">
+                  <a-form-item label="关键词">
+                    <a-input
+                      v-model:value="testParams.inputKeyword"
+                      placeholder="如：medical device"
+                    />
+                  </a-form-item>
+                </a-col>
+                <!-- <a-col :span="8">
                   <a-form-item label="最大记录数">
                     <a-input-number
                       v-model:value="testParams.maxRecords"
-                      :min="1"
-                      :max="1000"
+                      :min="-1"
+                      placeholder="0或-1表示爬取所有数据"
                       style="width: 100%"
                     />
+                  </a-form-item>
+                </a-col> -->
+                <!-- <a-col :span="8">
+                  <a-form-item label="批次大小">
+                    <a-input-number
+                      v-model:value="testParams.batchSize"
+                      :min="1"
+                      placeholder="如：50"
+                      style="width: 100%"
+                    />
+                  </a-form-item>
+                </a-col> -->
+              </a-row>
+              <!-- <a-row :gutter="16">
+                <a-col :span="12">
+                  <a-form-item label="开始日期">
+                    <a-date-picker
+                      v-model:value="testParams.dateFrom"
+                      placeholder="yyyy-MM-dd"
+                      style="width: 100%"
+                      format="YYYY-MM-DD"
+                    />
+                  </a-form-item>
+                </a-col>
+                <a-col :span="12">
+                  <a-form-item label="结束日期">
+                    <a-date-picker
+                      v-model:value="testParams.dateTo"
+                      placeholder="yyyy-MM-dd"
+                      style="width: 100%"
+                      format="YYYY-MM-DD"
+                    />
+                  </a-form-item>
+                </a-col>
+              </a-row> -->
+              <!-- 关键词列表按钮 -->
+              <a-row :gutter="16">
+                <a-col :span="24">
+                  <a-form-item label="关键词设置">
+                    <a-space>
+                      <a-button 
+                        :type="testParams.useKeywords ? 'primary' : 'default'"
+                        @click="testParams.useKeywords = !testParams.useKeywords"
+                        :icon="testParams.useKeywords ? h(CheckOutlined) : h(PlusOutlined)"
+                      >
+                        {{ testParams.useKeywords ? '已启用关键词列表' : '使用关键词列表' }}
+                      </a-button>
+                      <a-button type="link" size="small" @click="refreshKeywords" :loading="keywordLoading">
+                          <template #icon>
+                            <ReloadOutlined />
+                          </template>
+                          刷新关键词列表
+                        </a-button>
+                    </a-space>
+                    <div v-if="testParams.useKeywords" style="margin-top: 8px;">
+                      <a-tag color="blue">将使用所有 {{ keywordOptions.length }} 个关键词</a-tag>
+                      <div style="max-height: 150px; overflow-y: auto; margin-top: 8px; padding: 8px; background: #f5f5f5; border-radius: 4px;">
+                        <a-tag v-for="keyword in keywordOptions" :key="keyword.value" style="margin: 2px;">
+                          {{ keyword.label }}
+                        </a-tag>
+                      </div>
+                    </div>
                   </a-form-item>
                 </a-col>
               </a-row>
@@ -748,7 +818,7 @@
         <div class="request-preview-section">
           <h4>请求体预览</h4>
           <div class="json-preview">
-            <pre><code>{{ JSON.stringify(getRequestPayload(), null, 2) }}</code></pre>
+            <pre><code>{{ JSON.stringify(requestPayload, null, 2) }}</code></pre>
           </div>
         </div>
 
@@ -797,7 +867,62 @@
           </div>
           <div class="response-content">
             <a-tabs v-model:activeKey="responseTabActive">
-              <a-tab-pane key="formatted" tab="格式化">
+              <a-tab-pane key="summary" tab="爬取结果">
+                <div class="crawl-summary">
+                  <a-row :gutter="16">
+                    <a-col :span="8">
+                      <a-statistic
+                        title="爬取状态"
+                        :value="testResult.data?.success ? '成功' : '失败'"
+                        :value-style="{ color: testResult.data?.success ? '#3f8600' : '#cf1322' }"
+                      />
+                    </a-col>
+                    <a-col :span="8">
+                      <a-statistic
+                        title="新增数据"
+                        :value="testResult.data?.savedCount || 0"
+                        :value-style="{ color: '#1890ff' }"
+                        suffix="条"
+                      />
+                    </a-col>
+                    <a-col :span="8">
+                      <a-statistic
+                        title="重复数据"
+                        :value="testResult.data?.skippedCount || 0"
+                        :value-style="{ color: '#faad14' }"
+                        suffix="条"
+                      />
+                    </a-col>
+                  </a-row>
+                  
+                  <a-divider />
+                  
+                  <div class="result-message">
+                    <a-alert
+                      :type="testResult.data?.success ? 'success' : 'error'"
+                      :message="testResult.data?.message || '无消息'"
+                      :description="getResultDescription()"
+                      show-icon
+                    />
+                  </div>
+                  
+                  <!-- 错误详情显示 -->
+                  <div v-if="!testResult.data?.success && (testResult.data?.error || testResult.data?.errorDetails)" class="error-details">
+                    <h5>错误详情：</h5>
+                    <a-alert
+                      type="error"
+                      :message="testResult.data?.errorDetails || testResult.data?.error"
+                      show-icon
+                    />
+                  </div>
+                  
+                  <div v-if="testResult.data?.databaseResult" class="database-result">
+                    <h5>数据库保存详情：</h5>
+                    <a-typography-text code>{{ testResult.data.databaseResult }}</a-typography-text>
+                  </div>
+                </div>
+              </a-tab-pane>
+              <a-tab-pane key="formatted" tab="完整响应">
                 <div class="json-response">
                   <pre><code>{{ JSON.stringify(testResult.data, null, 2) }}</code></pre>
                 </div>
@@ -813,10 +938,10 @@
       </div>
     </a-modal>
 
-    <!-- 参数测试模态框 -->
+    <!-- 参数爬取模态框 -->
     <a-modal
       v-model:open="testModalVisible"
-      :title="`${selectedCrawler?.displayName || ''} - 参数化测试`"
+      :title="`${selectedCrawler?.displayName || ''} - 参数化爬取`"
       width="800px"
       :footer="null"
     >
@@ -827,8 +952,8 @@
               :wrapper-col="{ span: 18 }"
           class="test-form"
             >
-          <!-- D_510K 参数 -->
-          <template v-if="selectedCrawler.key === 'd510k'">
+          <!-- US_510K 参数 -->
+          <template v-if="selectedCrawler.key === 'us510k'">
             <a-form-item label="设备名称">
               <a-input
                 v-model:value="testParams.deviceName"
@@ -843,39 +968,21 @@
                 allow-clear
               />
             </a-form-item>
-            <a-form-item label="决策日期开始">
-              <a-date-picker
-                v-model:value="testParams.dateFrom"
-                format="YYYY-MM-DD"
-                placeholder="选择决策日期开始"
-                style="width: 100%"
-              />
-            </a-form-item>
-            <a-form-item label="决策日期结束">
-              <a-date-picker
-                v-model:value="testParams.dateTo"
-                format="YYYY-MM-DD"
-                placeholder="选择决策日期结束"
-                style="width: 100%"
-              />
-            </a-form-item>
-            <a-form-item label="最大页数">
-              <a-input-number
-                v-model:value="testParams.maxPages"
-                :min="1"
-                :max="50"
-                placeholder="最大爬取页数"
-                style="width: 100%"
+            <a-form-item label="贸易名称">
+              <a-input
+                v-model:value="testParams.tradeName"
+                placeholder="请输入贸易名称，如：Trade Name"
+                allow-clear
               />
             </a-form-item>
           </template>
 
-          <!-- D_event 参数 -->
-          <template v-else-if="selectedCrawler.key === 'devent'">
-            <a-form-item label="品牌名称">
+          <!-- US_event 参数 -->
+          <template v-else-if="selectedCrawler.key === 'usevent'">
+            <a-form-item label="设备名称">
               <a-input
-                v-model:value="testParams.brandName"
-                placeholder="请输入品牌名称，如：Medtronic"
+                v-model:value="testParams.deviceName"
+                placeholder="请输入设备名称，如：Pacemaker"
                 allow-clear
               />
             </a-form-item>
@@ -886,56 +993,17 @@
                 allow-clear
               />
             </a-form-item>
-            <a-form-item label="型号">
+            <a-form-item label="产品问题">
               <a-input
-                v-model:value="testParams.modelNumber"
-                placeholder="请输入型号，如：Model 123"
+                v-model:value="testParams.productProblem"
+                placeholder="请输入产品问题，如：Product Problem"
                 allow-clear
-              />
-            </a-form-item>
-            <a-form-item label="报告接收日期开始">
-              <a-date-picker
-                v-model:value="testParams.dateFrom"
-                format="YYYY-MM-DD"
-                placeholder="选择报告接收日期开始"
-                style="width: 100%"
-              />
-            </a-form-item>
-            <a-form-item label="报告接收日期结束">
-              <a-date-picker
-                v-model:value="testParams.dateTo"
-                format="YYYY-MM-DD"
-                placeholder="选择报告接收日期结束"
-                style="width: 100%"
-              />
-            </a-form-item>
-            <a-form-item label="最大页数">
-              <a-input-number
-                v-model:value="testParams.maxPages"
-                :min="1"
-                :max="50"
-                placeholder="最大爬取页数"
-                style="width: 100%"
               />
             </a-form-item>
           </template>
 
-          <!-- D_recall 参数 -->
-          <template v-else-if="selectedCrawler.key === 'drecall'">
-            <a-form-item label="产品名称">
-              <a-input
-                v-model:value="testParams.productName"
-                placeholder="请输入产品名称，如：Pacemaker"
-                allow-clear
-              />
-            </a-form-item>
-            <a-form-item label="召回原因">
-              <a-input
-                v-model:value="testParams.reasonForRecall"
-                placeholder="请输入召回原因，如：Software Defect"
-                allow-clear
-              />
-            </a-form-item>
+          <!-- US_recall 参数 -->
+          <template v-else-if="selectedCrawler.key === 'usrecall'">
             <a-form-item label="召回公司">
               <a-input
                 v-model:value="testParams.recallingFirm"
@@ -943,35 +1011,24 @@
                 allow-clear
               />
             </a-form-item>
-            <a-form-item label="召回日期开始">
-              <a-date-picker
-                v-model:value="testParams.dateFrom"
-                format="YYYY-MM-DD"
-                placeholder="选择召回日期开始"
-                style="width: 100%"
+            <a-form-item label="品牌名称">
+              <a-input
+                v-model:value="testParams.brandName"
+                placeholder="请输入品牌名称，如：Medtronic"
+                allow-clear
               />
             </a-form-item>
-            <a-form-item label="召回日期结束">
-              <a-date-picker
-                v-model:value="testParams.dateTo"
-                format="YYYY-MM-DD"
-                placeholder="选择召回日期结束"
-                style="width: 100%"
-              />
-            </a-form-item>
-            <a-form-item label="最大页数">
-              <a-input-number
-                v-model:value="testParams.maxPages"
-                :min="1"
-                :max="50"
-                placeholder="最大爬取页数"
-                style="width: 100%"
+            <a-form-item label="产品描述">
+              <a-input
+                v-model:value="testParams.productDescription"
+                placeholder="请输入产品描述，如：Product Description"
+                allow-clear
               />
             </a-form-item>
           </template>
 
-          <!-- D_registration 参数 -->
-          <template v-else-if="selectedCrawler.key === 'dregistration'">
+          <!-- US_registration 参数 -->
+          <template v-else-if="selectedCrawler.key === 'usregistration'">
             <a-form-item label="机构/贸易名称">
               <a-input
                 v-model:value="testParams.establishmentName"
@@ -993,15 +1050,6 @@
                 allow-clear
               />
             </a-form-item>
-            <a-form-item label="最大页数">
-              <a-input-number
-                v-model:value="testParams.maxPages"
-                :min="1"
-                :max="50"
-                placeholder="最大爬取页数"
-                style="width: 100%"
-              />
-            </a-form-item>
           </template>
 
           <!-- unicrawl 参数 -->
@@ -1015,7 +1063,7 @@
                 style="width: 100%"
               />
             </a-form-item>
-            <a-form-item label="开始日期">
+            <!-- <a-form-item label="开始日期">
               <a-date-picker
                 v-model:value="testParams.dateFrom"
                 placeholder="YYYY-MM-DD"
@@ -1023,30 +1071,38 @@
                 format="YYYY-MM-DD"
               />
             </a-form-item>
-            <a-form-item label="结束日期">
+            <!-- <a-form-item label="结束日期">
               <a-date-picker
                 v-model:value="testParams.dateTo"
                 placeholder="YYYY-MM-DD"
                 style="width: 100%"
                 format="YYYY-MM-DD"
               />
-            </a-form-item>
-            <a-form-item label="最大页数">
-              <a-input-number
-                v-model:value="testParams.maxPages"
-                :min="0"
-                :max="100"
-                placeholder="0表示爬取所有"
-                style="width: 100%"
-              />
-            </a-form-item>
-            <a-form-item label="输入关键词">
-              <a-textarea
-                v-model:value="testParams.inputKeywords"
-                placeholder="输入关键词，每行一个，留空则使用文件关键词"
-                :rows="3"
-                style="width: 100%"
-              />
+            </a-form-item> -->
+            <a-form-item label="关键词设置">
+              <a-space>
+                <a-button 
+                  :type="testParams.useKeywords ? 'primary' : 'default'"
+                  @click="testParams.useKeywords = !testParams.useKeywords"
+                  :icon="testParams.useKeywords ? h(CheckOutlined) : h(PlusOutlined)"
+                >
+                  {{ testParams.useKeywords ? '已启用关键词列表' : '使用关键词列表' }}
+                </a-button>
+                <a-button type="link" size="small" @click="refreshKeywords" :loading="keywordLoading">
+                  <template #icon>
+                    <ReloadOutlined />
+                  </template>
+                  刷新关键词列表
+                </a-button>
+              </a-space>
+              <div v-if="testParams.useKeywords" style="margin-top: 8px;">
+                <a-tag color="blue">将使用所有 {{ keywordOptions.length }} 个关键词</a-tag>
+                <div style="max-height: 150px; overflow-y: auto; margin-top: 8px; padding: 8px; background: #f5f5f5; border-radius: 4px;">
+                  <a-tag v-for="keyword in keywordOptions" :key="keyword.value" style="margin: 2px;">
+                    {{ keyword.label }}
+                  </a-tag>
+                </div>
+              </div>
             </a-form-item>
                     </template>
 
@@ -1059,45 +1115,11 @@
                 allow-clear
               />
             </a-form-item>
-            <a-form-item label="最大记录数">
-              <a-input-number
-                v-model:value="testParams.maxRecords"
-                :min="1"
-                :max="1000"
-                placeholder="最大爬取记录数"
-                style="width: 100%"
-              />
-            </a-form-item>
-            <a-form-item label="批次大小">
-              <a-input-number
-                v-model:value="testParams.batchSize"
-                :min="1"
-                :max="100"
-                placeholder="批量保存大小"
-                style="width: 100%"
-              />
-            </a-form-item>
-            <a-form-item label="开始日期">
-              <a-date-picker
-                v-model:value="testParams.startDate"
-                format="MM/DD/YYYY"
-                placeholder="选择开始日期"
-                style="width: 100%"
-              />
-            </a-form-item>
                     </template>
 
           <!-- GuidanceCrawler 参数 -->
           <template v-else-if="selectedCrawler.key === 'guidance'">
-            <a-form-item label="最大记录数">
-              <a-input-number
-                v-model:value="testParams.maxRecords"
-                :min="1"
-                :max="1000"
-                placeholder="最大爬取记录数"
-                style="width: 100%"
-              />
-            </a-form-item>
+            <!-- Guidance爬虫不需要额外参数，默认爬取所有数据 -->
                     </template>
         </a-form>
 
@@ -1117,17 +1139,17 @@
                     <template #icon>
                 <BugOutlined />
                     </template>
-              执行测试
+              执行爬取
                   </a-button>
                 </a-space>
               </div>
               </div>
     </a-modal>
 
-    <!-- 测试结果模态框 -->
+    <!-- 爬取结果模态框 -->
     <a-modal
       v-model:open="testResultModalVisible"
-      title="爬虫测试结果"
+      title="爬虫爬取结果"
       width="1000px"
       :footer="null"
     >
@@ -1136,7 +1158,7 @@
           <a-descriptions-item label="爬虫名称">
             {{ currentTestResult.crawlerName }}
           </a-descriptions-item>
-          <a-descriptions-item label="测试状态">
+          <a-descriptions-item label="爬取状态">
             <a-tag :color="currentTestResult.success ? 'green' : 'red'">
               {{ currentTestResult.success ? '成功' : '失败' }}
             </a-tag>
@@ -1150,7 +1172,7 @@
           <a-descriptions-item label="总页数">
             {{ currentTestResult.totalPages || 0 }}
           </a-descriptions-item>
-          <a-descriptions-item label="测试时间">
+          <a-descriptions-item label="爬取时间">
             {{ currentTestResult.testTime }}
           </a-descriptions-item>
           <a-descriptions-item label="消息" :span="2">
@@ -1187,7 +1209,7 @@
           <a-descriptions-item label="描述">
             {{ selectedCrawler.description }}
           </a-descriptions-item>
-          <a-descriptions-item label="测试端点">
+          <a-descriptions-item label="爬取端点">
             {{ selectedCrawler.testEndpoint }}
           </a-descriptions-item>
           <a-descriptions-item label="状态">
@@ -1195,8 +1217,8 @@
               {{ getStatusText(selectedCrawler.status) }}
             </a-tag>
           </a-descriptions-item>
-          <a-descriptions-item label="最后测试">
-            {{ selectedCrawler.lastTest || '未测试' }}
+          <a-descriptions-item label="最后爬取">
+            {{ selectedCrawler.lastTest || '未爬取' }}
           </a-descriptions-item>
         </a-descriptions>
       </div>
@@ -1293,6 +1315,121 @@
       </div>
     </a-modal>
 
+        </a-tab-pane>
+
+        <!-- 欧盟爬虫管理标签页 -->
+        <a-tab-pane key="eu-crawlers" tab="欧盟爬虫">
+          <template #tab>
+            <span>
+              🇪🇺 欧盟爬虫
+            </span>
+          </template>
+
+          <!-- 欧盟爬虫管理 -->
+          <div class="eu-crawler-section">
+            <a-card :title="`🇪🇺 欧盟爬虫 (${euCrawlers.length}个)`" :bordered="false" class="country-card">
+              <template #extra>
+                <a-space>
+                  <a-tag color="blue">运行中: {{ euRunningCount }}</a-tag>
+                  <a-tag color="green">可用: {{ euAvailableCount }}</a-tag>
+                  <a-tag color="red">停止: {{ euStoppedCount }}</a-tag>
+                </a-space>
+              </template>
+
+              <!-- 欧盟爬虫列表 -->
+              <div class="crawler-list">
+                <div 
+                  v-for="crawler in euCrawlers" 
+                  :key="crawler.key"
+                  class="crawler-list-item"
+                  :class="{ 
+                    'running': crawler.status === 'running', 
+                    'selected': selectedEUCrawlers.includes(crawler.key),
+                    'testing': crawler.testing,
+                    'expanded': expandedEUCrawlers.includes(crawler.key)
+                  }"
+                >
+                  <!-- 列表项头部 -->
+                  <div class="crawler-list-header">
+                    <div class="crawler-icon">
+                      <div class="icon-wrapper" :class="crawler.key">
+                        <BugOutlined />
+                      </div>
+                    </div>
+                    <div class="crawler-info">
+                      <div class="crawler-name-section">
+                        <h3 class="crawler-name">{{ crawler.displayName }}</h3>
+                        <div class="crawler-meta">
+                          <a-tag :color="getStatusColor(crawler.status)" class="status-tag">
+                            <template #icon>
+                              <div class="status-dot" :class="crawler.status"></div>
+                            </template>
+                            {{ getStatusText(crawler.status) }}
+                          </a-tag>
+                          <span class="entity-tag">{{ crawler.entity }}</span>
+                        </div>
+                      </div>
+                      <div class="crawler-description">
+                        <p>{{ crawler.description }}</p>
+                      </div>
+                    </div>
+                    <div class="crawler-actions">
+                      <div class="crawler-checkbox">
+                        <a-checkbox 
+                          :checked="selectedEUCrawlers.includes(crawler.key)"
+                          @change="(e: any) => handleEUCrawlerSelect(crawler.key, e.target.checked)"
+                        />
+                      </div>
+                      <div class="test-actions">
+                        <a-button
+                          type="primary"
+                          size="small"
+                          @click="showEUTestInterface(crawler)"
+                          :loading="crawler.testing"
+                          :disabled="crawler.testing"
+                        >
+                          <template #icon>
+                            <BugOutlined />
+                          </template>
+                          爬取
+                        </a-button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 加载遮罩 -->
+                  <div v-if="crawler.testing" class="loading-overlay">
+                    <a-spin size="large" />
+                    <span class="loading-text">爬取中...</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 批量操作 -->
+              <div class="batch-actions" v-if="selectedEUCrawlers.length > 0">
+                <a-alert 
+                  :message="`已选择 ${selectedEUCrawlers.length} 个欧盟爬虫`"
+                  type="info"
+                  show-icon
+                  style="margin-bottom: 16px"
+                />
+                <a-space>
+                  <a-button @click="batchEUQuickTest" :loading="batchEUTestLoading">
+                    <template #icon>
+                      <ThunderboltOutlined />
+                    </template>
+                    批量快速爬取
+                  </a-button>
+                  <a-button @click="clearEUSelection">
+                    <template #icon>
+                      <ClearOutlined />
+                    </template>
+                    清除选择
+                  </a-button>
+                </a-space>
+              </div>
+            </a-card>
+          </div>
         </a-tab-pane>
 
         <!-- 关键词管理标签页 -->
@@ -1406,7 +1543,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, h } from 'vue';
 import { message, Modal } from 'ant-design-vue';
 import dayjs from 'dayjs';
 import {
@@ -1418,10 +1555,10 @@ import {
   EditOutlined,
   DeleteOutlined,
   FileTextOutlined,
-  BarChartOutlined
+  BarChartOutlined,
+  CheckOutlined
 } from '@ant-design/icons-vue';
 import { PerformanceOptimizer } from '@/utils/performanceOptimizer';
-// 移除后端API调用，改为前端本地管理
 
 // 响应式数据
 const testAllLoading = ref(false);
@@ -1438,6 +1575,7 @@ const currentTestResult = ref<any>(null);
 const selectedCrawler = ref<any>(null);
 const testResult = ref<any>(null);
 const responseTabActive = ref('formatted');
+
 
 // 标签页管理
 const activeTab = ref('crawlers');
@@ -1471,35 +1609,43 @@ const keywordOptions = computed(() => {
     }));
 });
 
-// 测试参数
+// TARIC编码选项（用于EU_CustomCase）
+const taricCodeOptions = computed(() => {
+  const taricCodes = ['9018','8543','9031.49','9031.49','525'];
+  return taricCodes.map(code => ({
+    label: code,
+    value: code
+  }));
+});
+
+// 爬取参数
 const testParams = ref({
-  // 通用参数
-  maxRecords: 10,
-  batchSize: 10,
+  // 通用参数 - 默认爬取所有数据
+  maxRecords: -1,  // -1表示爬取所有记录
+  batchSize: 100,  // 使用较大的批次大小提高效率
   dateFrom: null,
   dateTo: null,
   totalCount: 50,
-  hsCode: '9018',
+  hsCode: '',
   startDate: null,
-  maxPages: 5,
-  inputKeywords: '',
-  keywordSource: 'manual', // 关键词来源：manual, list
+  maxPages: 0,     // 0表示爬取所有页
+  useKeywords: false, // 是否使用关键词列表
   
-  // D_510K 专用参数
+  // US_510K 专用参数
   deviceName: '',
   applicantName: '',
+  tradeName: '',
   
-  // D_event 专用参数
-  brandName: '',
+  // US_event 专用参数
   manufacturer: '',
-  modelNumber: '',
+  productProblem: '',
   
-  // D_recall 专用参数
-  productName: '',
-  reasonForRecall: '',
+  // US_recall 专用参数
   recallingFirm: '',
+  brandName: '',
+  productDescription: '',
   
-  // D_registration 专用参数
+  // US_registration 专用参数
   establishmentName: '',
   proprietaryName: '',
   ownerOperatorName: ''
@@ -1509,71 +1655,75 @@ const testParams = ref({
 // 美国爬虫配置
 const usaCrawlers = ref([
   {
-    key: 'd510k',
-    displayName: 'D_510K - FDA 510K设备',
-    className: 'com.certification.crawler.countrydata.us.D_510K',
+    key: 'us510k',
+    displayName: 'US_510K - FDA 510K设备',
+    className: 'com.certification.crawler.countrydata.us.US_510K',
     entity: 'Device510K',
     description: 'FDA 510K设备审批数据爬虫，用于获取FDA 510K设备审批信息',
-    testEndpoint: '/api/api/us-crawler/search/d510k',
+    testEndpoint: '/api/us-crawler/test/us510k',
     status: 'available',
     lastTest: null,
     testing: false,
     testParams: {
       deviceName: '',
       applicantName: '',
+      tradeName: '',
       dateFrom: null,
       dateTo: null,
-      maxPages: 5
+      maxPages: 0,  // 0表示爬取所有页
+      maxRecords: -1,  // -1表示爬取所有记录
+      batchSize: 100  // 使用较大的批次大小
     }
   },
   {
-    key: 'devent',
-    displayName: 'D_event - FDA事件报告',
-    className: 'com.certification.crawler.countrydata.us.D_event',
+    key: 'usevent',
+    displayName: 'US_event - FDA事件报告',
+    className: 'com.certification.crawler.countrydata.us.US_event_api',
     entity: 'DeviceEventReport',
     description: 'FDA设备不良事件数据爬虫，用于获取FDA设备不良事件信息',
-    testEndpoint: '/api/api/us-crawler/search/devent',
+    testEndpoint: '/api/us-crawler/execute/usevent',
     status: 'available',
     lastTest: null,
     testing: false,
     testParams: {
-      brandName: '',
+      deviceName: '',
       manufacturer: '',
-      modelNumber: '',
+      productProblem: '',
       dateFrom: null,
       dateTo: null,
-      maxPages: 5
+      maxPages: 0,  // 0表示爬取所有页
+      maxRecords: -1,  // -1表示爬取所有记录
+      batchSize: 100  // 使用较大的批次大小
     }
   },
   {
-    key: 'drecall',
-    displayName: 'D_recall - FDA召回数据',
-    className: 'com.certification.crawler.countrydata.us.D_recall',
+    key: 'usrecall',
+    displayName: 'US_recall - FDA召回数据',
+    className: 'com.certification.crawler.countrydata.us.US_recall_api',
     entity: 'DeviceRecallRecord',
     description: 'FDA设备召回数据爬虫，用于获取FDA设备召回信息',
-    testEndpoint: '/api/api/us-crawler/search/drecall',
+    testEndpoint: '/api/us-crawler/test/usrecall',
     status: 'available',
     lastTest: null,
     testing: false,
     testParams: {
-      productName: '',
-      reasonForRecall: '',
       recallingFirm: '',
+      brandName: '',
+      productDescription: '',
       dateFrom: null,
       dateTo: null,
-      maxPages: 5,
-      useKeywordList: false,
-      inputKeywords: '',
-      selectedKeywords: []
+      maxPages: 0,  // 0表示爬取所有页
+      maxRecords: -1,  // -1表示爬取所有记录
+      batchSize: 100  // 使用较大的批次大小
     }
   },
   {
-    key: 'dregistration',
-    displayName: 'D_registration - FDA注册数据',
-    className: 'com.certification.crawler.countrydata.us.D_registration',
+    key: 'usregistration',
+    displayName: 'US_registration - FDA注册数据',
+    className: 'com.certification.crawler.countrydata.us.US_registration',
     entity: 'DeviceRegistrationRecord',
     description: 'FDA设备注册信息爬虫，用于获取FDA设备注册信息',
-    testEndpoint: '/api/api/us-crawler/search/dregistration',
+    testEndpoint: '/api/us-crawler/test/usregistration',
     status: 'available',
     lastTest: null,
     testing: false,
@@ -1581,56 +1731,118 @@ const usaCrawlers = ref([
       establishmentName: '',
       proprietaryName: '',
       ownerOperatorName: '',
-      maxPages: 5
-    }
-  },
-  {
-    key: 'unicrawl',
-    displayName: 'unicrawl - 统一爬虫',
-    className: 'com.certification.crawler.countrydata.us.unicrawl',
-    entity: 'UnifiedCrawler',
-    description: '统一爬虫，支持多种数据源的统一爬取',
-    testEndpoint: '/api/api/us-crawler/test/unicrawl',
-    status: 'available',
-    lastTest: null,
-    testing: false,
-    testParams: {
-      totalCount: 50,
-      dateFrom: null,
-      dateTo: null,
-      inputKeywords: '',
-      maxPages: 0
+      maxPages: 0,  // 0表示爬取所有页
+      maxRecords: -1,  // -1表示爬取所有记录
+      batchSize: 100  // 使用较大的批次大小
     }
   },
   {
     key: 'customs-case',
     displayName: 'CustomsCaseCrawler - 海关案例',
-    className: 'com.certification.crawler.generalArchitecture.us.CustomsCaseCrawler',
+    className: 'com.certification.crawler.countrydata.us.CustomsCaseCrawler',
     entity: 'CustomsCase',
     description: 'CBP海关裁定数据爬虫，用于获取美国海关与边境保护局裁定信息',
-    testEndpoint: '/api/api/us-crawler/search/customs-case',
+    testEndpoint: '/api/us-crawler/test/customs-case',
     status: 'available',
     lastTest: null,
     testing: false,
     testParams: {
       hsCode: '9018',
-      maxRecords: 10,
-      batchSize: 10,
-      startDate: null
+      maxRecords: -1,  // -1表示爬取所有记录
+      batchSize: 100,  // 使用较大的批次大小
+      startDate: null,
+      maxPages: 0  // 0表示爬取所有页
     }
   },
   {
     key: 'guidance',
     displayName: 'GuidanceCrawler - 指导文档',
-    className: 'com.certification.crawler.generalArchitecture.us.GuidanceCrawler',
+    className: 'com.certification.crawler.countrydata.us.GuidanceCrawler',
     entity: 'GuidanceDocument',
     description: 'FDA指导文档爬虫，用于获取FDA医疗设备指导文档',
-    testEndpoint: '/api/api/us-crawler/search/guidance',
+    testEndpoint: '/api/us-crawler/test/guidance',
     status: 'available',
     lastTest: null,
     testing: false,
     testParams: {
-      maxRecords: 10
+      maxRecords: -1,  // -1表示爬取所有记录
+      maxPages: 0,     // 0表示爬取所有页
+      batchSize: 100   // 使用较大的批次大小
+    }
+  }
+]);
+
+// 欧盟爬虫配置
+const euCrawlers = ref([
+  {
+    key: 'eu-custom-case',
+    displayName: 'EU_CustomCase - 欧盟海关案例',
+    className: 'com.certification.crawler.countrydata.eu.Eu_customcase',
+    entity: 'CustomsCase',
+    description: '欧盟TARIC编码关税措施数据爬虫，用于获取欧盟海关与边境保护局裁定信息',
+    testEndpoint: '/api/eu-crawler/test/eu-custom-case',
+    status: 'available',
+    lastTest: null,
+    testing: false,
+    testParams: {
+      taricCode: '9018',              // TARIC编码，默认9018
+      maxRecords: -1,                 // -1表示爬取所有记录
+      batchSize: 100,                 // 批次大小
+      useKeywords: false              // 是否使用关键词列表
+    }
+  },
+  {
+    key: 'eu-guidance',
+    displayName: 'EU_Guidance - 欧盟指导文档',
+    className: 'com.certification.crawler.countrydata.eu.Eu_guidance',
+    entity: 'GuidanceDocument',
+    description: '欧盟医疗设备最新更新新闻爬虫，用于获取欧盟医疗设备指导文档',
+    testEndpoint: '/api/eu-crawler/test/eu-guidance',
+    status: 'available',
+    lastTest: null,
+    testing: false,
+    testParams: {
+      maxRecords: -1,  // -1表示爬取所有记录
+      maxPages: 0,     // 0表示爬取所有页
+      batchSize: 100   // 使用较大的批次大小
+    }
+  },
+  {
+    key: 'eu-recall',
+    displayName: 'EU_Recall - 欧盟召回数据',
+    className: 'com.certification.crawler.countrydata.eu.Eu_recall',
+    entity: 'DeviceRecallRecord',
+    description: '欧盟设备召回数据爬虫，用于获取欧盟设备召回信息',
+    testEndpoint: '/api/eu-crawler/test/eu-recall',
+    status: 'available',
+    lastTest: null,
+    testing: false,
+    testParams: {
+      searchKeyword: 'medical device',                           // 搜索关键词
+      maxRecords: -1,                                            // -1表示爬取所有记录
+      batchSize: 50,                                             // 批次大小
+      dateFrom: '',                                              // 开始日期
+      dateTo: '',                                                // 结束日期
+      useKeywords: false                                         // 是否使用关键词列表
+    }
+  },
+  {
+    key: 'eu-registration',
+    displayName: 'EU_Registration - 欧盟注册数据',
+    className: 'com.certification.crawler.countrydata.eu.Eu_registration',
+    entity: 'DeviceRegistrationRecord',
+    description: '欧盟设备注册信息爬虫，用于获取欧盟设备注册信息',
+    testEndpoint: '/api/eu-crawler/test/eu-registration',
+    status: 'available',
+    lastTest: null,
+    testing: false,
+    testParams: {
+      inputKeyword: 'medical device',                            // 关键词
+      maxRecords: 100,                                          // 最大记录数，默认100
+      batchSize: 50,                                            // 批次大小，默认50
+      dateFrom: '',                                             // 开始日期
+      dateTo: '',                                               // 结束日期
+      useKeywords: false                                        // 是否使用关键词列表
     }
   }
 ]);
@@ -1647,6 +1859,215 @@ const usaStoppedCount = computed(() =>
 const usaAvailableCount = computed(() => 
   usaCrawlers.value.filter(c => c.status === 'available').length
 );
+
+// 欧盟爬虫计算属性
+const euRunningCount = computed(() => 
+  euCrawlers.value.filter(c => c.status === 'running').length
+);
+
+const euStoppedCount = computed(() => 
+  euCrawlers.value.filter(c => c.status === 'stopped').length
+);
+
+const euAvailableCount = computed(() => 
+  euCrawlers.value.filter(c => c.status === 'available').length
+);
+
+// 欧盟爬虫状态管理
+const selectedEUCrawlers = ref<string[]>([]);
+const expandedEUCrawlers = ref<string[]>([]);
+const batchEUTestLoading = ref(false);
+
+// 欧盟爬虫选择处理
+const handleEUCrawlerSelect = (crawlerKey: string, checked: boolean) => {
+  if (checked) {
+    selectedEUCrawlers.value.push(crawlerKey);
+  } else {
+    const index = selectedEUCrawlers.value.indexOf(crawlerKey);
+    if (index > -1) {
+      selectedEUCrawlers.value.splice(index, 1);
+    }
+  }
+};
+
+// 清除欧盟爬虫选择
+const clearEUSelection = () => {
+  selectedEUCrawlers.value = [];
+};
+
+// 显示欧盟爬虫测试界面
+const showEUTestInterface = (crawler: any) => {
+  selectedCrawler.value = crawler;
+  testInterfaceVisible.value = true;
+};
+
+// 批量欧盟爬虫快速测试
+const batchEUQuickTest = async () => {
+  if (selectedEUCrawlers.value.length === 0) {
+    message.warning('请先选择要测试的欧盟爬虫');
+    return;
+  }
+
+  batchEUTestLoading.value = true;
+  
+  try {
+    const promises = selectedEUCrawlers.value.map(crawlerKey => {
+      const crawler = euCrawlers.value.find(c => c.key === crawlerKey);
+      if (crawler) {
+        return testEUCrawler(crawler);
+      }
+      return Promise.resolve();
+    });
+
+    await Promise.all(promises);
+    message.success(`批量测试完成，共测试 ${selectedEUCrawlers.value.length} 个欧盟爬虫`);
+  } catch (error: any) {
+    message.error(`批量测试失败: ${error.message}`);
+  } finally {
+    batchEUTestLoading.value = false;
+  }
+};
+
+// 刷新TARIC编码列表
+const refreshTaricCodes = async () => {
+  keywordLoading.value = true;
+  try {
+    // 模拟刷新TARIC编码列表
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    message.success('TARIC编码列表已刷新');
+  } catch (error) {
+    message.error('刷新TARIC编码列表失败');
+  } finally {
+    keywordLoading.value = false;
+  }
+};
+
+// 欧盟爬虫测试方法
+const testEUCrawler = async (crawler: any) => {
+  crawler.testing = true;
+  crawler.status = 'running';
+  
+  try {
+    // 根据useKeywords标志选择API端点
+    let endpoint = crawler.testEndpoint;
+    let params = { ...crawler.testParams };
+    
+    if (crawler.testParams.useKeywords) {
+      // 使用关键词列表模式
+      switch (crawler.key) {
+        case 'eu-custom-case':
+          endpoint = '/api/eu-crawler/test/eu-custom-case/batch';
+          params = {
+            taricCodes: taricCodeOptions.value.map(code => code.value).join(','), // 使用TARIC编码选项
+            maxRecords: crawler.testParams.maxRecords,
+            batchSize: crawler.testParams.batchSize
+          };
+          break;
+        case 'eu-recall':
+          endpoint = '/api/eu-crawler/test/eu-recall/batch';
+          params = {
+            searchKeywords: keywordOptions.value.map(keyword => keyword.value).join(','), // 使用关键词选项
+            maxRecords: crawler.testParams.maxRecords,
+            batchSize: crawler.testParams.batchSize,
+            dateFrom: crawler.testParams.dateFrom,
+            dateTo: crawler.testParams.dateTo
+          };
+          break;
+        case 'eu-registration':
+          endpoint = '/api/eu-crawler/test/eu-registration/batch';
+          params = {
+            inputKeywords: keywordOptions.value.map(keyword => keyword.value).join(','), // 使用关键词选项
+            maxRecords: crawler.testParams.maxRecords,
+            batchSize: crawler.testParams.batchSize,
+            dateFrom: crawler.testParams.dateFrom,
+            dateTo: crawler.testParams.dateTo
+          };
+          break;
+      }
+    } else {
+      // 单个爬取模式，使用原始参数
+      switch (crawler.key) {
+        case 'eu-custom-case':
+          params = {
+            taricCode: crawler.testParams.taricCode,
+            maxRecords: crawler.testParams.maxRecords,
+            batchSize: crawler.testParams.batchSize
+          };
+          break;
+        case 'eu-recall':
+          params = {
+            maxPages: 5,
+            searchKeyword: crawler.testParams.searchKeyword,
+            sortField: '',
+            sortDirection: '',
+            language: '',
+            productCategories: ''
+          };
+          break;
+        case 'eu-registration':
+          params = {
+            inputKeywords: crawler.testParams.inputKeyword,
+            maxRecords: crawler.testParams.maxRecords,
+            batchSize: crawler.testParams.batchSize,
+            dateFrom: crawler.testParams.dateFrom,
+            dateTo: crawler.testParams.dateTo
+          };
+          break;
+      }
+    }
+    
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams(params)
+    });
+    
+    const result = await response.json();
+    
+    crawler.lastTest = {
+      success: result.success,
+      message: result.message,
+      savedCount: result.savedCount || 0,
+      skippedCount: result.skippedCount || 0,
+      totalProcessed: result.totalProcessed || 0,
+      timestamp: new Date(),
+      isAllDuplicate: result.isAllDuplicate || false,
+      error: result.error || null,
+      errorDetails: result.errorDetails || null
+    };
+    
+    crawler.status = result.success ? 'available' : 'stopped';
+    
+    if (result.success) {
+      if (result.isAllDuplicate) {
+        message.warning(`${crawler.displayName} 爬取完成，但没有数据更新。`);
+      } else {
+        message.success(`${crawler.displayName} 测试成功！`);
+      }
+    } else {
+      const errorMsg = result.errorDetails || result.error || result.message;
+      message.error(`${crawler.displayName} 测试失败: ${errorMsg}`);
+    }
+    
+  } catch (error: any) {
+    console.error('测试欧盟爬虫失败:', error);
+    crawler.lastTest = {
+      success: false,
+      message: `网络错误: ${error.message}`,
+      savedCount: 0,
+      skippedCount: 0,
+      totalProcessed: 0,
+      timestamp: new Date()
+    };
+    crawler.status = 'stopped';
+    message.error(`${crawler.displayName} 测试失败: ${error.message}`);
+  } finally {
+    crawler.testing = false;
+  }
+};
+
 
 // 关键词管理计算属性
 const filteredKeywords = computed(() => {
@@ -1674,34 +2095,17 @@ const showTestInterface = (crawler: any) => {
   testInterfaceVisible.value = true;
 };
 
-const getRequestPayload = () => {
+// 将getRequestPayload改为计算属性，避免重复执行
+const requestPayload = computed(() => {
   if (!selectedCrawler.value) return {};
   
   const params: any = {};
   
-  // 首先处理关键词相关参数
-  console.log('关键词来源:', testParams.value.keywordSource);
-  console.log('手动输入关键词:', testParams.value.inputKeywords);
-  console.log('关键词选项数量:', keywordOptions.value.length);
-  console.log('关键词选项:', keywordOptions.value);
-  
-  if (testParams.value.keywordSource === 'list') {
-    // 使用所有可用的关键词列表，转换为空格分隔的字符串
+  // 处理关键词参数
+  if (testParams.value.useKeywords) {
+    // 使用所有可用的关键词列表，转换为逗号分隔的字符串（后端期望格式）
     const allKeywords = keywordOptions.value.map(option => option.value);
-    params['inputKeywords'] = allKeywords.join(' ');
-    console.log('使用所有关键词列表，数量:', allKeywords.length);
-    console.log('转换后:', params['inputKeywords']);
-  } else if (testParams.value.keywordSource === 'manual' && testParams.value.inputKeywords) {
-    // 手动输入的关键词，将字符串按行分割成数组
-    const keywords = testParams.value.inputKeywords.split('\n')
-      .map((k: string) => k.trim())
-      .filter((k: string) => k.length > 0);
-    if (keywords.length > 0) {
-      params['inputKeywords'] = keywords;
-      console.log('使用手动输入关键词，转换后:', params['inputKeywords']);
-    }
-  } else {
-    console.log('没有设置inputKeywords，keywordSource:', testParams.value.keywordSource);
+    params['inputKeywords'] = allKeywords.join(', ');
   }
 
   // 根据爬虫类型构建其他参数
@@ -1722,6 +2126,24 @@ const getRequestPayload = () => {
   });
   
   return params;
+});
+
+// 保留原函数用于执行爬取时调用
+const getRequestPayload = () => {
+  console.log('是否使用关键词:', testParams.value.useKeywords);
+  console.log('关键词选项数量:', keywordOptions.value.length);
+  console.log('关键词选项:', keywordOptions.value);
+  
+  const payload = requestPayload.value;
+  
+  if (testParams.value.useKeywords) {
+    console.log('使用关键词列表，数量:', keywordOptions.value.length);
+    console.log('转换后:', payload.inputKeywords);
+  } else {
+    console.log('不使用关键词列表');
+  }
+  
+  return payload;
 };
 
 const executeTest = async () => {
@@ -1732,60 +2154,53 @@ const executeTest = async () => {
   
   try {
     const payload = getRequestPayload();
-    console.log(`开始执行测试: ${selectedCrawler.value.displayName}`, payload);
+    console.log(`开始执行爬取: ${selectedCrawler.value.displayName}`, payload);
     console.log('payload.inputKeywords:', payload.inputKeywords);
     
-    // 判断是否使用GET请求（参数化搜索接口）
-    const isSearchEndpoint = selectedCrawler.value.testEndpoint.includes('/search/');
+    // 所有接口都使用POST请求发送JSON数据
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5分钟超时
     
-    let response;
-    if (isSearchEndpoint) {
-      // 构建查询参数
-      const queryParams = new URLSearchParams();
-      Object.keys(payload).forEach(key => {
-        if (payload[key] !== null && payload[key] !== undefined && payload[key] !== '') {
-          // 特殊处理inputKeywords参数
-          if (key === 'inputKeywords' && Array.isArray(payload[key])) {
-            // 如果是数组，转换为空格分隔的字符串
-            queryParams.append(key, payload[key].join(' '));
-          } else {
-            queryParams.append(key, payload[key]);
-          }
-        }
-      });
-      
-      const url = `http://localhost:8080${selectedCrawler.value.testEndpoint}?${queryParams.toString()}`;
-      console.log('GET请求URL:', url);
-      console.log('queryParams.toString():', queryParams.toString());
-      
-      response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-    } else {
-      // 使用POST请求发送JSON数据
-      response = await fetch(`http://localhost:8080${selectedCrawler.value.testEndpoint}`, {
+    const response = await fetch(`http://localhost:8080${selectedCrawler.value.testEndpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: controller.signal
       });
-    }
+    
+    clearTimeout(timeoutId);
     
     const endTime = Date.now();
     const responseTime = endTime - startTime;
-    const responseText = await response.text();
-    const dataSize = new Blob([responseText]).size;
     
+    console.log('响应状态:', response.status);
+    console.log('响应头:', Object.fromEntries(response.headers.entries()));
+    
+    let responseText;
     let result;
+    
     try {
+      // 尝试获取响应文本
+      responseText = await response.text();
+      console.log('原始响应文本:', responseText);
+      
+      // 尝试解析JSON
       result = JSON.parse(responseText);
-    } catch (e) {
-      result = { message: responseText };
+      console.log('解析后的结果:', result);
+    } catch (parseError: any) {
+      console.error('JSON解析失败:', parseError);
+      console.error('响应文本:', responseText);
+      result = { 
+        success: false, 
+        message: '响应解析失败', 
+        rawResponse: responseText,
+        parseError: parseError.toString()
+      };
     }
+    
+    const dataSize = new Blob([responseText || '']).size;
     
     testResult.value = {
       success: response.ok,
@@ -1802,28 +2217,53 @@ const executeTest = async () => {
     selectedCrawler.value.status = result.success ? 'available' : 'stopped';
     
     if (result.success) {
-      message.success(`${selectedCrawler.value.displayName} 测试成功`);
+      const savedCount = result.savedCount || 0;
+      const skippedCount = result.skippedCount || 0;
+      
+      if (savedCount === 0 && skippedCount > 0) {
+        message.warning(`${selectedCrawler.value.displayName} 爬取完成 - 没有新数据，所有 ${skippedCount} 条都是重复数据`);
+      } else if (savedCount > 0) {
+        message.success(`${selectedCrawler.value.displayName} 爬取成功 - 新增 ${savedCount} 条数据${skippedCount > 0 ? `，跳过 ${skippedCount} 条重复数据` : ''}`);
     } else {
-      message.error(`${selectedCrawler.value.displayName} 测试失败: ${result.message}`);
+        message.info(`${selectedCrawler.value.displayName} 爬取完成 - 没有数据更新`);
+      }
+    } else {
+      message.error(`${selectedCrawler.value.displayName} 爬取失败: ${result.message || result.error || '未知错误'}`);
     }
     
   } catch (error: any) {
     const endTime = Date.now();
     const responseTime = endTime - startTime;
     
-    console.error(`测试失败: ${selectedCrawler.value.displayName}`, error);
+    console.error(`爬取失败: ${selectedCrawler.value.displayName}`, error);
+    console.error('错误类型:', error.name);
+    console.error('错误消息:', error.message);
+    console.error('错误堆栈:', error.stack);
+    
+    let errorMessage = '未知错误';
+    if (error.name === 'AbortError') {
+      errorMessage = '请求超时（5分钟）';
+    } else if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+      errorMessage = '网络连接失败，请检查后端服务是否运行';
+    } else {
+      errorMessage = error.message || error.toString();
+    }
     
     testResult.value = {
       success: false,
       status: 0,
       responseTime,
       dataSize: 0,
-      data: { error: error.toString() },
+      data: { 
+        error: errorMessage,
+        errorType: error.name,
+        errorDetails: error.toString()
+      },
       rawResponse: error.toString(),
       timestamp: new Date().toLocaleString()
     };
     
-    message.error(`${selectedCrawler.value.displayName} 测试失败`);
+    message.error(`${selectedCrawler.value.displayName} 爬取失败: ${errorMessage}`);
   } finally {
     testExecuting.value = false;
   }
@@ -1834,33 +2274,32 @@ const executeTest = async () => {
 
 const resetTestParams = () => {
   testParams.value = {
-    // 通用参数
-    maxRecords: 10,
-    batchSize: 10,
+    // 通用参数 - 默认爬取所有数据
+    maxRecords: -1,  // -1表示爬取所有记录
+    batchSize: 100,  // 使用较大的批次大小提高效率
     dateFrom: null,
     dateTo: null,
     totalCount: 50,
     hsCode: '9018',
     startDate: null,
-    maxPages: 5,
-    inputKeywords: '',
-    keywordSource: 'manual',
+    maxPages: 0,     // 0表示爬取所有页
+    useKeywords: false,
     
-    // D_510K 专用参数
+    // US_510K 专用参数
     deviceName: '',
     applicantName: '',
+    tradeName: '',
     
-    // D_event 专用参数
-    brandName: '',
+    // US_event 专用参数
     manufacturer: '',
-    modelNumber: '',
+    productProblem: '',
     
-    // D_recall 专用参数
-    productName: '',
-    reasonForRecall: '',
+    // US_recall 专用参数
     recallingFirm: '',
+    brandName: '',
+    productDescription: '',
     
-    // D_registration 专用参数
+    // US_registration 专用参数
     establishmentName: '',
     proprietaryName: '',
     ownerOperatorName: ''
@@ -1893,7 +2332,7 @@ const executeParameterizedTest = async (crawler: any) => {
       }
     });
     
-    console.log(`开始执行参数化测试: ${crawler.displayName}`, params);
+    console.log(`开始执行参数化爬取: ${crawler.displayName}`, params);
     
     const response = await fetch(`http://localhost:8080${crawler.testEndpoint}`, {
       method: 'POST',
@@ -1908,7 +2347,7 @@ const executeParameterizedTest = async (crawler: any) => {
     const testResult = {
       crawlerName: crawler.displayName,
       success: result.success,
-      message: result.message || '测试完成',
+      message: result.message || '爬取完成',
       totalSaved: result.totalSaved || 0,
       totalSkipped: result.totalSkipped || 0,
       totalPages: result.totalPages || 0,
@@ -1920,23 +2359,23 @@ const executeParameterizedTest = async (crawler: any) => {
     crawler.lastTest = testResult.testTime;
     crawler.status = result.success ? 'available' : 'stopped';
     
-    // 显示测试结果
+    // 显示爬取结果
     currentTestResult.value = testResult;
     testResultModalVisible.value = true;
     
     if (result.success) {
-      message.success(`${crawler.displayName} 参数化测试成功`);
+      message.success(`${crawler.displayName} 参数化爬取成功`);
     } else {
-      message.error(`${crawler.displayName} 参数化测试失败: ${result.message}`);
+      message.error(`${crawler.displayName} 参数化爬取失败: ${result.message}`);
     }
     
   } catch (error: any) {
-    console.error(`参数化测试失败: ${crawler.displayName}`, error);
+    console.error(`参数化爬取失败: ${crawler.displayName}`, error);
     
     const testResult = {
       crawlerName: crawler.displayName,
       success: false,
-      message: `参数化测试失败: ${error}`,
+      message: `参数化爬取失败: ${error}`,
       totalSaved: 0,
       totalSkipped: 0,
       totalPages: 0,
@@ -1947,7 +2386,7 @@ const executeParameterizedTest = async (crawler: any) => {
     currentTestResult.value = testResult;
     testResultModalVisible.value = true;
     
-    message.error(`${crawler.displayName} 参数化测试失败`);
+    message.error(`${crawler.displayName} 参数化爬取失败`);
   } finally {
     crawler.testing = false;
   }
@@ -1957,9 +2396,9 @@ const quickTest = async (crawler: any) => {
   crawler.testing = true;
   
   try {
-    console.log(`开始快速测试: ${crawler.displayName}`);
+    console.log(`开始快速爬取: ${crawler.displayName}`);
     
-    // 使用默认参数进行快速测试
+    // 使用默认参数进行快速爬取
     const defaultParams = getDefaultParams(crawler.key);
     
     const response = await fetch(`http://localhost:8080${crawler.testEndpoint}`, {
@@ -1975,7 +2414,7 @@ const quickTest = async (crawler: any) => {
     const testResult = {
       crawlerName: crawler.displayName,
       success: result.success,
-      message: result.message || '快速测试完成',
+      message: result.message || '快速爬取完成',
       totalSaved: result.totalSaved || 0,
       totalSkipped: result.totalSkipped || 0,
       totalPages: result.totalPages || 0,
@@ -1987,23 +2426,23 @@ const quickTest = async (crawler: any) => {
     crawler.lastTest = testResult.testTime;
     crawler.status = result.success ? 'available' : 'stopped';
     
-    // 显示测试结果
+    // 显示爬取结果
     currentTestResult.value = testResult;
     testResultModalVisible.value = true;
 
     if (result.success) {
-      message.success(`${crawler.displayName} 快速测试成功`);
+      message.success(`${crawler.displayName} 快速爬取成功`);
       } else {
-      message.error(`${crawler.displayName} 快速测试失败: ${result.message}`);
+      message.error(`${crawler.displayName} 快速爬取失败: ${result.message}`);
     }
     
   } catch (error: any) {
-    console.error(`快速测试失败: ${crawler.displayName}`, error);
+    console.error(`快速爬取失败: ${crawler.displayName}`, error);
     
     const testResult = {
       crawlerName: crawler.displayName,
       success: false,
-      message: `快速测试失败: ${error}`,
+      message: `快速爬取失败: ${error}`,
       totalSaved: 0,
       totalSkipped: 0,
       totalPages: 0,
@@ -2014,30 +2453,38 @@ const quickTest = async (crawler: any) => {
     currentTestResult.value = testResult;
     testResultModalVisible.value = true;
     
-    message.error(`${crawler.displayName} 快速测试失败`);
+    message.error(`${crawler.displayName} 快速爬取失败`);
   } finally {
     crawler.testing = false;
   }
 };
 
 const getDefaultParams = (crawlerKey: string) => {
+  // 使用默认的全量爬取参数
+  const defaultMaxPages = 0;  // 0表示爬取所有页
+  const defaultBatchSize = 100;  // 使用较大的批次大小
+  const defaultMaxRecords = -1;  // -1表示爬取所有记录
+  
   switch (crawlerKey) {
-    case 'd510k':
-      return { maxPages: 3, inputKeywords: '', keywordSource: 'manual' };
-    case 'devent':
-      return { maxPages: 3, inputKeywords: '', keywordSource: 'manual' };
-    case 'drecall':
-      return { maxPages: 3, inputKeywords: '', keywordSource: 'manual' };
-    case 'dregistration':
-      return { maxPages: 3, inputKeywords: '', keywordSource: 'manual' };
-    case 'unicrawl':
-      return { totalCount: 10, dateFrom: null, dateTo: null, inputKeywords: '', maxPages: 0 };
+    case 'us510k':
+      return { maxPages: defaultMaxPages, useKeywords: false };
+    case 'usevent':
+      return { maxPages: defaultMaxPages, useKeywords: false };
+    case 'usrecall':
+      return { maxPages: defaultMaxPages, useKeywords: false };
+    case 'usregistration':
+      return { maxPages: defaultMaxPages, useKeywords: false };
     case 'customs-case':
-      return { hsCode: '9018', maxRecords: 5, batchSize: 5, inputKeywords: '' };
+      return { 
+        hsCode: '9018', 
+        maxRecords: defaultMaxRecords, // 使用全量爬取
+        batchSize: defaultBatchSize, 
+        useKeywords: false 
+      };
     case 'guidance':
-      return { maxRecords: 5, inputKeywords: '' };
+      return { maxRecords: defaultMaxRecords, useKeywords: false }; // 使用全量爬取
     default:
-      return { inputKeywords: '' };
+      return { useKeywords: false };
   }
 };
 
@@ -2045,7 +2492,7 @@ const testAllCrawlers = async () => {
   testAllLoading.value = true;
   
   try {
-    console.log('🚀 开始批量测试所有爬虫...')
+    console.log('🚀 开始批量爬取所有爬虫...')
     
     // 使用Promise.allSettled来避免单个失败影响整体
     const promises = usaCrawlers.value.map(crawler => quickTest(crawler));
@@ -2055,17 +2502,17 @@ const testAllCrawlers = async () => {
     const successCount = results.filter(result => result.status === 'fulfilled').length
     const failedCount = results.filter(result => result.status === 'rejected').length
     
-    console.log(`✅ 批量测试完成: 成功 ${successCount}, 失败 ${failedCount}`)
+    console.log(`✅ 批量爬取完成: 成功 ${successCount}, 失败 ${failedCount}`)
     
     if (failedCount === 0) {
-      message.success(`所有爬虫快速测试完成！成功: ${successCount}/${usaCrawlers.value.length}`);
+      message.success(`所有爬虫快速爬取完成！成功: ${successCount}/${usaCrawlers.value.length}`);
     } else {
-      message.warning(`批量测试完成！成功: ${successCount}, 失败: ${failedCount}`);
+      message.warning(`批量爬取完成！成功: ${successCount}, 失败: ${failedCount}`);
     }
     
   } catch (error) {
-    console.error('批量测试失败:', error);
-    message.error('批量测试失败');
+    console.error('批量爬取失败:', error);
+    message.error('批量爬取失败');
   } finally {
     testAllLoading.value = false;
   }
@@ -2073,14 +2520,14 @@ const testAllCrawlers = async () => {
 
 const batchQuickTest = async () => {
   if (selectedCrawlers.value.length === 0) {
-    message.warning('请选择要测试的爬虫');
+    message.warning('请选择要爬取的爬虫');
     return;
   }
   
   batchTestLoading.value = true;
   
   try {
-    console.log(`🚀 开始批量测试选中的 ${selectedCrawlers.value.length} 个爬虫...`)
+    console.log(`🚀 开始批量爬取选中的 ${selectedCrawlers.value.length} 个爬虫...`)
     
     const selectedCrawlerObjects = usaCrawlers.value.filter(c => 
       selectedCrawlers.value.includes(c.key)
@@ -2094,19 +2541,19 @@ const batchQuickTest = async () => {
     const successCount = results.filter(result => result.status === 'fulfilled').length
     const failedCount = results.filter(result => result.status === 'rejected').length
     
-    console.log(`✅ 批量测试完成: 成功 ${successCount}, 失败 ${failedCount}`)
+    console.log(`✅ 批量爬取完成: 成功 ${successCount}, 失败 ${failedCount}`)
     
     if (failedCount === 0) {
-      message.success(`批量快速测试完成！共测试 ${selectedCrawlers.value.length} 个爬虫，全部成功`);
+      message.success(`批量快速爬取完成！共爬取 ${selectedCrawlers.value.length} 个爬虫，全部成功`);
     } else {
-      message.warning(`批量快速测试完成！成功: ${successCount}, 失败: ${failedCount}`);
+      message.warning(`批量快速爬取完成！成功: ${successCount}, 失败: ${failedCount}`);
     }
     
     clearSelection();
     
   } catch (error) {
-    console.error('批量测试失败:', error);
-    message.error('批量测试失败');
+    console.error('批量爬取失败:', error);
+    message.error('批量爬取失败');
   } finally {
     batchTestLoading.value = false;
   }
@@ -2397,11 +2844,42 @@ const getOriginalKeywordIndex = (filteredIndex: number) => {
   return keywords.value.indexOf(filteredKeyword);
 };
 
+// 获取爬取结果描述
+const getResultDescription = () => {
+  if (!testResult.value?.data) return '';
+  
+  const data = testResult.value.data;
+  const savedCount = data.savedCount || 0;
+  const skippedCount = data.skippedCount || 0;
+  const totalProcessed = data.totalProcessed || (savedCount + skippedCount);
+  
+  if (data.success) {
+    if (savedCount === 0 && skippedCount > 0) {
+      return `没有发现新数据，所有 ${skippedCount} 条数据都是重复的。`;
+    } else if (savedCount > 0 && skippedCount > 0) {
+      return `成功处理 ${totalProcessed} 条数据，其中新增 ${savedCount} 条，跳过重复 ${skippedCount} 条。`;
+    } else if (savedCount > 0 && skippedCount === 0) {
+      return `成功新增 ${savedCount} 条数据，没有重复数据。`;
+    } else {
+      return '爬取完成，但没有数据更新。';
+    }
+  } else {
+    return data.error || '爬取过程中发生未知错误。';
+  }
+};
+
 
 
 // 生命周期
-onMounted(() => {
+onMounted(async () => {
   console.log('🚀 美国爬虫管理系统初始化完成');
+  
+  // 所有爬虫默认爬取所有数据
+  console.log('✅ 已设置默认全量爬取参数:', {
+    maxPages: testParams.value.maxPages,
+    batchSize: testParams.value.batchSize,
+    maxRecords: testParams.value.maxRecords
+  });
   
   // 初始化关键词缓存
   const cacheKey = 'crawler-keywords'
@@ -2543,24 +3021,20 @@ onMounted(() => {
   z-index: 1;
 }
 
-.icon-wrapper.d510k::before {
+.icon-wrapper.us510k::before {
   background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
 }
 
-.icon-wrapper.devent::before {
+.icon-wrapper.usevent::before {
   background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
 }
 
-.icon-wrapper.drecall::before {
+.icon-wrapper.usrecall::before {
   background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
 }
 
-.icon-wrapper.dregistration::before {
+.icon-wrapper.usregistration::before {
   background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-}
-
-.icon-wrapper.unicrawl::before {
-  background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
 }
 
 .icon-wrapper.customs-case::before {
@@ -2569,6 +3043,23 @@ onMounted(() => {
 
 .icon-wrapper.guidance::before {
   background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+}
+
+/* 欧盟爬虫图标样式 */
+.icon-wrapper.eu-custom-case::before {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.icon-wrapper.eu-guidance::before {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.icon-wrapper.eu-recall::before {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.icon-wrapper.eu-registration::before {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
 }
 
 .crawler-info {
@@ -3207,6 +3698,29 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* 爬取结果展示样式 */
+.crawl-summary {
+  padding: 16px;
+}
+
+.result-message {
+  margin: 16px 0;
+}
+
+.database-result {
+  margin-top: 16px;
+  padding: 12px;
+  background: #f5f5f5;
+  border-radius: 6px;
+}
+
+.database-result h5 {
+  margin: 0 0 8px 0;
+  color: #262626;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .length-info {

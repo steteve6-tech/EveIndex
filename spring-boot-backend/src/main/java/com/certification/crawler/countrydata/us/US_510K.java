@@ -1,7 +1,9 @@
 package com.certification.crawler.countrydata.us;
 
+import com.certification.config.MedcertCrawlerConfig;
 import com.certification.entity.common.Device510K;
 import com.certification.entity.common.CrawlerCheckpoint;
+import com.certification.exception.AllDataDuplicateException;
 import com.certification.repository.common.Device510KRepository;
 import com.certification.repository.common.CrawlerCheckpointRepository;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -38,9 +40,6 @@ public class US_510K {
 
     private static final String BASE_URL = "https://api.fda.gov";
     private static final String API_KEY = "xSSE0jrA316WGLwkRQzPhSlgmYbHIEsZck6H62ji";
-    private static final int RETRY_COUNT = 3;
-    private static final int RETRY_DELAY = 5;
-    private static final int BATCH_SAVE_SIZE = 50; // 每50条数据保存一次
 
     private final CloseableHttpClient httpClient;
     private final ObjectMapper objectMapper;
@@ -50,6 +49,9 @@ public class US_510K {
     
     @Autowired
     private CrawlerCheckpointRepository crawlerCheckpointRepository;
+    
+    @Autowired
+    private MedcertCrawlerConfig crawlerConfig;
 
     public US_510K() {
         this.httpClient = HttpClients.createDefault();
@@ -666,11 +668,12 @@ public class US_510K {
         }
 
         int savedCount = 0;
+        int totalSkipped = 0;
         int batchCount = 0;
         int consecutiveEmptyBatches = 0;
 
-        for (int i = 0; i < records.size(); i += BATCH_SAVE_SIZE) {
-            int endIndex = Math.min(i + BATCH_SAVE_SIZE, records.size());
+        for (int i = 0; i < records.size(); i += crawlerConfig.getBatch().getSaveSize()) {
+            int endIndex = Math.min(i + crawlerConfig.getBatch().getSaveSize(), records.size());
             List<Device510K> batch = records.subList(i, endIndex);
             batchCount++;
 
@@ -727,13 +730,14 @@ public class US_510K {
             }
 
             if (newRecords.isEmpty()) {
-                System.out.println("本批次全部为重复记录，跳过了 " + batch.size() + " 条记录");
+                totalSkipped += batchDuplicateCount;
+                System.out.println("本批次全部为重复记录，跳过了 " + batchDuplicateCount + " 条记录");
                 consecutiveEmptyBatches++;
                 System.out.println("第 " + batchCount + " 批次数据全部重复，连续空批次: " + consecutiveEmptyBatches);
                 
                 if (consecutiveEmptyBatches >= 3) {
                     System.out.println("连续 " + consecutiveEmptyBatches + " 个批次都是重复数据，停止爬取");
-                    break;
+                    throw new AllDataDuplicateException("连续 " + consecutiveEmptyBatches + " 个批次都是重复数据，停止爬取");
                 }
             } else {
                 consecutiveEmptyBatches = 0;
@@ -747,6 +751,7 @@ public class US_510K {
                     try {
                         device510KRepository.saveAll(newRecords);
                         savedCount += newRecords.size();
+                        totalSkipped += batchDuplicateCount;
                         System.out.println("第 " + batchCount + " 批次保存成功，新增: " + newRecords.size() + " 条，重复: " + batchDuplicateCount + " 条");
                         saveSuccess = true;
                     } catch (Exception e) {
@@ -767,7 +772,7 @@ public class US_510K {
             }
         }
 
-        return savedCount + " 条记录";
+        return String.format("保存成功: %d 条新记录, 跳过重复: %d 条", savedCount, totalSkipped);
     }
 
     /**
@@ -785,7 +790,7 @@ public class US_510K {
 
         HttpGet httpGet = new HttpGet(uriBuilder.build());
 
-        for (int attempt = 1; attempt <= RETRY_COUNT; attempt++) {
+        for (int attempt = 1; attempt <= crawlerConfig.getRetry().getMaxAttempts(); attempt++) {
             try (ClassicHttpResponse response = httpClient.executeOpen(null, httpGet, null)) {
                 int statusCode = response.getCode();
                 String reasonPhrase = response.getReasonPhrase();
@@ -824,9 +829,9 @@ public class US_510K {
                     }
                 } else {
                     System.err.printf("请求失败，状态码: %d，原因: %s（第%d次重试）%n", statusCode, reasonPhrase, attempt);
-                    if (attempt < RETRY_COUNT) {
+                    if (attempt < crawlerConfig.getRetry().getMaxAttempts()) {
                         try {
-                            TimeUnit.SECONDS.sleep(RETRY_DELAY);
+                            TimeUnit.SECONDS.sleep(crawlerConfig.getRetry().getDelaySeconds());
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
                             break;
@@ -835,9 +840,9 @@ public class US_510K {
                 }
             } catch (Exception e) {
                 System.err.printf("请求异常: %s（第%d次重试）%n", e.getMessage(), attempt);
-                if (attempt < RETRY_COUNT) {
+                if (attempt < crawlerConfig.getRetry().getMaxAttempts()) {
                     try {
-                        TimeUnit.SECONDS.sleep(RETRY_DELAY);
+                        TimeUnit.SECONDS.sleep(crawlerConfig.getRetry().getDelaySeconds());
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         break;
@@ -846,7 +851,7 @@ public class US_510K {
             }
         }
 
-        throw new IOException("请求失败，已重试 " + RETRY_COUNT + " 次");
+        throw new IOException("请求失败，已重试 " + crawlerConfig.getRetry().getMaxAttempts() + " 次");
     }
 
     /**
@@ -874,40 +879,4 @@ public class US_510K {
         return null;
     }
 
-    /**
-     * 主函数用于测试
-     */
-    public static void main(String[] args) {
-        System.out.println("=== US_510K 爬虫测试 ===");
-        
-        try {
-            US_510K crawler = new US_510K();
-            
-            // 测试1: 按设备名称搜索
-            System.out.println("\n1. 测试按设备名称搜索...");
-            String result1 = crawler.crawlAndSaveByDeviceName("skin", 10, 5);
-            System.out.println("   结果: " + result1);
-            
-            // 测试2: 按申请人搜索
-            System.out.println("\n2. 测试按申请人搜索...");
-            String result2 = crawler.crawlAndSaveByApplicant("medtronic", 10, 5);
-            System.out.println("   结果: " + result2);
-            
-            // 测试3: 按trade_name搜索
-            System.out.println("\n3. 测试按trade_name搜索...");
-            String result3 = crawler.crawlAndSaveByTradeName("Monitor", 10, 5);
-            System.out.println("   结果: " + result3);
-            
-            // 测试4: 通用搜索方法
-            System.out.println("\n4. 测试通用搜索方法...");
-            String result4 = crawler.crawlAndSaveDevice510K("device_name:catheter", 10, 5);
-            System.out.println("   结果: " + result4);
-            
-        } catch (Exception e) {
-            System.err.println("测试过程中发生错误: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            System.out.println("\n=== 测试完成 ===");
-        }
-    }
 }

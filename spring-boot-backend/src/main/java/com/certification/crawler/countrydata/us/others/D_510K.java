@@ -1,5 +1,6 @@
-package com.certification.crawler.countrydata.us;
+package com.certification.crawler.countrydata.us.others;
 
+import com.certification.config.MedcertCrawlerConfig;
 import com.certification.entity.common.CertNewsData;
 import com.certification.entity.common.Device510K;
 import com.certification.repository.common.Device510KRepository;
@@ -32,13 +33,15 @@ public class D_510K {
     private static final String BASE_URL = "https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfpmn/pmn.cfm";
     private static final int MAX_PAGES = 10; // 最大爬取页数（0表示爬到最后一页）
     private static final int DELAY_MS = 2000; // 每页延迟（毫秒）
-    private static final int BATCH_SIZE = 20; // 每批保存的数据量
 
     // 搜索筛选条件
     private final Map<String, String> searchParams = new HashMap<>();
     
     @Autowired
     private Device510KRepository device510KRepository;
+    
+    @Autowired
+    private MedcertCrawlerConfig crawlerConfig;
 
     /**
      * 执行FDA数据爬取（带参数化搜索）
@@ -74,8 +77,8 @@ public class D_510K {
                 allResults.addAll(pageResults);
                 log.info("第 {} 页解析完成，获取 {} 条记录", currentPage, pageResults.size());
                 
-                // 每20条数据保存一次到数据库
-                if (allResults.size() >= BATCH_SIZE) {
+                // 每配置的批量大小条数据保存一次到数据库
+                if (allResults.size() >= crawlerConfig.getBatch().getSmallSaveSize()) {
                     int[] result = saveBatchToDatabase(allResults);
                     totalSaved += result[0];
                     totalSkipped += result[1];

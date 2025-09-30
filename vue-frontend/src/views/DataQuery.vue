@@ -304,21 +304,21 @@
         </a-col>
       </a-row>
       <a-row :gutter="16" style="margin-top: 16px;">
-        <a-col :span="6">
-          <a-card>
-            <div class="clickable-statistic" @click="filterByStatus('undetermined')">
-<!--              <a-statistic-->
-<!--                title="未确定"-->
-<!--                :value="stats.undetermined"-->
-<!--                :value-style="{ color: '#d9d9d9', cursor: 'pointer' }"-->
-<!--              >-->
-<!--                <template #prefix>-->
-<!--                  <QuestionCircleOutlined />-->
-<!--                </template>-->
-<!--              </a-statistic>-->
-            </div>
-          </a-card>
-        </a-col>
+<!--        <a-col :span="6">-->
+<!--          <a-card>-->
+<!--            <div class="clickable-statistic" @click="filterByStatus('undetermined')">-->
+<!--&lt;!&ndash;              <a-statistic&ndash;&gt;-->
+<!--&lt;!&ndash;                title="未确定"&ndash;&gt;-->
+<!--&lt;!&ndash;                :value="stats.undetermined"&ndash;&gt;-->
+<!--&lt;!&ndash;                :value-style="{ color: '#d9d9d9', cursor: 'pointer' }"&ndash;&gt;-->
+<!--&lt;!&ndash;              >&ndash;&gt;-->
+<!--&lt;!&ndash;                <template #prefix>&ndash;&gt;-->
+<!--&lt;!&ndash;                  <QuestionCircleOutlined />&ndash;&gt;-->
+<!--&lt;!&ndash;                </template>&ndash;&gt;-->
+<!--&lt;!&ndash;              </a-statistic>&ndash;&gt;-->
+<!--            </div>-->
+<!--          </a-card>-->
+<!--        </a-col>-->
       </a-row>
     </div>
 
@@ -412,9 +412,9 @@
             </a-radio-group>
             
             <a-dropdown v-if="dataList.length > 0">
-              <a-button>
-                批量操作 <DownOutlined />
-              </a-button>
+<!--              <a-button>-->
+<!--                批量操作 <DownOutlined />-->
+<!--              </a-button>-->
               <template #overlay>
                 <a-menu>
                   <a-menu-item @click="batchMarkRelated">
@@ -466,12 +466,12 @@
               class="news-item"
               :class="{ 'selected': selectedRowKeys.includes(item.id) }"
             >
-              <div class="news-item-checkbox">
-                <a-checkbox 
-                  :checked="selectedRowKeys.includes(item.id)"
-                  @change="(e: any) => handleRowSelectionChange(item.id, e.target.checked)"
-                />
-              </div>
+<!--              <div class="news-item-checkbox">-->
+<!--                <a-checkbox -->
+<!--                  :checked="selectedRowKeys.includes(item.id)"-->
+<!--                  @change="(e: any) => handleRowSelectionChange(item.id, e.target.checked)"-->
+<!--                />-->
+<!--              </div>-->
               <div class="news-header">
                 <h3 class="news-title" @click="viewDetail(item)" v-html="highlightKeyword(item.title, searchForm.keyword)"></h3>
                                  <div class="news-meta">
@@ -553,12 +553,6 @@
                 >
                   <template #cover>
                     <div class="card-cover">
-                      <div class="card-checkbox">
-                        <a-checkbox 
-                          :checked="selectedRowKeys.includes(item.id)"
-                          @change="(e: any) => handleRowSelectionChange(item.id, e.target.checked)"
-                        />
-                      </div>
                       <div class="country-flag">{{ getCountryFlag(item.country) }}</div>
                       <div class="risk-badge" :class="getRiskLevelClass(item.riskLevel)">
                         {{ getRiskLevelText(item.riskLevel) }}
@@ -772,7 +766,7 @@
             style="margin-bottom: 16px"
           />
         </div>
-        
+
         <a-form layout="vertical">
           <a-form-item label="风险等级状态">
             <a-radio-group v-model:value="batchRiskLevelValue">
@@ -1164,6 +1158,38 @@ const loadingMatchDetails = ref(false)
 const lastAutoProcessTime = ref<string>('') // 上次自动处理时间
 const lastDataUpdateTime = ref<string>('') // 数据更新时间
 const lastAutoProcessResult = ref<any>(null) // 本次自动处理结果
+
+// 更新数据更新时间为最新数据的爬取时间
+const updateDataUpdateTime = () => {
+  if (dataList.value && dataList.value.length > 0) {
+    // 找到最新的爬取时间
+    let latestCrawlTime = null
+    
+    for (const item of dataList.value) {
+      if (item.crawlTime) {
+        const crawlTime = new Date(item.crawlTime)
+        if (!latestCrawlTime || crawlTime > latestCrawlTime) {
+          latestCrawlTime = crawlTime
+        }
+      }
+    }
+    
+    if (latestCrawlTime) {
+      lastDataUpdateTime.value = latestCrawlTime.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      })
+    } else {
+      lastDataUpdateTime.value = '暂无爬取时间'
+    }
+  } else {
+    lastDataUpdateTime.value = '暂无数据'
+  }
+}
 
 
 
@@ -1663,6 +1689,9 @@ const loadData = async () => {
         dataList.value = (result.data as any).content || []
         totalCount.value = (result.data as any).totalElements || 0
         dataLoaded.value = true // 标记数据已加载
+        
+        // 更新数据更新时间为最新数据的爬取时间
+        updateDataUpdateTime()
         
         // 更新统计数据
         updateStats() // 重新启用统计数据更新
@@ -2457,7 +2486,7 @@ const filterByStatus = (status: string) => {
     'highRisk': '高风险数据',
     'mediumRisk': '中风险数据',
     'lowRisk': '低风险数据',
-    'undetermined': '未确定数据'
+    // 'undetermined': '未确定数据'
   }
   message.success(`已筛选显示${statusText[status]}`)
 }
@@ -2646,8 +2675,7 @@ const loadAutoProcessInfo = () => {
       lastAutoProcessResult.value = JSON.parse(savedResult)
     }
     
-    // 设置数据更新时间为当前时间
-    lastDataUpdateTime.value = new Date().toLocaleString('zh-CN')
+    // 数据更新时间现在由updateDataUpdateTime()函数根据最新数据的爬取时间设置
   } catch (error) {
     console.error('加载自动处理信息失败:', error)
   }
@@ -2863,15 +2891,6 @@ onMounted(async () => {
   box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
 }
 
-.card-checkbox {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 2;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 4px;
-  padding: 2px;
-}
 
 .card-cover {
   height: 120px;

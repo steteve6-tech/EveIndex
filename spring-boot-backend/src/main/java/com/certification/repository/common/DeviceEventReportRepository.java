@@ -64,4 +64,24 @@ public interface DeviceEventReportRepository extends JpaRepository<DeviceEventRe
      * 根据关键词搜索（忽略大小写）
      */
     List<DeviceEventReport> findByKeywordsContainingIgnoreCase(String keywords);
+
+    /**
+     * 根据关键词搜索（支持多个字段）
+     */
+    @Query("SELECT d FROM DeviceEventReport d WHERE " +
+           "(d.brandName LIKE %:keyword% OR " +
+           "d.manufacturerName LIKE %:keyword% OR " +
+           "d.genericName LIKE %:keyword%) " +
+           "AND (:countryCode IS NULL OR d.jdCountry = :countryCode)")
+    List<DeviceEventReport> findByKeywordAndCountry(@Param("keyword") String keyword, @Param("countryCode") String countryCode);
+
+    /**
+     * 根据关键词搜索（支持多个字段，分页）
+     */
+    @Query("SELECT d FROM DeviceEventReport d WHERE " +
+           "(d.brandName LIKE %:keyword% OR " +
+           "d.manufacturerName LIKE %:keyword% OR " +
+           "d.genericName LIKE %:keyword%) " +
+           "AND (:countryCode IS NULL OR d.jdCountry = :countryCode)")
+    org.springframework.data.domain.Page<DeviceEventReport> findByKeywordAndCountry(@Param("keyword") String keyword, @Param("countryCode") String countryCode, org.springframework.data.domain.Pageable pageable);
 }

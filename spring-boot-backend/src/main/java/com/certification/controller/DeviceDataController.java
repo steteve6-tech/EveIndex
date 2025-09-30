@@ -710,16 +710,15 @@ public class DeviceDataController {
      * 获取510K设备记录
      */
     @GetMapping("/device-510k")
-    @Operation(summary = "获取510K设备记录", description = "分页获取510K设备记录")
+    @Operation(summary = "获取510K设备记录", description = "分页获取510K设备记录，支持关键词和国家搜索")
     public ResponseEntity<Map<String, Object>> getDevice510KRecords(
             @Parameter(description = "页码", example = "0") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "每页大小", example = "10") @RequestParam(defaultValue = "10") int size,
-            @Parameter(description = "设备名称") @RequestParam(required = false) String deviceName,
-            @Parameter(description = "申请人") @RequestParam(required = false) String applicant,
-            @Parameter(description = "设备类别") @RequestParam(required = false) String deviceClass) {
+            @Parameter(description = "关键词搜索") @RequestParam(required = false) String keyword,
+            @Parameter(description = "国家代码") @RequestParam(required = false) String countryCode) {
         
-        log.info("获取510K设备记录: page={}, size={}, deviceName={}, applicant={}, deviceClass={}", 
-                page, size, deviceName, applicant, deviceClass);
+        log.info("获取510K设备记录: page={}, size={}, keyword={}, countryCode={}", 
+                page, size, keyword, countryCode);
         
         Map<String, Object> result = new HashMap<>();
         
@@ -727,23 +726,22 @@ public class DeviceDataController {
             Pageable pageable = PageRequest.of(page, size);
             Page<Device510K> dataPage;
             
-                            if (deviceName != null && !deviceName.trim().isEmpty()) {
-                    List<Device510K> deviceList = device510KRepository.findByDeviceNameContaining(deviceName);
-                    // 手动分页
-                    int start = (int) pageable.getOffset();
-                    int end = Math.min(start + pageable.getPageSize(), deviceList.size());
-                    List<Device510K> pageContent = deviceList.subList(start, end);
-                    dataPage = new org.springframework.data.domain.PageImpl<>(pageContent, pageable, deviceList.size());
-                } else if (applicant != null && !applicant.trim().isEmpty()) {
-                    List<Device510K> applicantList = device510KRepository.findByApplicantContaining(applicant);
-                    // 手动分页
-                    int start = (int) pageable.getOffset();
-                    int end = Math.min(start + pageable.getPageSize(), applicantList.size());
-                    List<Device510K> pageContent = applicantList.subList(start, end);
-                    dataPage = new org.springframework.data.domain.PageImpl<>(pageContent, pageable, applicantList.size());
-                } else {
-                    dataPage = device510KRepository.findAll(pageable);
-                }
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                // 使用关键词和国家搜索，如果countryCode为空则搜索所有国家
+                String normalizedCountryCode = (countryCode != null && !countryCode.trim().isEmpty()) ? countryCode.trim() : null;
+                dataPage = device510KRepository.findByKeywordAndCountry(keyword.trim(), normalizedCountryCode, pageable);
+            } else if (countryCode != null && !countryCode.trim().isEmpty()) {
+                // 只按国家搜索
+                List<Device510K> countryList = device510KRepository.findByJdCountry(countryCode.trim());
+                // 手动分页
+                int start = (int) pageable.getOffset();
+                int end = Math.min(start + pageable.getPageSize(), countryList.size());
+                List<Device510K> pageContent = countryList.subList(start, end);
+                dataPage = new org.springframework.data.domain.PageImpl<>(pageContent, pageable, countryList.size());
+            } else {
+                // 获取所有数据
+                dataPage = device510KRepository.findAll(pageable);
+            }
             
             result.put("success", true);
             result.put("data", dataPage.getContent());
@@ -765,16 +763,15 @@ public class DeviceDataController {
      * 获取召回记录
      */
     @GetMapping("/recall-records")
-    @Operation(summary = "获取召回记录", description = "分页获取召回记录")
+    @Operation(summary = "获取召回记录", description = "分页获取召回记录，支持关键词和国家搜索")
     public ResponseEntity<Map<String, Object>> getDeviceRecallRecords(
             @Parameter(description = "页码", example = "0") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "每页大小", example = "10") @RequestParam(defaultValue = "10") int size,
-            @Parameter(description = "产品描述") @RequestParam(required = false) String productDescription,
-            @Parameter(description = "召回公司") @RequestParam(required = false) String recallingFirm,
-            @Parameter(description = "设备名称") @RequestParam(required = false) String deviceName) {
+            @Parameter(description = "关键词搜索") @RequestParam(required = false) String keyword,
+            @Parameter(description = "国家代码") @RequestParam(required = false) String countryCode) {
         
-        log.info("获取召回记录: page={}, size={}, productDescription={}, recallingFirm={}, deviceName={}", 
-                page, size, productDescription, recallingFirm, deviceName);
+        log.info("获取召回记录: page={}, size={}, keyword={}, countryCode={}", 
+                page, size, keyword, countryCode);
         
         Map<String, Object> result = new HashMap<>();
         
@@ -782,23 +779,22 @@ public class DeviceDataController {
             Pageable pageable = PageRequest.of(page, size);
             Page<DeviceRecallRecord> dataPage;
             
-                            if (productDescription != null && !productDescription.trim().isEmpty()) {
-                    List<DeviceRecallRecord> productList = deviceRecallRecordRepository.findByProductDescriptionContaining(productDescription);
-                    // 手动分页
-                    int start = (int) pageable.getOffset();
-                    int end = Math.min(start + pageable.getPageSize(), productList.size());
-                    List<DeviceRecallRecord> pageContent = productList.subList(start, end);
-                    dataPage = new org.springframework.data.domain.PageImpl<>(pageContent, pageable, productList.size());
-                } else if (recallingFirm != null && !recallingFirm.trim().isEmpty()) {
-                    List<DeviceRecallRecord> firmList = deviceRecallRecordRepository.findByRecallingFirmContaining(recallingFirm);
-                    // 手动分页
-                    int start = (int) pageable.getOffset();
-                    int end = Math.min(start + pageable.getPageSize(), firmList.size());
-                    List<DeviceRecallRecord> pageContent = firmList.subList(start, end);
-                    dataPage = new org.springframework.data.domain.PageImpl<>(pageContent, pageable, firmList.size());
-                } else {
-                    dataPage = deviceRecallRecordRepository.findAll(pageable);
-                }
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                // 使用关键词和国家搜索，如果countryCode为空则搜索所有国家
+                String normalizedCountryCode = (countryCode != null && !countryCode.trim().isEmpty()) ? countryCode.trim() : null;
+                dataPage = deviceRecallRecordRepository.findByKeywordAndCountry(keyword.trim(), normalizedCountryCode, pageable);
+            } else if (countryCode != null && !countryCode.trim().isEmpty()) {
+                // 只按国家搜索
+                List<DeviceRecallRecord> countryList = deviceRecallRecordRepository.findByJdCountry(countryCode.trim());
+                // 手动分页
+                int start = (int) pageable.getOffset();
+                int end = Math.min(start + pageable.getPageSize(), countryList.size());
+                List<DeviceRecallRecord> pageContent = countryList.subList(start, end);
+                dataPage = new org.springframework.data.domain.PageImpl<>(pageContent, pageable, countryList.size());
+            } else {
+                // 获取所有数据
+                dataPage = deviceRecallRecordRepository.findAll(pageable);
+            }
             
             result.put("success", true);
             result.put("data", dataPage.getContent());
@@ -820,16 +816,15 @@ public class DeviceDataController {
      * 获取事件报告
      */
     @GetMapping("/event-reports")
-    @Operation(summary = "获取事件报告", description = "分页获取事件报告")
+    @Operation(summary = "获取事件报告", description = "分页获取事件报告，支持关键词和国家搜索")
     public ResponseEntity<Map<String, Object>> getDeviceEventReports(
             @Parameter(description = "页码", example = "0") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "每页大小", example = "10") @RequestParam(defaultValue = "10") int size,
-            @Parameter(description = "品牌名称") @RequestParam(required = false) String brandName,
-            @Parameter(description = "通用名称") @RequestParam(required = false) String genericName,
-            @Parameter(description = "制造商名称") @RequestParam(required = false) String manufacturerName) {
+            @Parameter(description = "关键词搜索") @RequestParam(required = false) String keyword,
+            @Parameter(description = "国家代码") @RequestParam(required = false) String countryCode) {
         
-        log.info("获取事件报告: page={}, size={}, brandName={}, genericName={}, manufacturerName={}", 
-                page, size, brandName, genericName, manufacturerName);
+        log.info("获取事件报告: page={}, size={}, keyword={}, countryCode={}", 
+                page, size, keyword, countryCode);
         
         Map<String, Object> result = new HashMap<>();
         
@@ -837,42 +832,22 @@ public class DeviceDataController {
             Pageable pageable = PageRequest.of(page, size);
             Page<DeviceEventReport> dataPage;
             
-                            if (brandName != null && !brandName.trim().isEmpty()) {
-                    List<DeviceEventReport> allEvents = deviceEventReportRepository.findAll();
-                    List<DeviceEventReport> matchedEvents = allEvents.stream()
-                        .filter(event -> event.getBrandName() != null && 
-                                       event.getBrandName().toLowerCase().contains(brandName.toLowerCase()))
-                        .toList();
-                    // 手动分页
-                    int start = (int) pageable.getOffset();
-                    int end = Math.min(start + pageable.getPageSize(), matchedEvents.size());
-                    List<DeviceEventReport> pageContent = matchedEvents.subList(start, end);
-                    dataPage = new org.springframework.data.domain.PageImpl<>(pageContent, pageable, matchedEvents.size());
-                } else if (genericName != null && !genericName.trim().isEmpty()) {
-                    List<DeviceEventReport> allEvents = deviceEventReportRepository.findAll();
-                    List<DeviceEventReport> matchedEvents = allEvents.stream()
-                        .filter(event -> event.getGenericName() != null && 
-                                       event.getGenericName().toLowerCase().contains(genericName.toLowerCase()))
-                        .toList();
-                    // 手动分页
-                    int start = (int) pageable.getOffset();
-                    int end = Math.min(start + pageable.getPageSize(), matchedEvents.size());
-                    List<DeviceEventReport> pageContent = matchedEvents.subList(start, end);
-                    dataPage = new org.springframework.data.domain.PageImpl<>(pageContent, pageable, matchedEvents.size());
-                } else if (manufacturerName != null && !manufacturerName.trim().isEmpty()) {
-                    List<DeviceEventReport> allEvents = deviceEventReportRepository.findAll();
-                    List<DeviceEventReport> matchedEvents = allEvents.stream()
-                        .filter(event -> event.getManufacturerName() != null && 
-                                       event.getManufacturerName().toLowerCase().contains(manufacturerName.toLowerCase()))
-                        .toList();
-                    // 手动分页
-                    int start = (int) pageable.getOffset();
-                    int end = Math.min(start + pageable.getPageSize(), matchedEvents.size());
-                    List<DeviceEventReport> pageContent = matchedEvents.subList(start, end);
-                    dataPage = new org.springframework.data.domain.PageImpl<>(pageContent, pageable, matchedEvents.size());
-                } else {
-                    dataPage = deviceEventReportRepository.findAll(pageable);
-                }
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                // 使用关键词和国家搜索，如果countryCode为空则搜索所有国家
+                String normalizedCountryCode = (countryCode != null && !countryCode.trim().isEmpty()) ? countryCode.trim() : null;
+                dataPage = deviceEventReportRepository.findByKeywordAndCountry(keyword.trim(), normalizedCountryCode, pageable);
+            } else if (countryCode != null && !countryCode.trim().isEmpty()) {
+                // 只按国家搜索
+                List<DeviceEventReport> countryList = deviceEventReportRepository.findByJdCountry(countryCode.trim());
+                // 手动分页
+                int start = (int) pageable.getOffset();
+                int end = Math.min(start + pageable.getPageSize(), countryList.size());
+                List<DeviceEventReport> pageContent = countryList.subList(start, end);
+                dataPage = new org.springframework.data.domain.PageImpl<>(pageContent, pageable, countryList.size());
+            } else {
+                // 获取所有数据
+                dataPage = deviceEventReportRepository.findAll(pageable);
+            }
             
             result.put("success", true);
             result.put("data", dataPage.getContent());
@@ -894,13 +869,14 @@ public class DeviceDataController {
      * 获取注册记录
      */
     @GetMapping("/registration-records")
-    @Operation(summary = "获取注册记录", description = "分页获取注册记录")
+    @Operation(summary = "获取注册记录", description = "分页获取注册记录，支持关键词和国家搜索")
     public ResponseEntity<Map<String, Object>> getDeviceRegistrationRecords(
             @Parameter(description = "页码", example = "0") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "每页大小", example = "10") @RequestParam(defaultValue = "10") int size,
-            @Parameter(description = "制造商名称") @RequestParam(required = false) String manufacturerName) {
+            @Parameter(description = "关键词搜索") @RequestParam(required = false) String keyword,
+            @Parameter(description = "国家代码") @RequestParam(required = false) String countryCode) {
         
-        log.info("获取注册记录: page={}, size={}, manufacturerName={}", page, size, manufacturerName);
+        log.info("获取注册记录: page={}, size={}, keyword={}, countryCode={}", page, size, keyword, countryCode);
         
         Map<String, Object> result = new HashMap<>();
         
@@ -908,16 +884,22 @@ public class DeviceDataController {
             Pageable pageable = PageRequest.of(page, size);
             Page<DeviceRegistrationRecord> dataPage;
             
-                            if (manufacturerName != null && !manufacturerName.trim().isEmpty()) {
-                    List<DeviceRegistrationRecord> manufacturerList = deviceRegistrationRecordRepository.findByManufacturerNameLike(manufacturerName);
-                    // 手动分页
-                    int start = (int) pageable.getOffset();
-                    int end = Math.min(start + pageable.getPageSize(), manufacturerList.size());
-                    List<DeviceRegistrationRecord> pageContent = manufacturerList.subList(start, end);
-                    dataPage = new org.springframework.data.domain.PageImpl<>(pageContent, pageable, manufacturerList.size());
-                } else {
-                    dataPage = deviceRegistrationRecordRepository.findAll(pageable);
-                }
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                // 使用关键词和国家搜索，如果countryCode为空则搜索所有国家
+                String normalizedCountryCode = (countryCode != null && !countryCode.trim().isEmpty()) ? countryCode.trim() : null;
+                dataPage = deviceRegistrationRecordRepository.findByKeywordAndCountry(keyword.trim(), normalizedCountryCode, pageable);
+            } else if (countryCode != null && !countryCode.trim().isEmpty()) {
+                // 只按国家搜索
+                List<DeviceRegistrationRecord> countryList = deviceRegistrationRecordRepository.findByJdCountry(countryCode.trim());
+                // 手动分页
+                int start = (int) pageable.getOffset();
+                int end = Math.min(start + pageable.getPageSize(), countryList.size());
+                List<DeviceRegistrationRecord> pageContent = countryList.subList(start, end);
+                dataPage = new org.springframework.data.domain.PageImpl<>(pageContent, pageable, countryList.size());
+            } else {
+                // 获取所有数据
+                dataPage = deviceRegistrationRecordRepository.findAll(pageable);
+            }
             
             result.put("success", true);
             result.put("data", dataPage.getContent());
@@ -939,14 +921,14 @@ public class DeviceDataController {
      * 获取指导文档
      */
     @GetMapping("/guidance-documents")
-    @Operation(summary = "获取指导文档", description = "分页获取指导文档")
+    @Operation(summary = "获取指导文档", description = "分页获取指导文档，支持关键词和国家搜索")
     public ResponseEntity<Map<String, Object>> getGuidanceDocuments(
             @Parameter(description = "页码", example = "0") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "每页大小", example = "10") @RequestParam(defaultValue = "10") int size,
-            @Parameter(description = "标题") @RequestParam(required = false) String title,
-            @Parameter(description = "话题") @RequestParam(required = false) String topic) {
+            @Parameter(description = "关键词搜索") @RequestParam(required = false) String keyword,
+            @Parameter(description = "国家代码") @RequestParam(required = false) String countryCode) {
         
-        log.info("获取指导文档: page={}, size={}, title={}, topic={}", page, size, title, topic);
+        log.info("获取指导文档: page={}, size={}, keyword={}, countryCode={}", page, size, keyword, countryCode);
         
         Map<String, Object> result = new HashMap<>();
         
@@ -954,31 +936,22 @@ public class DeviceDataController {
             Pageable pageable = PageRequest.of(page, size);
             Page<GuidanceDocument> dataPage;
             
-                            if (title != null && !title.trim().isEmpty()) {
-                    List<GuidanceDocument> allDocuments = guidanceDocumentRepository.findAll();
-                    List<GuidanceDocument> matchedDocuments = allDocuments.stream()
-                        .filter(doc -> doc.getTitle() != null && 
-                                      doc.getTitle().toLowerCase().contains(title.toLowerCase()))
-                        .toList();
-                    // 手动分页
-                    int start = (int) pageable.getOffset();
-                    int end = Math.min(start + pageable.getPageSize(), matchedDocuments.size());
-                    List<GuidanceDocument> pageContent = matchedDocuments.subList(start, end);
-                    dataPage = new org.springframework.data.domain.PageImpl<>(pageContent, pageable, matchedDocuments.size());
-                } else if (topic != null && !topic.trim().isEmpty()) {
-                    List<GuidanceDocument> allDocuments = guidanceDocumentRepository.findAll();
-                    List<GuidanceDocument> matchedDocuments = allDocuments.stream()
-                        .filter(doc -> doc.getTopic() != null && 
-                                      doc.getTopic().toLowerCase().contains(topic.toLowerCase()))
-                        .toList();
-                    // 手动分页
-                    int start = (int) pageable.getOffset();
-                    int end = Math.min(start + pageable.getPageSize(), matchedDocuments.size());
-                    List<GuidanceDocument> pageContent = matchedDocuments.subList(start, end);
-                    dataPage = new org.springframework.data.domain.PageImpl<>(pageContent, pageable, matchedDocuments.size());
-                } else {
-                    dataPage = guidanceDocumentRepository.findAll(pageable);
-                }
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                // 使用关键词和国家搜索，如果countryCode为空则搜索所有国家
+                String normalizedCountryCode = (countryCode != null && !countryCode.trim().isEmpty()) ? countryCode.trim() : null;
+                dataPage = guidanceDocumentRepository.findByKeywordAndCountry(keyword.trim(), normalizedCountryCode, pageable);
+            } else if (countryCode != null && !countryCode.trim().isEmpty()) {
+                // 只按国家搜索
+                List<GuidanceDocument> countryList = guidanceDocumentRepository.findByJdCountry(countryCode.trim());
+                // 手动分页
+                int start = (int) pageable.getOffset();
+                int end = Math.min(start + pageable.getPageSize(), countryList.size());
+                List<GuidanceDocument> pageContent = countryList.subList(start, end);
+                dataPage = new org.springframework.data.domain.PageImpl<>(pageContent, pageable, countryList.size());
+            } else {
+                // 获取所有数据
+                dataPage = guidanceDocumentRepository.findAll(pageable);
+            }
             
             result.put("success", true);
             result.put("data", dataPage.getContent());
@@ -1000,15 +973,15 @@ public class DeviceDataController {
      * 获取海关案例
      */
     @GetMapping("/customs-cases")
-    @Operation(summary = "获取海关案例", description = "分页获取海关案例")
+    @Operation(summary = "获取海关案例", description = "分页获取海关案例，支持关键词和国家搜索")
     public ResponseEntity<Map<String, Object>> getCustomsCases(
             @Parameter(description = "页码", example = "0") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "每页大小", example = "10") @RequestParam(defaultValue = "10") int size,
-            @Parameter(description = "裁定结果") @RequestParam(required = false) String rulingResult,
-            @Parameter(description = "违规类型") @RequestParam(required = false) String violationType) {
+            @Parameter(description = "关键词搜索") @RequestParam(required = false) String keyword,
+            @Parameter(description = "国家代码") @RequestParam(required = false) String countryCode) {
         
-        log.info("获取海关案例: page={}, size={}, rulingResult={}, violationType={}", 
-                page, size, rulingResult, violationType);
+        log.info("获取海关案例: page={}, size={}, keyword={}, countryCode={}", 
+                page, size, keyword, countryCode);
         
         Map<String, Object> result = new HashMap<>();
         
@@ -1016,31 +989,22 @@ public class DeviceDataController {
             Pageable pageable = PageRequest.of(page, size);
             Page<CustomsCase> dataPage;
             
-                            if (rulingResult != null && !rulingResult.trim().isEmpty()) {
-                    List<CustomsCase> allCases = customsCaseRepository.findAll();
-                    List<CustomsCase> matchedCases = allCases.stream()
-                        .filter(caseItem -> caseItem.getRulingResult() != null && 
-                                           caseItem.getRulingResult().toLowerCase().contains(rulingResult.toLowerCase()))
-                        .toList();
-                    // 手动分页
-                    int start = (int) pageable.getOffset();
-                    int end = Math.min(start + pageable.getPageSize(), matchedCases.size());
-                    List<CustomsCase> pageContent = matchedCases.subList(start, end);
-                    dataPage = new org.springframework.data.domain.PageImpl<>(pageContent, pageable, matchedCases.size());
-                } else if (violationType != null && !violationType.trim().isEmpty()) {
-                    List<CustomsCase> allCases = customsCaseRepository.findAll();
-                    List<CustomsCase> matchedCases = allCases.stream()
-                        .filter(caseItem -> caseItem.getViolationType() != null && 
-                                           caseItem.getViolationType().toLowerCase().contains(violationType.toLowerCase()))
-                        .toList();
-                    // 手动分页
-                    int start = (int) pageable.getOffset();
-                    int end = Math.min(start + pageable.getPageSize(), matchedCases.size());
-                    List<CustomsCase> pageContent = matchedCases.subList(start, end);
-                    dataPage = new org.springframework.data.domain.PageImpl<>(pageContent, pageable, matchedCases.size());
-                } else {
-                    dataPage = customsCaseRepository.findAll(pageable);
-                }
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                // 使用关键词和国家搜索，如果countryCode为空则搜索所有国家
+                String normalizedCountryCode = (countryCode != null && !countryCode.trim().isEmpty()) ? countryCode.trim() : null;
+                dataPage = customsCaseRepository.findByKeywordAndCountry(keyword.trim(), normalizedCountryCode, pageable);
+            } else if (countryCode != null && !countryCode.trim().isEmpty()) {
+                // 只按国家搜索
+                List<CustomsCase> countryList = customsCaseRepository.findByJdCountry(countryCode.trim());
+                // 手动分页
+                int start = (int) pageable.getOffset();
+                int end = Math.min(start + pageable.getPageSize(), countryList.size());
+                List<CustomsCase> pageContent = countryList.subList(start, end);
+                dataPage = new org.springframework.data.domain.PageImpl<>(pageContent, pageable, countryList.size());
+            } else {
+                // 获取所有数据
+                dataPage = customsCaseRepository.findAll(pageable);
+            }
             
             result.put("success", true);
             result.put("data", dataPage.getContent());

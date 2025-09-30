@@ -8,9 +8,7 @@ export async function getDeviceRecallRecords(
     page?: number;
     size?: number;
     keyword?: string;
-    country?: string;
-    startDate?: string;
-    endDate?: string;
+    countryCode?: string;
   },
   options?: { [key: string]: any }
 ) {
@@ -21,15 +19,13 @@ export async function getDeviceRecallRecords(
   });
 }
 
-/** 获取设备510K记录 GET /device-data/510k-records */
+/** 获取设备510K记录 GET /device-data/device-510k */
 export async function getDevice510KRecords(
   params?: {
     page?: number;
     size?: number;
     keyword?: string;
-    country?: string;
-    startDate?: string;
-    endDate?: string;
+    countryCode?: string;
   },
   options?: { [key: string]: any }
 ) {
@@ -46,9 +42,7 @@ export async function getDeviceEventReports(
     page?: number;
     size?: number;
     keyword?: string;
-    country?: string;
-    startDate?: string;
-    endDate?: string;
+    countryCode?: string;
   },
   options?: { [key: string]: any }
 ) {
@@ -65,9 +59,7 @@ export async function getDeviceRegistrationRecords(
     page?: number;
     size?: number;
     keyword?: string;
-    country?: string;
-    startDate?: string;
-    endDate?: string;
+    countryCode?: string;
   },
   options?: { [key: string]: any }
 ) {
@@ -84,9 +76,7 @@ export async function getGuidanceDocuments(
     page?: number;
     size?: number;
     keyword?: string;
-    country?: string;
-    startDate?: string;
-    endDate?: string;
+    countryCode?: string;
   },
   options?: { [key: string]: any }
 ) {
@@ -103,9 +93,7 @@ export async function getCustomsCases(
     page?: number;
     size?: number;
     keyword?: string;
-    country?: string;
-    startDate?: string;
-    endDate?: string;
+    countryCode?: string;
   },
   options?: { [key: string]: any }
 ) {

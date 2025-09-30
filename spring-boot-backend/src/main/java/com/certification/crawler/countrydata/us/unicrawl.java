@@ -2,6 +2,10 @@ package com.certification.crawler.countrydata.us;
 
 // import com.certification.crawler.generalArchitecture.us.CustomsCaseCrawler; // 已删除
 // import com.certification.crawler.generalArchitecture.us.GuidanceCrawler; // 已删除
+import com.certification.config.MedcertCrawlerConfig;
+import com.certification.crawler.countrydata.us.others.D_510K;
+import com.certification.crawler.countrydata.us.others.D_recall;
+import com.certification.exception.AllDataDuplicateException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -26,6 +30,9 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component
 public class unicrawl {
+    
+    @Autowired
+    private MedcertCrawlerConfig crawlerConfig;
     
     @Autowired
     private D_510K d510kCrawler;

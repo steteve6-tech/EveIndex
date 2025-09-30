@@ -1,5 +1,6 @@
 package com.certification.crawler.countrydata.us;
 
+import com.certification.config.MedcertCrawlerConfig;
 import com.certification.entity.common.GuidanceDocument;
 import com.certification.repository.common.FDAGuidanceDocumentRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -26,20 +27,18 @@ import java.util.List;
  */
 @Slf4j
 @Component
-public class GuidanceCrawler {
+public class US_Guidance {
     
     // 基础URL
     private static final String BASE_URL = "https://www.fda.gov/medical-devices/device-advice-comprehensive-regulatory-assistance/guidance-documents-medical-devices-and-radiation-emitting-products";
-    // 等待时间
-    private static final int WAIT_TIMEOUT_SECONDS = 30;
-    private static final int PAGE_LOAD_TIMEOUT_SECONDS = 60;
     // 日期格式
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("MM/dd/yyyy");
-    // 批量保存大小
-    private static final int BATCH_SAVE_SIZE = 20;
 
     @Autowired
     private FDAGuidanceDocumentRepository guidanceDocumentRepository;
+    
+    @Autowired
+    private MedcertCrawlerConfig crawlerConfig;
 
     private WebDriver driver;
     private WebDriverWait wait;
@@ -92,9 +91,9 @@ public class GuidanceCrawler {
             throw new RuntimeException("无法初始化无头ChromeDriver", e);
         }
 
-        driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(PAGE_LOAD_TIMEOUT_SECONDS));
+        driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(crawlerConfig.getTimeout().getPageLoadTimeoutSeconds()));
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
-        wait = new WebDriverWait(driver, Duration.ofSeconds(WAIT_TIMEOUT_SECONDS));
+        wait = new WebDriverWait(driver, Duration.ofSeconds(crawlerConfig.getTimeout().getWaitTimeoutSeconds()));
     }
 
     /**
@@ -104,6 +103,35 @@ public class GuidanceCrawler {
         if (driver != null) {
             driver.quit();
         }
+    }
+    
+    /**
+     * 带重试机制的操作执行
+     */
+    private <T> T executeWithRetry(java.util.function.Supplier<T> operation, String operationName) {
+        Exception lastException = null;
+        
+        for (int attempt = 1; attempt <= crawlerConfig.getRetry().getMaxAttempts(); attempt++) {
+            try {
+                log.debug("执行{}操作，第{}次尝试", operationName, attempt);
+                return operation.get();
+            } catch (Exception e) {
+                lastException = e;
+                log.warn("{}操作第{}次尝试失败: {}", operationName, attempt, e.getMessage());
+                
+                if (attempt < crawlerConfig.getRetry().getMaxAttempts()) {
+                    try {
+                        Thread.sleep(crawlerConfig.getRetry().getDelayMilliseconds());
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("操作被中断", ie);
+                    }
+                }
+            }
+        }
+        
+        log.error("{}操作失败，已重试{}次", operationName, crawlerConfig.getRetry().getMaxAttempts());
+        throw new RuntimeException(operationName + "操作失败", lastException);
     }
 
     /**
@@ -116,13 +144,13 @@ public class GuidanceCrawler {
     /**
      * 爬取数据的主方法（带数量限制和分批保存）
      */
-    public void     crawlWithLimit(int maxRecords) {
+    public void crawlWithLimit(int maxRecords) {
         try {
             initDriver();
             log.info("=== FDA指导文档爬虫启动 ===");
             log.info("目标网址: " + BASE_URL);
             log.info("最大记录数: " + (maxRecords > 0 ? maxRecords : "全部"));
-            log.info("批量保存大小: " + BATCH_SAVE_SIZE + " 条/批");
+            log.info("批量保存大小: " + crawlerConfig.getBatch().getSmallSaveSize() + " 条/批");
             
             // 访问页面
             driver.get(BASE_URL);
@@ -268,8 +296,8 @@ public class GuidanceCrawler {
                     
                     log.info("解析第 " + (i + 1) + " 行完成: " + record.getTitle());
                     
-                    // 每BATCH_SAVE_SIZE条数据保存一次
-                    if (batchToSave.size() >= BATCH_SAVE_SIZE) {
+                    // 每配置的批量大小条数据保存一次
+                    if (batchToSave.size() >= crawlerConfig.getBatch().getSmallSaveSize()) {
                         int[] result = saveBatchToDatabase(batchToSave);
                         totalSaved += result[0];
                         totalSkipped += result[1];
@@ -748,67 +776,4 @@ public class GuidanceCrawler {
         return null;
     }
 
-    /**
-     * 主函数用于测试GuidanceCrawler
-     * 
-     * 使用方法：
-     * 1. 确保Chrome浏览器已安装
-     * 2. 确保数据库连接正常
-     * 3. 运行此主函数进行测试
-     * 
-     * 测试参数：
-     * - args[0]: 最大爬取记录数（可选，默认为5）
-     */
-    public static void main(String[] args) {
-        GuidanceCrawler crawler = new GuidanceCrawler();
-        
-        try {
-            System.out.println("=== 开始测试GuidanceCrawler ===");
-            System.out.println("测试时间: " + LocalDateTime.now());
-            System.out.println("目标网站: " + BASE_URL);
-            
-            // 解析命令行参数
-            int maxRecords = 5; // 默认值
-            if (args.length > 0) {
-                try {
-                    maxRecords = Integer.parseInt(args[0]);
-                    System.out.println("使用命令行参数: maxRecords = " + maxRecords);
-                } catch (NumberFormatException e) {
-                    System.out.println("无效的参数格式，使用默认值: maxRecords = " + maxRecords);
-                }
-            } else {
-                System.out.println("使用默认参数: maxRecords = " + maxRecords);
-            }
-            
-            System.out.println("\n=== 开始爬取 ===");
-            long startTime = System.currentTimeMillis();
-            
-            // 执行爬取
-            crawler.crawlWithLimit(maxRecords);
-            
-            long endTime = System.currentTimeMillis();
-            long duration = endTime - startTime;
-            
-            // 输出结果
-            System.out.println("\n=== 爬取结果 ===");
-            System.out.println("爬取任务已完成！");
-            System.out.println("耗时: " + (duration / 1000.0) + " 秒");
-            System.out.println("请检查数据库中的 t_guidance_document 表查看详细结果");
-            
-            System.out.println("\n=== 测试完成 ===");
-            
-        } catch (Exception e) {
-            System.err.println("\n=== 测试失败 ===");
-            System.err.println("错误信息: " + e.getMessage());
-            System.err.println("错误类型: " + e.getClass().getSimpleName());
-            System.err.println("详细堆栈:");
-            e.printStackTrace();
-            
-            System.err.println("\n=== 故障排除建议 ===");
-            System.err.println("1. 检查Chrome浏览器是否已安装");
-            System.err.println("2. 检查网络连接是否正常");
-            System.err.println("3. 检查数据库连接配置");
-            System.err.println("4. 检查目标网站是否可访问");
-        }
-    }
 }

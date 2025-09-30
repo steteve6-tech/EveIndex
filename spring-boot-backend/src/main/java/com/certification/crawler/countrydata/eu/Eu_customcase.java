@@ -1,8 +1,11 @@
 package com.certification.crawler.countrydata.eu;
 
+import com.certification.config.MedcertCrawlerConfig;
 import com.certification.entity.common.CustomsCase;
 import com.certification.entity.common.CertNewsData.RiskLevel;
+import com.certification.exception.AllDataDuplicateException;
 import com.certification.repository.common.CustomsCaseRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -17,31 +20,34 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Pattern;
 
+@Slf4j
 @Component
 public class Eu_customcase {
     
     private static final String BASE_URL = "https://ec.europa.eu/taxation_customs/dds2/taric/measures.jsp";
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
     
-    private static final int BATCH_SIZE = 20;
-    private static final int MAX_CONSECUTIVE_DUPLICATE_BATCHES = 3;
-    private static final int MAX_RETRY_ATTEMPTS = 3;
-    private static final int BASE_DELAY_MS = 2000; // 基础延迟2秒
-    private static final int MAX_DELAY_MS = 10000; // 最大延迟10秒
-    
     @Autowired
     private CustomsCaseRepository customsCaseRepository;
     
+    @Autowired
+    private MedcertCrawlerConfig crawlerConfig;
+    
     /**
-     * 爬取指定TARIC编码的关税措施信息并保存到数据库
+     * 爬取指定TARIC编码的关税措施信息并保存到数据库（支持全量爬取）
      * @param taricCode TARIC编码，如"9018"
+     * @param maxRecords 最大记录数，-1表示爬取所有数据
+     * @param batchSize 批次大小
      * @return 保存的记录数量
      */
     @Transactional
-    public int crawlAndSaveToDatabase(String taricCode) {
-        System.out.println("🚀 开始爬取TARIC编码 " + taricCode + " 的商品编码信息...");
-        System.out.println("📊 批次大小: " + BATCH_SIZE + "，最大连续重复批次: " + MAX_CONSECUTIVE_DUPLICATE_BATCHES);
-        System.out.println("🌐 目标URL: " + buildUrl(taricCode));
+    public int crawlAndSaveToDatabase(String taricCode, int maxRecords, int batchSize) {
+        log.info("🚀 开始爬取TARIC编码 {} 的商品编码信息...", taricCode);
+        log.info("📊 批次大小: {}，最大记录数: {}", batchSize, maxRecords == -1 ? "所有数据" : maxRecords);
+        log.info("🌐 目标URL: {}", buildUrl(taricCode));
+        
+        boolean crawlAll = (maxRecords == -1);
+        int actualBatchSize = Math.min(batchSize, crawlerConfig.getCrawl().getApiLimits().getEuCustomCaseMaxPerPage());
         
         int totalSaved = 0;
         int consecutiveDuplicateBatches = 0;
@@ -95,7 +101,7 @@ public class Eu_customcase {
                 if (data != null && !data.isEmpty()) {
                     currentBatch.add(data);
                     
-                    if (currentBatch.size() >= BATCH_SIZE) {
+                    if (currentBatch.size() >= actualBatchSize) {
                         int savedInBatch = saveBatchToDatabase(currentBatch);
                         totalSaved += savedInBatch;
                         
@@ -103,8 +109,8 @@ public class Eu_customcase {
                             consecutiveDuplicateBatches++;
                             System.out.println("🔄 批次完全重复，连续重复批次数: " + consecutiveDuplicateBatches);
                             
-                            if (consecutiveDuplicateBatches >= MAX_CONSECUTIVE_DUPLICATE_BATCHES) {
-                                System.out.println("🛑 连续 " + MAX_CONSECUTIVE_DUPLICATE_BATCHES + " 个批次完全重复，停止爬取");
+                            if (consecutiveDuplicateBatches >= 3) {
+                                System.out.println("🛑 连续 " + 3 + " 个批次完全重复，停止爬取");
                                 break;
                             }
                         } else {
@@ -136,6 +142,85 @@ public class Eu_customcase {
         System.out.println("   ├─ 连续重复批次: " + consecutiveDuplicateBatches);
         System.out.println("   └─ 完成时间: " + LocalDateTime.now().toString());
         return totalSaved;
+    }
+    
+    /**
+     * 向后兼容的方法
+     * @param taricCode TARIC编码
+     * @return 保存的记录数量
+     */
+    @Transactional
+    public int crawlAndSaveToDatabase(String taricCode) {
+        return crawlAndSaveToDatabase(taricCode, -1, crawlerConfig.getBatch().getSmallSaveSize());
+    }
+    
+    /**
+     * 批量爬取多个TARIC编码的关税措施信息
+     * @param taricCodes TARIC编码列表
+     * @param maxRecords 最大记录数，-1表示爬取所有数据
+     * @param batchSize 批次大小
+     * @return 爬取结果汇总
+     */
+    @Transactional
+    public Map<String, Object> crawlAndSaveWithTaricCodes(List<String> taricCodes, int maxRecords, int batchSize) {
+        log.info("🚀 开始批量爬取TARIC编码列表，共 {} 个编码", taricCodes.size());
+        log.info("📊 批次大小: {}，最大记录数: {}", batchSize, maxRecords == -1 ? "所有数据" : maxRecords);
+        
+        Map<String, Object> result = new HashMap<>();
+        int totalSaved = 0;
+        int totalSkipped = 0;
+        int successCount = 0;
+        int failureCount = 0;
+        List<String> failedCodes = new ArrayList<>();
+        Map<String, Integer> codeResults = new HashMap<>();
+        
+        for (String taricCode : taricCodes) {
+            try {
+                log.info("🔄 正在爬取TARIC编码: {}", taricCode);
+                int savedCount = crawlAndSaveToDatabase(taricCode, maxRecords, batchSize);
+                
+                if (savedCount >= 0) {
+                    totalSaved += savedCount;
+                    successCount++;
+                    codeResults.put(taricCode, savedCount);
+                    log.info("✅ TARIC编码 {} 爬取成功，保存 {} 条记录", taricCode, savedCount);
+                } else {
+                    failureCount++;
+                    failedCodes.add(taricCode);
+                    codeResults.put(taricCode, -1);
+                    log.error("❌ TARIC编码 {} 爬取失败", taricCode);
+                }
+                
+                // 添加延迟避免请求过快
+                Thread.sleep(crawlerConfig.getRetry().getDelayMilliseconds() / 2);
+                
+            } catch (Exception e) {
+                failureCount++;
+                failedCodes.add(taricCode);
+                codeResults.put(taricCode, -1);
+                log.error("❌ TARIC编码 {} 爬取异常: {}", taricCode, e.getMessage());
+            }
+        }
+        
+        result.put("totalProcessed", taricCodes.size());
+        result.put("successCount", successCount);
+        result.put("failureCount", failureCount);
+        result.put("totalSaved", totalSaved);
+        result.put("totalSkipped", totalSkipped);
+        result.put("failedCodes", failedCodes);
+        result.put("codeResults", codeResults);
+        result.put("success", failureCount == 0);
+        result.put("message", String.format("批量爬取完成：成功 %d 个，失败 %d 个，共保存 %d 条记录", 
+                successCount, failureCount, totalSaved));
+        
+        log.info("📊 批量爬取汇总:");
+        log.info("   ├─ 总处理编码: {}", taricCodes.size());
+        log.info("   ├─ 成功: {}", successCount);
+        log.info("   ├─ 失败: {}", failureCount);
+        log.info("   ├─ 总保存记录: {}", totalSaved);
+        log.info("   └─ 失败编码: {}", failedCodes);
+        
+        return result;
     }
     
     /**
@@ -542,8 +627,8 @@ public class Eu_customcase {
                     consecutiveDuplicateBatches++;
                     System.out.println("🔄 关键词批次完全重复，连续重复批次数: " + consecutiveDuplicateBatches);
                     
-                    if (consecutiveDuplicateBatches >= MAX_CONSECUTIVE_DUPLICATE_BATCHES) {
-                        System.out.println("🛑 连续 " + MAX_CONSECUTIVE_DUPLICATE_BATCHES + " 个关键词批次完全重复，停止爬取");
+                    if (consecutiveDuplicateBatches >= 3) {
+                        System.out.println("🛑 连续 " + 3 + " 个关键词批次完全重复，停止爬取");
                         break;
                     }
                 } else {
@@ -624,8 +709,8 @@ public class Eu_customcase {
                     consecutiveDuplicateBatches++;
                     System.out.println("🔄 智能关键词批次完全重复，连续重复批次数: " + consecutiveDuplicateBatches);
                     
-                    if (consecutiveDuplicateBatches >= MAX_CONSECUTIVE_DUPLICATE_BATCHES) {
-                        System.out.println("🛑 连续 " + MAX_CONSECUTIVE_DUPLICATE_BATCHES + " 个智能关键词批次完全重复，停止爬取");
+                    if (consecutiveDuplicateBatches >= 3) {
+                        System.out.println("🛑 连续 " + 3 + " 个智能关键词批次完全重复，停止爬取");
                         break;
                     }
                 } else {
@@ -654,7 +739,7 @@ public class Eu_customcase {
     private Document fetchDocumentWithRetry(String url) throws Exception {
         Exception lastException = null;
         
-        for (int attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
+        for (int attempt = 1; attempt <= crawlerConfig.getRetry().getMaxAttempts(); attempt++) {
             try {
                 System.out.println("🌐 尝试获取文档 (第" + attempt + "次): " + url);
                 
@@ -679,7 +764,7 @@ public class Eu_customcase {
                     Thread.sleep(delay);
                 } else if (statusCode >= 500) {
                     // 服务器错误 - 中等延迟
-                    int delay = BASE_DELAY_MS * attempt;
+                    int delay = crawlerConfig.getRetry().getDelayMilliseconds() * attempt;
                     System.out.println("⚠️ HTTP " + statusCode + " (服务器错误)，等待 " + delay + " 毫秒后重试...");
                     Thread.sleep(delay);
                 } else {
@@ -690,28 +775,28 @@ public class Eu_customcase {
                 
             } catch (java.net.SocketTimeoutException e) {
                 lastException = e;
-                int delay = BASE_DELAY_MS * attempt;
+                int delay = crawlerConfig.getRetry().getDelayMilliseconds() * attempt;
                 System.out.println("⚠️ 连接超时，等待 " + delay + " 毫秒后重试...");
                 Thread.sleep(delay);
                 
             } catch (java.net.ConnectException e) {
                 lastException = e;
-                int delay = BASE_DELAY_MS * attempt;
+                int delay = crawlerConfig.getRetry().getDelayMilliseconds() * attempt;
                 System.out.println("⚠️ 连接异常，等待 " + delay + " 毫秒后重试...");
                 Thread.sleep(delay);
                 
             } catch (Exception e) {
                 lastException = e;
                 System.err.println("❌ 获取文档时发生未知错误: " + e.getMessage());
-                if (attempt < MAX_RETRY_ATTEMPTS) {
-                    int delay = BASE_DELAY_MS * attempt;
+                if (attempt < crawlerConfig.getRetry().getMaxAttempts()) {
+                    int delay = crawlerConfig.getRetry().getDelayMilliseconds() * attempt;
                     System.out.println("等待 " + delay + " 毫秒后重试...");
                     Thread.sleep(delay);
                 }
             }
         }
         
-        System.err.println("❌ 经过 " + MAX_RETRY_ATTEMPTS + " 次重试后仍然失败");
+        System.err.println("❌ 经过 " + crawlerConfig.getRetry().getMaxAttempts() + " 次重试后仍然失败");
         throw new Exception("获取文档失败: " + (lastException != null ? lastException.getMessage() : "未知错误"));
     }
     
@@ -720,8 +805,8 @@ public class Eu_customcase {
      */
     private int calculateBackoffDelay(int attempt) {
         // 指数退避：2秒, 4秒, 8秒, 最大10秒
-        int delay = BASE_DELAY_MS * (int) Math.pow(2, attempt - 1);
-        return Math.min(delay, MAX_DELAY_MS);
+        int delay = crawlerConfig.getRetry().getDelayMilliseconds() * (int) Math.pow(2, attempt - 1);
+        return Math.min(delay, crawlerConfig.getRetry().getDelayMilliseconds() * 2);
     }
     
     /**
@@ -730,7 +815,7 @@ public class Eu_customcase {
     private void smartDelay() {
         try {
             // 基础延迟2秒，避免429错误
-            int delay = BASE_DELAY_MS;
+            int delay = crawlerConfig.getRetry().getDelayMilliseconds();
             
             // 添加随机延迟，避免请求过于规律
             int randomDelay = (int) (Math.random() * 1000); // 0-1秒随机延迟

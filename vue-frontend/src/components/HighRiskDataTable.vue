@@ -553,16 +553,22 @@ const loadData = async () => {
                                   params.country || 
                                   params.riskLevel
       
+      // 注释掉"未找到数据"的提示，因为用户反馈即使有数据也会显示这个提示
+      // if (hasSearchConditions && tableData.value.length === 0) {
+      //   let searchInfo = []
+      //   if (params.searchKeyword) searchInfo.push(`关键词"${params.searchKeyword}"`)
+      //   if (params.keyword) searchInfo.push(`筛选关键词"${params.keyword}"`)
+      //   if (params.country) searchInfo.push(`国家"${params.country}"`)
+      //   if (params.riskLevel) searchInfo.push(`风险等级"${params.riskLevel}"`)
+      //   
+      //   const searchText = searchInfo.join('、')
+      //   message.info(`未找到符合${searchText}的数据`)
+      //   console.log(`🔍 搜索结果为空: ${searchText}`)
+      // }
+      
+      // 只在控制台记录搜索结果，不显示用户提示
       if (hasSearchConditions && tableData.value.length === 0) {
-        let searchInfo = []
-        if (params.searchKeyword) searchInfo.push(`关键词"${params.searchKeyword}"`)
-        if (params.keyword) searchInfo.push(`筛选关键词"${params.keyword}"`)
-        if (params.country) searchInfo.push(`国家"${params.country}"`)
-        if (params.riskLevel) searchInfo.push(`风险等级"${params.riskLevel}"`)
-        
-        const searchText = searchInfo.join('、')
-        message.info(`未找到符合${searchText}的数据`)
-        console.log(`🔍 搜索结果为空: ${searchText}`)
+        console.log(`🔍 搜索结果为空，但已移除用户提示以避免误报`)
       }
       
       // 触发数据加载完成事件

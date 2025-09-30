@@ -1,6 +1,6 @@
 package com.certification.util;
 
-import com.certification.crawler.countrydata.us.US_event_api;
+import com.certification.crawler.countrydata.us.others.US_event_api;
 import com.certification.entity.common.DeviceEventReport;
 import com.certification.entity.common.CertNewsData.RiskLevel;
 import java.time.LocalDate;

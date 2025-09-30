@@ -1,15 +1,10 @@
 package com.certification.service;
 
-import com.certification.crawler.countrydata.us.D_510K;
-import com.certification.crawler.countrydata.us.US_event;
-import com.certification.crawler.countrydata.us.D_recall;
-import com.certification.crawler.countrydata.us.US_registration;
-import com.certification.crawler.countrydata.us.US_510K;
-import com.certification.crawler.countrydata.us.US_event_api;
-import com.certification.crawler.countrydata.us.US_recall_api;
-import com.certification.crawler.countrydata.us.unicrawl;
-import com.certification.crawler.countrydata.us.CustomsCaseCrawler;
-import com.certification.crawler.countrydata.us.GuidanceCrawler;
+import com.certification.crawler.countrydata.us.*;
+import com.certification.crawler.countrydata.us.others.D_510K;
+import com.certification.crawler.countrydata.us.others.D_recall;
+import com.certification.crawler.countrydata.us.others.US_event_api;
+import com.certification.crawler.countrydata.us.US_CustomsCase;
 import com.certification.entity.common.CustomsCase;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,10 +65,10 @@ public class USCrawlerService {
     private unicrawl uniCrawler;
 
     @Autowired
-    private CustomsCaseCrawler customsCaseCrawler;
+    private US_CustomsCase USCustomsCase;
 
     @Autowired
-    private GuidanceCrawler guidanceCrawler;
+    private US_Guidance USGuidance;
 
     /**
      * 执行D_510K爬虫测试
@@ -211,12 +206,57 @@ public class USCrawlerService {
                 }
             }
             
+            // 解析爬取结果中的统计信息
+            int savedCount = 0;
+            int skippedCount = 0;
+            if (crawlResult != null && crawlResult.contains("保存成功:")) {
+                try {
+                    // 解析格式: "保存成功: X 条新记录, 跳过重复: Y 条"
+                    String[] parts = crawlResult.split("保存成功: | 条新记录, 跳过重复: | 条");
+                    if (parts.length >= 3) {
+                        savedCount = Integer.parseInt(parts[1].trim());
+                        skippedCount = Integer.parseInt(parts[2].trim());
+                    }
+                } catch (Exception e) {
+                    log.warn("解析爬取结果统计信息失败: {}", e.getMessage());
+                }
+            }
+            
             result.put("success", true);
             result.put("message", "US_510K爬虫测试成功");
             result.put("databaseResult", crawlResult);
             result.put("savedToDatabase", true);
+            result.put("savedCount", savedCount);
+            result.put("skippedCount", skippedCount);
+            result.put("totalProcessed", savedCount + skippedCount);
             
             log.info("US_510K爬虫测试完成，数据库保存结果: {}", crawlResult);
+            
+        } catch (com.certification.exception.AllDataDuplicateException e) {
+            log.warn("US_510K爬虫测试完成 - 所有数据均为重复数据: {}", e.getMessage());
+            
+            // 从异常消息中解析跳过的记录数
+            int skippedCount = 0;
+            if (e.getMessage() != null && e.getMessage().contains("连续")) {
+                try {
+                    // 解析格式: "连续 X 个批次都是重复数据，停止爬取"
+                    String[] parts = e.getMessage().split("连续 | 个批次都是重复数据");
+                    if (parts.length >= 2) {
+                        int consecutiveBatches = Integer.parseInt(parts[1].trim());
+                        // 估算跳过数量：每个批次大约50条记录
+                        skippedCount = consecutiveBatches * 50;
+                    }
+                } catch (Exception parseException) {
+                    log.warn("解析跳过记录数失败: {}", parseException.getMessage());
+                }
+            }
+            
+            result.put("success", true);
+            result.put("message", "爬取完成 - 所有数据均为重复数据");
+            result.put("crawlResult", e.getMessage());
+            result.put("savedCount", 0);
+            result.put("skippedCount", skippedCount);
+            result.put("totalProcessed", skippedCount);
             
         } catch (Exception e) {
             log.error("US_510K爬虫测试失败", e);
@@ -365,12 +405,55 @@ public class USCrawlerService {
                 }
             }
             
+            // 解析爬取结果中的统计信息
+            int savedCount = 0;
+            int skippedCount = 0;
+            if (crawlResult != null && crawlResult.contains("保存成功:")) {
+                try {
+                    // 解析格式: "保存成功: X 条新记录, 跳过重复: Y 条"
+                    String[] parts = crawlResult.split("保存成功: | 条新记录, 跳过重复: | 条");
+                    if (parts.length >= 3) {
+                        savedCount = Integer.parseInt(parts[1].trim());
+                        skippedCount = Integer.parseInt(parts[2].trim());
+                    }
+                } catch (Exception e) {
+                    log.warn("解析爬取结果统计信息失败: {}", e.getMessage());
+                }
+            }
+            
             result.put("success", true);
             result.put("message", "US_event爬虫测试成功");
             result.put("databaseResult", crawlResult);
             result.put("savedToDatabase", true);
+            result.put("savedCount", savedCount);
+            result.put("skippedCount", skippedCount);
+            result.put("totalProcessed", savedCount + skippedCount);
             
             log.info("US_event爬虫测试完成，数据库保存结果: {}", crawlResult);
+            
+        } catch (com.certification.exception.AllDataDuplicateException e) {
+            log.warn("US_event爬虫测试完成 - 所有数据均为重复数据: {}", e.getMessage());
+            
+            // 从异常消息中解析跳过的记录数
+            int skippedCount = 0;
+            if (e.getMessage() != null && e.getMessage().contains("跳过记录数:")) {
+                try {
+                    // 解析格式: "批次数据全部重复，停止爬取。跳过记录数: 10"
+                    String[] parts = e.getMessage().split("跳过记录数: |");
+                    if (parts.length >= 2) {
+                        skippedCount = Integer.parseInt(parts[1].trim());
+                    }
+                } catch (Exception parseException) {
+                    log.warn("解析跳过记录数失败: {}", parseException.getMessage());
+                }
+            }
+            
+            result.put("success", true);
+            result.put("message", "爬取完成 - 所有数据均为重复数据");
+            result.put("crawlResult", e.getMessage());
+            result.put("savedCount", 0);
+            result.put("skippedCount", skippedCount);
+            result.put("totalProcessed", skippedCount);
             
         } catch (Exception e) {
             log.error("US_event爬虫测试失败", e);
@@ -526,12 +609,62 @@ public class USCrawlerService {
                 }
             }
             
+            // 解析爬取结果中的统计信息
+            int savedCount = 0;
+            int skippedCount = 0;
+            if (crawlResult != null && crawlResult.contains("保存成功:")) {
+                try {
+                    // 解析格式: "保存成功: X 条新记录, 跳过重复: Y 条"
+                    String[] parts = crawlResult.split("保存成功: | 条新记录, 跳过重复: | 条");
+                    log.info("解析US_recall_api结果 - 原始字符串: '{}', 分割后部分数量: {}", crawlResult, parts.length);
+                    for (int i = 0; i < parts.length; i++) {
+                        log.info("parts[{}] = '{}'", i, parts[i]);
+                    }
+                    if (parts.length >= 3) {
+                        savedCount = Integer.parseInt(parts[1].trim());
+                        skippedCount = Integer.parseInt(parts[2].trim());
+                        log.info("解析成功 - savedCount: {}, skippedCount: {}", savedCount, skippedCount);
+                    } else {
+                        log.warn("分割后部分数量不足，无法解析: {}", parts.length);
+                    }
+                } catch (Exception e) {
+                    log.warn("解析爬取结果统计信息失败: {}", e.getMessage());
+                }
+            }
+            
             result.put("success", true);
             result.put("message", "US_recall_api爬虫测试成功");
             result.put("databaseResult", crawlResult);
             result.put("savedToDatabase", true);
+            result.put("savedCount", savedCount);
+            result.put("skippedCount", skippedCount);
+            result.put("totalProcessed", savedCount + skippedCount);
             
             log.info("US_recall_api爬虫测试完成，数据库保存结果: {}", crawlResult);
+            
+        } catch (com.certification.exception.AllDataDuplicateException e) {
+            log.warn("US_recall_api爬虫测试完成 - 所有数据均为重复数据: {}", e.getMessage());
+            
+            // 从异常消息中解析跳过的记录数
+            int skippedCount = 0;
+            if (e.getMessage() != null && e.getMessage().contains("跳过记录数:")) {
+                try {
+                    // 解析格式: "批次数据全部重复，停止爬取。跳过记录数: 10"
+                    String[] parts = e.getMessage().split("跳过记录数: |");
+                    if (parts.length >= 2) {
+                        skippedCount = Integer.parseInt(parts[1].trim());
+                    }
+                } catch (Exception parseException) {
+                    log.warn("解析跳过记录数失败: {}", parseException.getMessage());
+                }
+            }
+            
+            result.put("success", true);
+            result.put("message", "爬取完成 - 所有数据均为重复数据");
+            result.put("crawlResult", e.getMessage());
+            result.put("savedCount", 0);
+            result.put("skippedCount", skippedCount);
+            result.put("totalProcessed", skippedCount);
             
         } catch (Exception e) {
             log.error("US_recall_api爬虫测试失败", e);
@@ -610,12 +743,62 @@ public class USCrawlerService {
                 }
             }
 
+            // 解析爬取结果中的统计信息
+            int savedCount = 0;
+            int skippedCount = 0;
+            if (crawlResult != null && crawlResult.contains("保存成功:")) {
+                try {
+                    // 解析格式: "保存成功: X 条新记录, 跳过重复: Y 条"
+                    String[] parts = crawlResult.split("保存成功: | 条新记录, 跳过重复: | 条");
+                    log.info("解析US_registration结果 - 原始字符串: '{}', 分割后部分数量: {}", crawlResult, parts.length);
+                    for (int i = 0; i < parts.length; i++) {
+                        log.info("parts[{}] = '{}'", i, parts[i]);
+                    }
+                    if (parts.length >= 3) {
+                        savedCount = Integer.parseInt(parts[1].trim());
+                        skippedCount = Integer.parseInt(parts[2].trim());
+                        log.info("解析成功 - savedCount: {}, skippedCount: {}", savedCount, skippedCount);
+                    } else {
+                        log.warn("分割后部分数量不足，无法解析: {}", parts.length);
+                    }
+                } catch (Exception e) {
+                    log.warn("解析爬取结果统计信息失败: {}", e.getMessage());
+                }
+            }
+            
             result.put("success", true);
             result.put("message", "US_registration爬虫测试成功，数据已保存到数据库");
             result.put("databaseResult", crawlResult);
             result.put("savedToDatabase", true);
+            result.put("savedCount", savedCount);
+            result.put("skippedCount", skippedCount);
+            result.put("totalProcessed", savedCount + skippedCount);
 
             log.info("US_registration爬虫测试完成，数据库保存结果: {}", crawlResult);
+
+        } catch (com.certification.exception.AllDataDuplicateException e) {
+            log.warn("US_registration爬虫测试完成 - 所有数据均为重复数据: {}", e.getMessage());
+            
+            // 从异常消息中解析跳过的记录数
+            int skippedCount = 0;
+            if (e.getMessage() != null && e.getMessage().contains("跳过记录数:")) {
+                try {
+                    // 解析格式: "批次数据全部重复，停止爬取。跳过记录数: 10"
+                    String[] parts = e.getMessage().split("跳过记录数: |");
+                    if (parts.length >= 2) {
+                        skippedCount = Integer.parseInt(parts[1].trim());
+                    }
+                } catch (Exception parseException) {
+                    log.warn("解析跳过记录数失败: {}", parseException.getMessage());
+                }
+            }
+            
+            result.put("success", true);
+            result.put("message", "爬取完成 - 所有数据均为重复数据");
+            result.put("crawlResult", e.getMessage());
+            result.put("savedCount", 0);
+            result.put("skippedCount", skippedCount);
+            result.put("totalProcessed", skippedCount);
 
         } catch (Exception e) {
             log.error("US_registration爬虫测试失败", e);
@@ -673,13 +856,13 @@ public class USCrawlerService {
      */
     public Map<String, Object> testCustomsCase(Map<String, Object> params) {
         Map<String, Object> result = new HashMap<>();
+        String hsCode = (String) params.getOrDefault("hsCode", "9018");
+        int maxRecords = (Integer) params.getOrDefault("maxRecords", 10);
+        int batchSize = (Integer) params.getOrDefault("batchSize", 10);
+        String startDate = (String) params.getOrDefault("startDate", null);
+        
         try {
             log.info("开始执行CustomsCaseCrawler爬虫测试，参数: {}", params);
-            
-            String hsCode = (String) params.getOrDefault("hsCode", "9018");
-            Integer maxRecords = (Integer) params.getOrDefault("maxRecords", 10);
-            Integer batchSize = (Integer) params.getOrDefault("batchSize", 10);
-            String startDate = (String) params.getOrDefault("startDate", "");
             
             // 检查是否有关键词参数
             Object inputKeywordsObj = params.get("inputKeywords");
@@ -707,32 +890,78 @@ public class USCrawlerService {
             
             if (inputKeywords != null && !inputKeywords.isEmpty()) {
                 log.info("使用关键词列表爬取模式");
-                // 使用第一个关键词作为搜索词
-                String searchTerm = inputKeywords.get(0);
-                List<CustomsCase> crawlResult = customsCaseCrawler.crawlAndSaveCustomsCases(searchTerm, maxRecords, batchSize);
+                log.info("搜索策略: 每个关键词将依次作为HS编码、关键词进行搜索");
+                String crawlResult = USCustomsCase.crawlWithKeywords(inputKeywords, maxRecords, batchSize, startDate, null);
+                
+                // 解析爬取结果中的统计信息
+                int savedCount = 0;
+                if (crawlResult != null && crawlResult.contains("总获取记录数:")) {
+                    try {
+                        // 解析格式: "关键词列表爬取完成，处理关键词数: X, 总获取记录数: Y"
+                        String[] parts = crawlResult.split("总获取记录数: |");
+                        if (parts.length >= 2) {
+                            savedCount = Integer.parseInt(parts[1].trim());
+                        }
+                    } catch (Exception e) {
+                        log.warn("解析爬取结果统计信息失败: {}", e.getMessage());
+                    }
+                }
                 
                 result.put("success", true);
                 result.put("message", "CustomsCaseCrawler关键词爬取成功");
-                result.put("crawlResult", "成功爬取 " + crawlResult.size() + " 条记录");
-                result.put("totalSaved", crawlResult.size());
+                result.put("crawlResult", crawlResult);
+                result.put("savedCount", savedCount);
+                result.put("skippedCount", 0); // 关键词爬取方法不返回跳过数量
+                result.put("totalProcessed", savedCount);
                 result.put("keywordsProcessed", inputKeywords.size());
                 result.put("keywords", inputKeywords);
                 
-                log.info("CustomsCaseCrawler关键词爬取完成，处理关键词数: {}, 保存记录数: {}", inputKeywords.size(), crawlResult.size());
+                log.info("CustomsCaseCrawler关键词爬取完成，处理关键词数: {}, 获取记录数: {}", inputKeywords.size(), savedCount);
             } else {
                 log.info("使用HS编码爬取模式");
-                List<CustomsCase> crawlResult = customsCaseCrawler.crawlAndSaveCustomsCases(hsCode, maxRecords, batchSize);
-                
-                result.put("success", true);
-                result.put("message", "CustomsCaseCrawler HS编码爬取成功");
-                result.put("crawlResult", "成功爬取 " + crawlResult.size() + " 条记录");
-                result.put("totalSaved", crawlResult.size());
-                result.put("hsCode", hsCode);
-                result.put("maxRecords", maxRecords);
-                result.put("batchSize", batchSize);
-                result.put("startDate", startDate);
-                
-                log.info("CustomsCaseCrawler HS编码爬取完成，HS编码: {}, 最大记录数: {}, 保存记录数: {}", hsCode, maxRecords, crawlResult.size());
+                try {
+                    List<CustomsCase> crawlResult = USCustomsCase.crawlAndSaveCustomsCases(hsCode, maxRecords, batchSize);
+                    
+                    result.put("success", true);
+                    result.put("message", "CustomsCaseCrawler HS编码爬取成功");
+                    result.put("crawlResult", "成功爬取 " + crawlResult.size() + " 条记录");
+                    result.put("savedCount", crawlResult.size());
+                    result.put("skippedCount", 0); // HS编码爬取不返回跳过数量
+                    result.put("totalProcessed", crawlResult.size());
+                    result.put("hsCode", hsCode);
+                    result.put("maxRecords", maxRecords);
+                    result.put("batchSize", batchSize);
+                    result.put("startDate", startDate);
+                    
+                    log.info("CustomsCaseCrawler HS编码爬取完成，HS编码: {}, 最大记录数: {}, 保存记录数: {}", hsCode, maxRecords, crawlResult.size());
+                } catch (com.certification.exception.AllDataDuplicateException e) {
+                    log.warn("CustomsCaseCrawler HS编码爬取完成 - 所有数据均为重复数据: {}", e.getMessage());
+                    
+                    // 从异常消息中解析跳过的记录数
+                    int skippedCount = 0;
+                    if (e.getMessage() != null && e.getMessage().contains("跳过记录数:")) {
+                        try {
+                            // 解析格式: "批次数据全部重复，停止爬取。跳过记录数: 10"
+                            String[] parts = e.getMessage().split("跳过记录数: |");
+                            if (parts.length >= 2) {
+                                skippedCount = Integer.parseInt(parts[1].trim());
+                            }
+                        } catch (Exception parseException) {
+                            log.warn("解析跳过记录数失败: {}", parseException.getMessage());
+                        }
+                    }
+                    
+                    result.put("success", true);
+                    result.put("message", "爬取完成 - 所有数据均为重复数据");
+                    result.put("crawlResult", e.getMessage());
+                    result.put("savedCount", 0);
+                    result.put("skippedCount", skippedCount);
+                    result.put("totalProcessed", skippedCount);
+                    result.put("hsCode", hsCode);
+                    result.put("maxRecords", maxRecords);
+                    result.put("batchSize", batchSize);
+                    result.put("startDate", startDate);
+                }
             }
             
         } catch (Exception e) {
@@ -758,7 +987,7 @@ public class USCrawlerService {
             log.info("爬取参数 - 最大记录数: {}", maxRecords);
             
             // 调用GuidanceCrawler爬虫
-            guidanceCrawler.crawlWithLimit(maxRecords);
+            USGuidance.crawlWithLimit(maxRecords);
             
             result.put("success", true);
             result.put("message", "GuidanceCrawler爬虫测试成功");
@@ -767,6 +996,37 @@ public class USCrawlerService {
             
             log.info("GuidanceCrawler爬虫测试完成，最大记录数: {}", maxRecords);
             
+        } catch (RuntimeException e) {
+            // 检查是否是"批次数据全部重复"的RuntimeException
+            if (e.getMessage() != null && e.getMessage().contains("批次数据全部重复")) {
+                log.warn("GuidanceCrawler爬虫测试完成 - 所有数据均为重复数据: {}", e.getMessage());
+                
+                // 从异常消息中解析跳过的记录数
+                int skippedCount = 0;
+                if (e.getMessage().contains("跳过记录数:")) {
+                    try {
+                        // 解析格式: "批次数据全部重复，停止爬取。跳过记录数: 10"
+                        String[] parts = e.getMessage().split("跳过记录数: |");
+                        if (parts.length >= 2) {
+                            skippedCount = Integer.parseInt(parts[1].trim());
+                        }
+                    } catch (Exception parseException) {
+                        log.warn("解析跳过记录数失败: {}", parseException.getMessage());
+                    }
+                }
+                
+                result.put("success", true);
+                result.put("message", "爬取完成 - 所有数据均为重复数据");
+                result.put("crawlResult", e.getMessage());
+                result.put("savedCount", 0);
+                result.put("skippedCount", skippedCount);
+                result.put("totalProcessed", skippedCount);
+            } else {
+                log.error("GuidanceCrawler爬虫测试失败", e);
+                result.put("success", false);
+                result.put("message", "GuidanceCrawler爬虫测试失败: " + e.getMessage());
+                result.put("error", e.getMessage());
+            }
         } catch (Exception e) {
             log.error("GuidanceCrawler爬虫测试失败", e);
             result.put("success", false);

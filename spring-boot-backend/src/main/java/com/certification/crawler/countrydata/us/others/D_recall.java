@@ -1,5 +1,6 @@
-package com.certification.crawler.countrydata.us;
+package com.certification.crawler.countrydata.us.others;
 
+import com.certification.config.MedcertCrawlerConfig;
 import com.certification.entity.common.CertNewsData;
 import com.certification.entity.common.DeviceRecallRecord;
 import com.certification.repository.common.DeviceRecallRecordRepository;
@@ -34,17 +35,15 @@ public class D_recall {
 
     @Autowired
     private DeviceRecallRecordRepository deviceRecallRecordRepository;
+    
+    @Autowired
+    private MedcertCrawlerConfig crawlerConfig;
 
     // -------------------------- 1. 初始化配置 --------------------------
     private static final String BASE_URL = "https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfRES/res.cfm";
     private static final int MAX_PAGES = 10; // 最大爬取页数（0表示爬到最后一页）
     private static final int DELAY_MS = 2000; // 每页延迟（毫秒）
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("MM/dd/yyyy");
-    private static final int BATCH_SIZE = 20; // 每批保存的数据量
-    
-    // 重试机制配置
-    private static final int MAX_RETRY_ATTEMPTS = 5; // 最大重试次数
-    private static final int RETRY_DELAY_MS = 5000; // 重试延迟（毫秒）
     private static final int TIMEOUT_MS = 30000; // 请求超时时间（毫秒）
 
     // 搜索筛选条件
@@ -77,10 +76,10 @@ public class D_recall {
             boolean pageSuccess = false;
             int retryCount = 0;
             
-            // 重试机制：最多重试5次
-            while (retryCount < MAX_RETRY_ATTEMPTS && !pageSuccess) {
+            // 重试机制：最多重试配置的次数
+            while (retryCount < crawlerConfig.getRetry().getMaxAttempts() && !pageSuccess) {
                 try {
-                    log.info("爬取第 {} 页... (尝试 {}/{})", currentPage, retryCount + 1, MAX_RETRY_ATTEMPTS);
+                    log.info("爬取第 {} 页... (尝试 {}/{})", currentPage, retryCount + 1, crawlerConfig.getRetry().getMaxAttempts());
                     
                     // 更新分页参数
                     if (currentPage > 1) {
@@ -116,8 +115,8 @@ public class D_recall {
                     allResults.addAll(pageResults);
                     log.info("第 {} 页解析完成，获取 {} 条记录", currentPage, pageResults.size());
                     
-                    // 每20条数据保存一次到数据库
-                    if (allResults.size() >= BATCH_SIZE) {
+                    // 每配置的批量大小条数据保存一次到数据库
+                    if (allResults.size() >= crawlerConfig.getBatch().getSmallSaveSize()) {
                         int[] result = saveBatchToDatabase(allResults);
                         totalSaved += result[0];
                         totalSkipped += result[1];
@@ -147,16 +146,16 @@ public class D_recall {
                     retryCount++;
                     String errorType = getErrorType(e);
                     
-                    if (retryCount >= MAX_RETRY_ATTEMPTS) {
+                    if (retryCount >= crawlerConfig.getRetry().getMaxAttempts()) {
                         log.error("第 {} 页爬取失败，已达到最大重试次数 {} 次，跳过该页。错误类型: {}, 错误信息: {}", 
-                                currentPage, MAX_RETRY_ATTEMPTS, errorType, e.getMessage());
+                                currentPage, crawlerConfig.getRetry().getMaxAttempts(), errorType, e.getMessage());
                         pageSuccess = true; // 标记为成功，跳过该页继续下一页
                         break;
                     } else {
                         log.warn("第 {} 页爬取失败 (尝试 {}/{}): {} - {}，{}秒后重试...", 
-                                currentPage, retryCount, MAX_RETRY_ATTEMPTS, errorType, e.getMessage(), RETRY_DELAY_MS / 1000);
+                                currentPage, retryCount, crawlerConfig.getRetry().getMaxAttempts(), errorType, e.getMessage(), crawlerConfig.getRetry().getDelayMilliseconds() / 1000);
                         try {
-                            Thread.sleep(RETRY_DELAY_MS);
+                            Thread.sleep(crawlerConfig.getRetry().getDelayMilliseconds());
                         } catch (InterruptedException ie) {
                             Thread.currentThread().interrupt();
                             log.error("线程被中断，停止爬取");

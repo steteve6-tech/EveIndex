@@ -1,6 +1,8 @@
 package com.certification.crawler.countrydata.us;
 
+import com.certification.config.MedcertCrawlerConfig;
 import com.certification.entity.common.CertNewsData;
+import com.certification.exception.AllDataDuplicateException;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.Connection;
@@ -26,7 +28,6 @@ import java.util.Map;
 
 /**
  * FDA MAUDE事件爬虫类 - 基于HTTP请求的爬虫实现
- * 参照D_510K的实现方式
  */
 @Slf4j
 @Component
@@ -38,12 +39,9 @@ public class US_event {
     private static final int MAX_PAGES = 10; // 最大爬取页数（0表示爬到最后一页）
     private static final int DELAY_MS = 2000; // 每页延迟（毫秒）
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("MM/dd/yyyy");
-    private static final int BATCH_SIZE = 20; // 每批保存的数据量
-    
-    // 重试机制配置
-    private static final int MAX_RETRY_ATTEMPTS = 5; // 最大重试次数
-    private static final int RETRY_DELAY_MS = 5000; // 重试延迟（毫秒）
-    private static final int TIMEOUT_MS = 15000; // 请求超时时间（毫秒）
+
+    @Autowired
+    private MedcertCrawlerConfig crawlerConfig;
 
     // 搜索筛选条件
     private final Map<String, String> searchParams = new HashMap<>();
@@ -59,7 +57,7 @@ public class US_event {
         int currentPage = 1;
         int totalSaved = 0;
         int totalSkipped = 0;
-        int actualMaxPages = (maxPages != null && maxPages > 0) ? maxPages : MAX_PAGES;
+        int actualMaxPages = (maxPages != null && maxPages > 0) ? maxPages : 0; // 0表示爬取所有页
         int consecutiveEmptyPages = 0; // 连续无结果页面计数器
 
         log.info("开始爬取FDA MAUDE数据（参数化搜索）...");
@@ -76,10 +74,10 @@ public class US_event {
             boolean pageSuccess = false;
             int retryCount = 0;
             
-            // 重试机制：最多重试5次
-            while (retryCount < MAX_RETRY_ATTEMPTS && !pageSuccess) {
+            // 重试机制：最多重试配置的次数
+            while (retryCount < crawlerConfig.getRetry().getMaxAttempts() && !pageSuccess) {
                 try {
-                    log.info("爬取第 {} 页... (尝试 {}/{})", currentPage, retryCount + 1, MAX_RETRY_ATTEMPTS);
+                    log.info("爬取第 {} 页... (尝试 {}/{})", currentPage, retryCount + 1, crawlerConfig.getRetry().getMaxAttempts());
 
                     // 发送请求并解析结果
                     Map<String, Object> pageResult = crawlPage(currentPage);
@@ -109,8 +107,8 @@ public class US_event {
                     allResults.addAll(pageResults);
                     log.info("第 {} 页解析完成，获取 {} 条记录", currentPage, pageResults.size());
 
-                    // 每20条数据保存一次到数据库
-                    if (allResults.size() >= BATCH_SIZE) {
+                    // 每配置的批量大小条数据保存一次到数据库
+                    if (allResults.size() >= crawlerConfig.getBatch().getSmallSaveSize()) {
                         int[] result = saveBatchToDatabase(allResults);
                         totalSaved += result[0];
                         totalSkipped += result[1];
@@ -145,16 +143,16 @@ public class US_event {
                     retryCount++;
                     String errorType = getErrorType(e);
                     
-                    if (retryCount >= MAX_RETRY_ATTEMPTS) {
+                    if (retryCount >= crawlerConfig.getRetry().getMaxAttempts()) {
                         log.error("第 {} 页爬取失败，已达到最大重试次数 {} 次，跳过该页。错误类型: {}, 错误信息: {}", 
-                                currentPage, MAX_RETRY_ATTEMPTS, errorType, e.getMessage());
+                                currentPage, crawlerConfig.getRetry().getMaxAttempts(), errorType, e.getMessage());
                         pageSuccess = true; // 标记为成功，跳过该页继续下一页
                         break;
                     } else {
                         log.warn("第 {} 页爬取失败 (尝试 {}/{}): {} - {}，{}秒后重试...", 
-                                currentPage, retryCount, MAX_RETRY_ATTEMPTS, errorType, e.getMessage(), RETRY_DELAY_MS / 1000);
+                                currentPage, retryCount, crawlerConfig.getRetry().getMaxAttempts(), errorType, e.getMessage(), crawlerConfig.getRetry().getDelayMilliseconds() / 1000);
                         try {
-                            Thread.sleep(RETRY_DELAY_MS);
+                            Thread.sleep(crawlerConfig.getRetry().getDelayMilliseconds());
                         } catch (InterruptedException ie) {
                             Thread.currentThread().interrupt();
                             log.error("线程被中断，停止爬取");
@@ -313,7 +311,7 @@ public class US_event {
                 .header("Sec-Fetch-User", "?1")
                 .header("Upgrade-Insecure-Requests", "1")
                 .data(buildPostData(pageNum))
-                .timeout(TIMEOUT_MS)
+                .timeout(crawlerConfig.getTimeout().getHttpTimeoutMilliseconds())
                 .followRedirects(true)
                 .execute();
 

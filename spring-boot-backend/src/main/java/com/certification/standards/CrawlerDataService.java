@@ -655,6 +655,280 @@ public class CrawlerDataService {
     }
     
     /**
+     * 获取Dashboard统计数据
+     * 专门为Dashboard页面提供风险等级统计，避免传输大量数据
+     */
+    public Map<String, Object> getDashboardStatistics() {
+        log.info("获取Dashboard统计数据（所有数据，不限制related）");
+        
+        Map<String, Object> statistics = new HashMap<>();
+        
+        try {
+            // 统计所有数据（包括已删除的）
+            long totalCount = crawlerDataRepository.count();
+            
+            // 查询所有数据进行风险等级统计
+            List<CertNewsData> allData = crawlerDataRepository.findAll();
+            
+            // 统计各风险等级的数据
+            long highRiskCount = allData.stream()
+                .filter(data -> data.getRiskLevel() == CertNewsData.RiskLevel.HIGH)
+                .count();
+            long mediumRiskCount = allData.stream()
+                .filter(data -> data.getRiskLevel() == CertNewsData.RiskLevel.MEDIUM)
+                .count();
+            long lowRiskCount = allData.stream()
+                .filter(data -> data.getRiskLevel() == CertNewsData.RiskLevel.LOW)
+                .count();
+            
+            statistics.put("total", totalCount);
+            statistics.put("highCount", highRiskCount);
+            statistics.put("mediumCount", mediumRiskCount);
+            statistics.put("lowCount", lowRiskCount);
+            
+            log.info("Dashboard统计数据（所有数据）: 总数={}, 高风险={}, 中风险={}, 低风险={}", 
+                    totalCount, highRiskCount, mediumRiskCount, lowRiskCount);
+            
+        } catch (Exception e) {
+            log.error("获取Dashboard统计数据失败: {}", e.getMessage(), e);
+            // 返回默认值
+            statistics.put("total", 0);
+            statistics.put("highCount", 0);
+            statistics.put("mediumCount", 0);
+            statistics.put("lowCount", 0);
+        }
+        
+        return statistics;
+    }
+    
+    /**
+     * 获取国家风险统计数据
+     * 专门为Dashboard国家风险分布提供数据
+     */
+    public List<Map<String, Object>> getCountryRiskStatistics() {
+        log.info("获取国家风险统计数据（所有数据，不限制related）");
+        
+        try {
+            // 定义指定的国家列表
+            List<String> specifiedCountries = Arrays.asList(
+                "美国", "欧盟", "中国", "韩国", "日本", "阿联酋", "印度", "泰国", 
+                "新加坡", "台湾", "澳大利亚", "智利", "马来西亚", "秘鲁", "南非", "以色列", "印尼"
+            );
+            
+            List<Map<String, Object>> countryStats = new ArrayList<>();
+            
+            // 获取所有数据，然后在内存中统计
+            List<CertNewsData> allData = crawlerDataRepository.findAll();
+            
+            // 为每个指定国家统计
+            for (String country : specifiedCountries) {
+                Map<String, Object> stats = new HashMap<>();
+                stats.put("name", country);
+                
+                // 过滤出该国家的数据
+                List<CertNewsData> countryData = allData.stream()
+                    .filter(data -> country.equals(data.getCountry()))
+                    .collect(Collectors.toList());
+                
+                long total = countryData.size();
+                long highRisk = countryData.stream()
+                    .filter(data -> data.getRiskLevel() == CertNewsData.RiskLevel.HIGH)
+                    .count();
+                long mediumRisk = countryData.stream()
+                    .filter(data -> data.getRiskLevel() == CertNewsData.RiskLevel.MEDIUM)
+                    .count();
+                long lowRisk = countryData.stream()
+                    .filter(data -> data.getRiskLevel() == CertNewsData.RiskLevel.LOW)
+                    .count();
+                
+                stats.put("total", total);
+                stats.put("highRisk", highRisk);
+                stats.put("mediumRisk", mediumRisk);
+                stats.put("lowRisk", lowRisk);
+                
+                // 计算风险等级 - 基于实际数据分布
+                if (total == 0) {
+                    stats.put("riskLevel", "LOW");
+                    stats.put("riskScore", 10);
+                } else {
+                    // 新的风险等级判断逻辑：
+                    // 1. 有高风险数据 -> 高风险
+                    // 2. 无高风险但有中风险数据 -> 中风险  
+                    // 3. 无高中风险但有低风险数据 -> 低风险
+                    // 4. 无任何风险数据 -> 低风险
+                    String riskLevel;
+                    int riskScore;
+                    
+                    if (highRisk > 0) {
+                        riskLevel = "HIGH";
+                        riskScore = 80 + (int) Math.round((double) highRisk / total * 20);
+                    } else if (mediumRisk > 0) {
+                        riskLevel = "MEDIUM";
+                        riskScore = 40 + (int) Math.round((double) mediumRisk / total * 20);
+                    } else if (lowRisk > 0) {
+                        riskLevel = "LOW";
+                        riskScore = 20 + (int) Math.round((double) lowRisk / total * 20);
+                    } else {
+                        riskLevel = "LOW";
+                        riskScore = 10;
+                    }
+                    
+                    stats.put("riskLevel", riskLevel);
+                    stats.put("riskScore", riskScore);
+                }
+                
+                stats.put("trend", Math.random() * 20 - 10); // 模拟趋势数据
+                countryStats.add(stats);
+            }
+            
+            // 添加"其他国家"统计
+            Map<String, Object> otherCountriesStats = new HashMap<>();
+            otherCountriesStats.put("name", "其他国家");
+            
+            List<CertNewsData> otherCountryData = allData.stream()
+                .filter(data -> data.getCountry() != null && 
+                               !specifiedCountries.contains(data.getCountry()) && 
+                               !"未确定".equals(data.getCountry()))
+                .collect(Collectors.toList());
+            
+            long otherTotal = otherCountryData.size();
+            long otherHighRisk = otherCountryData.stream()
+                .filter(data -> data.getRiskLevel() == CertNewsData.RiskLevel.HIGH)
+                .count();
+            long otherMediumRisk = otherCountryData.stream()
+                .filter(data -> data.getRiskLevel() == CertNewsData.RiskLevel.MEDIUM)
+                .count();
+            long otherLowRisk = otherCountryData.stream()
+                .filter(data -> data.getRiskLevel() == CertNewsData.RiskLevel.LOW)
+                .count();
+            
+            otherCountriesStats.put("total", otherTotal);
+            otherCountriesStats.put("highRisk", otherHighRisk);
+            otherCountriesStats.put("mediumRisk", otherMediumRisk);
+            otherCountriesStats.put("lowRisk", otherLowRisk);
+            // 应用新的风险等级判断逻辑
+            if (otherTotal == 0) {
+                otherCountriesStats.put("riskLevel", "LOW");
+                otherCountriesStats.put("riskScore", 10);
+            } else {
+                String riskLevel;
+                int riskScore;
+                
+                if (otherHighRisk > 0) {
+                    riskLevel = "HIGH";
+                    riskScore = 80 + (int) Math.round((double) otherHighRisk / otherTotal * 20);
+                } else if (otherMediumRisk > 0) {
+                    riskLevel = "MEDIUM";
+                    riskScore = 40 + (int) Math.round((double) otherMediumRisk / otherTotal * 20);
+                } else if (otherLowRisk > 0) {
+                    riskLevel = "LOW";
+                    riskScore = 20 + (int) Math.round((double) otherLowRisk / otherTotal * 20);
+                } else {
+                    riskLevel = "LOW";
+                    riskScore = 10;
+                }
+                
+                otherCountriesStats.put("riskLevel", riskLevel);
+                otherCountriesStats.put("riskScore", riskScore);
+            }
+            otherCountriesStats.put("trend", Math.random() * 20 - 10);
+            
+            countryStats.add(otherCountriesStats);
+            
+            // 添加"未确定"统计
+            Map<String, Object> undeterminedStats = new HashMap<>();
+            undeterminedStats.put("name", "未确定");
+            
+            List<CertNewsData> undeterminedData = allData.stream()
+                .filter(data -> data.getCountry() == null || "未确定".equals(data.getCountry()))
+                .collect(Collectors.toList());
+            
+            long undeterminedTotal = undeterminedData.size();
+            long undeterminedHighRisk = undeterminedData.stream()
+                .filter(data -> data.getRiskLevel() == CertNewsData.RiskLevel.HIGH)
+                .count();
+            long undeterminedMediumRisk = undeterminedData.stream()
+                .filter(data -> data.getRiskLevel() == CertNewsData.RiskLevel.MEDIUM)
+                .count();
+            long undeterminedLowRisk = undeterminedData.stream()
+                .filter(data -> data.getRiskLevel() == CertNewsData.RiskLevel.LOW)
+                .count();
+            
+            undeterminedStats.put("total", undeterminedTotal);
+            undeterminedStats.put("highRisk", undeterminedHighRisk);
+            undeterminedStats.put("mediumRisk", undeterminedMediumRisk);
+            undeterminedStats.put("lowRisk", undeterminedLowRisk);
+            // 应用新的风险等级判断逻辑
+            if (undeterminedTotal == 0) {
+                undeterminedStats.put("riskLevel", "LOW");
+                undeterminedStats.put("riskScore", 10);
+            } else {
+                String riskLevel;
+                int riskScore;
+                
+                if (undeterminedHighRisk > 0) {
+                    riskLevel = "HIGH";
+                    riskScore = 80 + (int) Math.round((double) undeterminedHighRisk / undeterminedTotal * 20);
+                } else if (undeterminedMediumRisk > 0) {
+                    riskLevel = "MEDIUM";
+                    riskScore = 40 + (int) Math.round((double) undeterminedMediumRisk / undeterminedTotal * 20);
+                } else if (undeterminedLowRisk > 0) {
+                    riskLevel = "LOW";
+                    riskScore = 20 + (int) Math.round((double) undeterminedLowRisk / undeterminedTotal * 20);
+                } else {
+                    riskLevel = "LOW";
+                    riskScore = 10;
+                }
+                
+                undeterminedStats.put("riskLevel", riskLevel);
+                undeterminedStats.put("riskScore", riskScore);
+            }
+            undeterminedStats.put("trend", Math.random() * 20 - 10);
+            
+            countryStats.add(undeterminedStats);
+            
+            log.info("国家风险统计数据获取完成: {}个国家", countryStats.size());
+            return countryStats;
+            
+        } catch (Exception e) {
+            log.error("获取国家风险统计数据失败: {}", e.getMessage(), e);
+            return new ArrayList<>();
+        }
+    }
+    
+    /**
+     * 获取最新高风险数据
+     * 专门为Dashboard最新风险信息提供数据
+     */
+    public List<CertNewsData> getLatestHighRiskData(int limit) {
+        log.info("获取最新高风险数据（所有数据，不限制related）: limit={}", limit);
+        
+        try {
+            // 获取所有数据，然后过滤出高风险数据并按发布时间排序
+            List<CertNewsData> allData = crawlerDataRepository.findAll();
+            
+            List<CertNewsData> highRiskData = allData.stream()
+                .filter(data -> data.getRiskLevel() == CertNewsData.RiskLevel.HIGH)
+                .sorted((a, b) -> {
+                    // 按发布时间降序排序
+                    if (a.getPublishDate() == null && b.getPublishDate() == null) return 0;
+                    if (a.getPublishDate() == null) return 1;
+                    if (b.getPublishDate() == null) return -1;
+                    return b.getPublishDate().compareTo(a.getPublishDate());
+                })
+                .limit(limit)
+                .collect(Collectors.toList());
+            
+            log.info("最新高风险数据获取完成: {}条", highRiskData.size());
+            return highRiskData;
+            
+        } catch (Exception e) {
+            log.error("获取最新高风险数据失败: {}", e.getMessage(), e);
+            return new ArrayList<>();
+        }
+    }
+    
+    /**
      * 获取所有数据
      */
     public List<CertNewsData> list() {

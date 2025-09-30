@@ -1,4 +1,4 @@
-package com.certification.crawler.countrydata.eu;
+package com.certification.crawler.countrydata.eu.others;
 
 import com.certification.crawler.common.CsvExporter;
 import org.jsoup.Jsoup;

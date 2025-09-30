@@ -1,9 +1,12 @@
 package com.certification.crawler.countrydata.eu;
 
+import com.certification.config.MedcertCrawlerConfig;
 import com.certification.crawler.common.CsvExporter;
 import com.certification.entity.common.GuidanceDocument;
 import com.certification.entity.common.CertNewsData.RiskLevel;
+import com.certification.exception.AllDataDuplicateException;
 import com.certification.repository.common.GuidanceDocumentRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -22,35 +25,46 @@ import java.util.*;
  * 爬取 https://health.ec.europa.eu/medical-devices-topics-interest/latest-updates_en 页面内容
  * 支持批次保存到数据库，连续3个批次完全重复则停止爬取
  */
+@Slf4j
 @Component
-public class Eu_UpdataNews {
+public class Eu_guidance {
     
     private static final String BASE_URL = "https://health.ec.europa.eu/medical-devices-topics-interest/latest-updates_en";
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
-    
-    // 批次大小和重复检测配置
-    private static final int BATCH_SIZE = 20;
-    private static final int MAX_CONSECUTIVE_DUPLICATE_BATCHES = 3;
     
     private final CsvExporter csvExporter;
     
     @Autowired
     private GuidanceDocumentRepository guidanceDocumentRepository;
     
-    public Eu_UpdataNews() {
+    @Autowired
+    private MedcertCrawlerConfig crawlerConfig;
+    
+    public Eu_guidance() {
         this.csvExporter = new CsvExporter();
     }
     
     /**
-     * 爬取欧盟医疗设备最新更新新闻
-     * @param maxPages 最大爬取页数
+     * 爬取欧盟医疗设备最新更新新闻（支持全量爬取）
+     * @param maxPages 最大爬取页数，0表示爬取所有页
+     * @param maxRecords 最大记录数，-1表示爬取所有记录
+     * @param batchSize 批次大小
      * @return 爬取结果列表
      */
-    public List<Map<String, String>> crawlMedicalDeviceNews(int maxPages) {
+    public List<Map<String, String>> crawlMedicalDeviceNews(int maxPages, int maxRecords, int batchSize) {
         List<Map<String, String>> allNews = new ArrayList<>();
+        boolean crawlAll = (maxPages == 0);
+        int actualBatchSize = Math.min(batchSize, crawlerConfig.getCrawl().getApiLimits().getEuGuidanceMaxPerPage());
+        
+        log.info("🚀 开始爬取欧盟医疗设备最新更新新闻...");
+        log.info("📊 最大页数: {}，最大记录数: {}，批次大小: {}", 
+                maxPages == 0 ? "所有页" : maxPages, 
+                maxRecords == -1 ? "所有记录" : maxRecords, 
+                actualBatchSize);
         
         try {
-            for (int page = 0; page < maxPages; page++) {
+            int page = 0;
+            while (crawlAll || page < maxPages) {
                 try {
                     long pageStartTime = System.currentTimeMillis();
                     
@@ -70,28 +84,44 @@ public class Eu_UpdataNews {
                     // 解析新闻内容
                     List<Map<String, String>> pageNews = parseNewsContent(doc);
                     if (pageNews.isEmpty()) {
-                        System.out.println("第" + (page + 1) + "页没有找到新闻数据，停止爬取");
+                        log.info("第{}页没有找到新闻数据，停止爬取", page + 1);
                         break;
                     }
                     
                     allNews.addAll(pageNews);
-                    System.out.println("第" + (page + 1) + "页解析完成，获取到 " + pageNews.size() + " 条新闻");
+                    log.info("第{}页解析完成，获取到 {} 条新闻", page + 1, pageNews.size());
+                    
+                    // 检查是否达到最大记录数限制
+                    if (maxRecords > 0 && allNews.size() >= maxRecords) {
+                        log.info("已达到最大记录数限制: {}", maxRecords);
+                        break;
+                    }
                     
                     // 添加延迟避免请求过快
-                    Thread.sleep(1000);
+                    Thread.sleep(crawlerConfig.getRetry().getDelayMilliseconds() / 5);
                     
                 } catch (Exception e) {
-                    System.err.println("爬取第" + (page + 1) + "页时出错: " + e.getMessage());
+                    log.error("爬取第{}页时出错: {}", page + 1, e.getMessage());
                     break;
                 }
+                
+                page++; // 增加页码
             }
             
         } catch (Exception e) {
-            System.err.println("爬取过程中发生错误: " + e.getMessage());
-            e.printStackTrace();
+            log.error("爬取过程中发生错误: {}", e.getMessage(), e);
         }
         
         return allNews;
+    }
+    
+    /**
+     * 向后兼容的方法
+     * @param maxPages 最大爬取页数
+     * @return 爬取结果列表
+     */
+    public List<Map<String, String>> crawlMedicalDeviceNews(int maxPages) {
+        return crawlMedicalDeviceNews(maxPages, -1, crawlerConfig.getBatch().getSmallSaveSize());
     }
     
     /**
@@ -321,7 +351,7 @@ public class Eu_UpdataNews {
     @Transactional
     public int crawlAndSaveToDatabase(int maxPages) {
         System.out.println("🚀 开始爬取EU医疗设备新闻并保存到数据库...");
-        System.out.println("📊 批次大小: " + BATCH_SIZE + "，最大连续重复批次: " + MAX_CONSECUTIVE_DUPLICATE_BATCHES);
+        System.out.println("📊 批次大小: " + crawlerConfig.getBatch().getSmallSaveSize() + "，最大连续重复批次: 3");
         
         int totalSaved = 0;
         int consecutiveDuplicateBatches = 0;
@@ -357,7 +387,7 @@ public class Eu_UpdataNews {
                     System.out.println("📝 第" + (page + 1) + "页解析完成，获取到 " + pageNews.size() + " 条新闻");
                     
                     // 检查是否需要保存批次
-                    if (currentBatch.size() >= BATCH_SIZE) {
+                    if (currentBatch.size() >= crawlerConfig.getBatch().getSmallSaveSize()) {
                         int savedInBatch = saveBatchToDatabase(currentBatch);
                         totalSaved += savedInBatch;
                         
@@ -365,8 +395,8 @@ public class Eu_UpdataNews {
                             consecutiveDuplicateBatches++;
                             System.out.println("🔄 批次完全重复，连续重复批次数: " + consecutiveDuplicateBatches);
                             
-                            if (consecutiveDuplicateBatches >= MAX_CONSECUTIVE_DUPLICATE_BATCHES) {
-                                System.out.println("🛑 连续 " + MAX_CONSECUTIVE_DUPLICATE_BATCHES + " 个批次完全重复，停止爬取");
+                            if (consecutiveDuplicateBatches >= 3) {
+                                System.out.println("🛑 连续 3 个批次完全重复，停止爬取");
                                 break;
                             }
                         } else {
@@ -577,7 +607,7 @@ public class Eu_UpdataNews {
      * 主函数用于测试
      */
     public static void main(String[] args) {
-        Eu_UpdataNews crawler = new Eu_UpdataNews();
+        Eu_guidance crawler = new Eu_guidance();
         
         // 测试爬取所有新闻
         System.out.println("=== 测试爬取欧盟医疗设备最新更新新闻 ===");

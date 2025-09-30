@@ -65,4 +65,24 @@ public interface GuidanceDocumentRepository extends JpaRepository<GuidanceDocume
      */
     @Query("SELECT gd FROM GuidanceDocument gd WHERE gd.keywords LIKE %:keyword%")
     List<GuidanceDocument> findByKeywordsContaining(@Param("keyword") String keyword);
+
+    /**
+     * 根据关键词搜索（支持多个字段）
+     */
+    @Query("SELECT d FROM GuidanceDocument d WHERE " +
+           "(LOWER(d.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(d.topic) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(d.documentType) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "AND (:countryCode IS NULL OR d.jdCountry = :countryCode)")
+    List<GuidanceDocument> findByKeywordAndCountry(@Param("keyword") String keyword, @Param("countryCode") String countryCode);
+
+    /**
+     * 根据关键词搜索（支持多个字段，分页）
+     */
+    @Query("SELECT d FROM GuidanceDocument d WHERE " +
+           "(LOWER(d.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(d.topic) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(d.documentType) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "AND (:countryCode IS NULL OR d.jdCountry = :countryCode)")
+    org.springframework.data.domain.Page<GuidanceDocument> findByKeywordAndCountry(@Param("keyword") String keyword, @Param("countryCode") String countryCode, org.springframework.data.domain.Pageable pageable);
 }

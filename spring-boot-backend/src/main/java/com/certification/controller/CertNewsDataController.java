@@ -132,6 +132,109 @@ public class CertNewsDataController {
     }
     
     /**
+     * 获取Dashboard统计数据
+     * 专门为Dashboard页面提供风险等级统计，避免传输大量数据
+     */
+    @Operation(summary = "获取Dashboard统计数据", description = "获取各风险等级的数据统计，专门为Dashboard页面优化")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "查询成功"),
+        @ApiResponse(responseCode = "500", description = "服务器错误")
+    })
+    @GetMapping("/dashboard/statistics")
+    public ResponseEntity<Map<String, Object>> getDashboardStatistics() {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            // 调用Service层获取统计数据
+            Map<String, Object> statistics = crawlerDataService.getDashboardStatistics();
+            
+            result.put("success", true);
+            result.put("data", statistics);
+            result.put("message", "统计数据获取成功");
+            result.put("timestamp", LocalDateTime.now().toString());
+            
+            log.info("Dashboard统计数据获取成功: {}", statistics);
+            return ResponseEntity.ok(result);
+            
+        } catch (Exception e) {
+            log.error("获取Dashboard统计数据失败: {}", e.getMessage(), e);
+            result.put("success", false);
+            result.put("error", "获取统计数据失败: " + e.getMessage());
+            result.put("timestamp", LocalDateTime.now().toString());
+            return ResponseEntity.status(500).body(result);
+        }
+    }
+    
+    /**
+     * 获取国家风险统计数据
+     * 专门为Dashboard国家风险分布提供数据
+     */
+    @Operation(summary = "获取国家风险统计数据", description = "获取各国风险等级分布统计，专门为Dashboard国家风险分析优化")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "查询成功"),
+        @ApiResponse(responseCode = "500", description = "服务器错误")
+    })
+    @GetMapping("/dashboard/country-risk-stats")
+    public ResponseEntity<Map<String, Object>> getCountryRiskStatistics() {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            // 调用Service层获取国家风险统计
+            List<Map<String, Object>> countryStats = crawlerDataService.getCountryRiskStatistics();
+            
+            result.put("success", true);
+            result.put("data", countryStats);
+            result.put("message", "国家风险统计数据获取成功");
+            result.put("timestamp", LocalDateTime.now().toString());
+            
+            log.info("国家风险统计数据获取成功: {}个国家", countryStats.size());
+            return ResponseEntity.ok(result);
+            
+        } catch (Exception e) {
+            log.error("获取国家风险统计数据失败: {}", e.getMessage(), e);
+            result.put("success", false);
+            result.put("error", "获取国家风险统计数据失败: " + e.getMessage());
+            result.put("timestamp", LocalDateTime.now().toString());
+            return ResponseEntity.status(500).body(result);
+        }
+    }
+    
+    /**
+     * 获取最新高风险数据
+     * 专门为Dashboard最新风险信息提供数据
+     */
+    @Operation(summary = "获取最新高风险数据", description = "获取最新的高风险数据列表，专门为Dashboard最新风险信息优化")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "查询成功"),
+        @ApiResponse(responseCode = "500", description = "服务器错误")
+    })
+    @GetMapping("/dashboard/latest-high-risk")
+    public ResponseEntity<Map<String, Object>> getLatestHighRiskData(
+            @Parameter(description = "数据条数", example = "3") @RequestParam(defaultValue = "3") int limit) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            // 调用Service层获取最新高风险数据
+            List<CertNewsData> latestHighRiskData = crawlerDataService.getLatestHighRiskData(limit);
+            
+            result.put("success", true);
+            result.put("data", latestHighRiskData);
+            result.put("message", "最新高风险数据获取成功");
+            result.put("timestamp", LocalDateTime.now().toString());
+            
+            log.info("最新高风险数据获取成功: {}条", latestHighRiskData.size());
+            return ResponseEntity.ok(result);
+            
+        } catch (Exception e) {
+            log.error("获取最新高风险数据失败: {}", e.getMessage(), e);
+            result.put("success", false);
+            result.put("error", "获取最新高风险数据失败: " + e.getMessage());
+            result.put("timestamp", LocalDateTime.now().toString());
+            return ResponseEntity.status(500).body(result);
+        }
+    }
+    
+    /**
      * 更新爬虫数据的相关性
      */
     @Operation(summary = "更新爬虫数据相关性", description = "更新指定爬虫数据的相关性状态")

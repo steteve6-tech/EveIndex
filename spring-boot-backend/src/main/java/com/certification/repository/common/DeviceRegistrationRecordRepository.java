@@ -67,4 +67,24 @@ public interface DeviceRegistrationRecordRepository extends JpaRepository<Device
             @Param("registrationNumber") String registrationNumber,
             @Param("feiNumber") String feiNumber,
             @Param("deviceName") String deviceName);
+
+    /**
+     * 根据关键词搜索（支持多个字段）
+     */
+    @Query("SELECT d FROM DeviceRegistrationRecord d WHERE " +
+           "(d.deviceName LIKE %:keyword% OR " +
+           "d.manufacturerName LIKE %:keyword% OR " +
+           "d.proprietaryName LIKE %:keyword%) " +
+           "AND (:countryCode IS NULL OR d.jdCountry = :countryCode)")
+    List<DeviceRegistrationRecord> findByKeywordAndCountry(@Param("keyword") String keyword, @Param("countryCode") String countryCode);
+
+    /**
+     * 根据关键词搜索（支持多个字段，分页）
+     */
+    @Query("SELECT d FROM DeviceRegistrationRecord d WHERE " +
+           "(d.deviceName LIKE %:keyword% OR " +
+           "d.manufacturerName LIKE %:keyword% OR " +
+           "d.proprietaryName LIKE %:keyword%) " +
+           "AND (:countryCode IS NULL OR d.jdCountry = :countryCode)")
+    org.springframework.data.domain.Page<DeviceRegistrationRecord> findByKeywordAndCountry(@Param("keyword") String keyword, @Param("countryCode") String countryCode, org.springframework.data.domain.Pageable pageable);
 }

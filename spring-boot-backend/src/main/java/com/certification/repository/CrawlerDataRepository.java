@@ -55,10 +55,16 @@ public interface CrawlerDataRepository extends JpaRepository<CertNewsData, Strin
     
     /**
      * 综合搜索查询（支持关键词、国家、相关性、数据源、类型、日期范围、匹配关键词）
+     * 特殊处理"其它国家"和"未确定"的搜索逻辑
      */
     @Query("SELECT c FROM CertNewsData c WHERE c.deleted = 0 " +
            "AND (:keyword IS NULL OR (c.title LIKE %:keyword% OR c.content LIKE %:keyword% OR c.summary LIKE %:keyword%)) " +
-           "AND (:country IS NULL OR c.country = :country) " +
+           "AND (" +
+           "  (:country IS NULL) OR " +
+           "  (:country = '其他国家' AND c.country IS NOT NULL AND c.country NOT IN ('美国', '欧盟', '中国', '韩国', '日本', '阿联酋', '印度', '泰国', '新加坡', '台湾', '澳大利亚', '智利', '马来西亚', '秘鲁', '南非', '以色列', '印尼', '未确定')) OR " +
+           "  (:country = '未确定' AND (c.country IS NULL OR c.country = '未确定')) OR " +
+           "  (:country != '其他国家' AND :country != '未确定' AND c.country = :country)" +
+           ") " +
            "AND (:related IS NULL OR c.related = :related) " +
            "AND (:sourceName IS NULL OR c.sourceName = :sourceName) " +
            "AND (:type IS NULL OR c.type = :type) " +
@@ -99,10 +105,16 @@ public interface CrawlerDataRepository extends JpaRepository<CertNewsData, Strin
     
     /**
      * 按发布时间排序的查询（使用CAST将字符串转换为日期进行排序）
+     * 特殊处理"其它国家"和"未确定"的搜索逻辑
      */
     @Query(value = "SELECT c.* FROM t_crawler_data c WHERE c.deleted = 0 " +
            "AND (:keyword IS NULL OR (c.title LIKE CONCAT('%', :keyword, '%') OR c.content LIKE CONCAT('%', :keyword, '%') OR c.summary LIKE CONCAT('%', :keyword, '%'))) " +
-           "AND (:country IS NULL OR c.country = :country) " +
+           "AND (" +
+           "  (:country IS NULL) OR " +
+           "  (:country = '其他国家' AND c.country IS NOT NULL AND c.country NOT IN ('美国', '欧盟', '中国', '韩国', '日本', '阿联酋', '印度', '泰国', '新加坡', '台湾', '澳大利亚', '智利', '马来西亚', '秘鲁', '南非', '以色列', '印尼', '未确定')) OR " +
+           "  (:country = '未确定' AND (c.country IS NULL OR c.country = '未确定')) OR " +
+           "  (:country != '其他国家' AND :country != '未确定' AND c.country = :country)" +
+           ") " +
            "AND (:related IS NULL OR c.related = :related) " +
            "AND (:sourceName IS NULL OR c.source_name = :sourceName) " +
            "AND (:type IS NULL OR c.type = :type) " +
@@ -113,7 +125,12 @@ public interface CrawlerDataRepository extends JpaRepository<CertNewsData, Strin
            "ORDER BY CAST(c.publish_date AS DATE) DESC, c.crawl_time DESC", 
            countQuery = "SELECT COUNT(*) FROM t_crawler_data c WHERE c.deleted = 0 " +
            "AND (:keyword IS NULL OR (c.title LIKE CONCAT('%', :keyword, '%') OR c.content LIKE CONCAT('%', :keyword, '%') OR c.summary LIKE CONCAT('%', :keyword, '%'))) " +
-           "AND (:country IS NULL OR c.country = :country) " +
+           "AND (" +
+           "  (:country IS NULL) OR " +
+           "  (:country = '其他国家' AND c.country IS NOT NULL AND c.country NOT IN ('美国', '欧盟', '中国', '韩国', '日本', '阿联酋', '印度', '泰国', '新加坡', '台湾', '澳大利亚', '智利', '马来西亚', '秘鲁', '南非', '以色列', '印尼', '未确定')) OR " +
+           "  (:country = '未确定' AND (c.country IS NULL OR c.country = '未确定')) OR " +
+           "  (:country != '其他国家' AND :country != '未确定' AND c.country = :country)" +
+           ") " +
            "AND (:related IS NULL OR c.related = :related) " +
            "AND (:sourceName IS NULL OR c.source_name = :sourceName) " +
            "AND (:type IS NULL OR c.type = :type) " +
@@ -210,6 +227,9 @@ public interface CrawlerDataRepository extends JpaRepository<CertNewsData, Strin
      */
     @Query("SELECT c FROM CertNewsData c WHERE c.sourceName = :sourceName AND c.deleted = 0 ORDER BY c.crawlTime DESC")
     List<CertNewsData> findRecentDataBySource(@Param("sourceName") String sourceName, Pageable pageable);
+    
+    // ========== Dashboard统计相关方法 ==========
+    // 注意：Dashboard统计功能现在使用现有的Repository方法，在Service层进行数据处理
     
     /**
      * 更新数据状态
@@ -657,7 +677,7 @@ public interface CrawlerDataRepository extends JpaRepository<CertNewsData, Strin
     /**
      * 分页查询指定删除状态的数据（用于批量处理）
      */
-    @Query(value = "SELECT * FROM t_crawler_data WHERE deleted = :deleted ORDER BY id LIMIT :limit OFFSET :offset", nativeQuery = true)
+    @Query(value = "SELECT * FROM t_crawler_data WHERE deleted = :deleted ORDER BY id LIMIT :offset, :limit", nativeQuery = true)
     List<CertNewsData> findByDeletedWithPagination(@Param("deleted") Integer deleted, @Param("offset") int offset, @Param("limit") int limit);
     
 }

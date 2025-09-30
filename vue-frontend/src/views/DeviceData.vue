@@ -504,17 +504,8 @@
                 <div class="tab-content">
                   <div class="search-section">
                     <a-form layout="inline" :model="recallSearchForm">
-                      <a-form-item label="产品代码">
-                        <a-input v-model:value="recallSearchForm.productCode" placeholder="输入产品代码"/>
-                      </a-form-item>
-                      <a-form-item label="召回状态">
-                        <a-select v-model:value="recallSearchForm.recallStatus" placeholder="选择状态"
-                                  style="width: 120px">
-                          <a-select-option value="">全部</a-select-option>
-                          <a-select-option value="Ongoing">进行中</a-select-option>
-                          <a-select-option value="Completed">已完成</a-select-option>
-                          <a-select-option value="Terminated">已终止</a-select-option>
-                        </a-select>
+                      <a-form-item label="关键词">
+                        <a-input v-model:value="recallSearchForm.keyword" placeholder="输入关键词搜索"/>
                       </a-form-item>
                       <a-form-item label="国家">
                         <a-select v-model:value="recallSearchForm.countryCode" placeholder="选择国家"
@@ -559,16 +550,16 @@
                 <div class="tab-content">
                   <div class="search-section">
                     <a-form layout="inline" :model="device510KSearchForm">
-                      <a-form-item label="设备名称">
-                        <a-input v-model:value="device510KSearchForm.deviceName" placeholder="输入设备名称"/>
+                      <a-form-item label="关键词">
+                        <a-input v-model:value="device510KSearchForm.keyword" placeholder="输入关键词搜索"/>
                       </a-form-item>
-                      <a-form-item label="设备类别">
-                        <a-select v-model:value="device510KSearchForm.deviceClass" placeholder="选择类别"
+                      <a-form-item label="国家">
+                        <a-select v-model:value="device510KSearchForm.countryCode" placeholder="选择国家"
                                   style="width: 120px">
                           <a-select-option value="">全部</a-select-option>
-                          <a-select-option value="I">I类</a-select-option>
-                          <a-select-option value="II">II类</a-select-option>
-                          <a-select-option value="III">III类</a-select-option>
+                          <a-select-option value="US">美国</a-select-option>
+                          <a-select-option value="CN">中国</a-select-option>
+                          <a-select-option value="EU">欧盟</a-select-option>
                         </a-select>
                       </a-form-item>
                       <a-form-item>
@@ -604,19 +595,16 @@
                 <div class="tab-content">
                   <div class="search-section">
                     <a-form layout="inline" :model="eventSearchForm">
-                      <a-form-item label="事件类型">
-                        <a-input v-model:value="eventSearchForm.eventType" placeholder="输入事件类型"/>
+                      <a-form-item label="关键词">
+                        <a-input v-model:value="eventSearchForm.keyword" placeholder="输入关键词搜索"/>
                       </a-form-item>
-                      <a-form-item label="制造商">
-                        <a-input v-model:value="eventSearchForm.manufacturerName" placeholder="输入制造商名称"/>
-                      </a-form-item>
-                      <a-form-item label="设备类别">
-                        <a-select v-model:value="eventSearchForm.deviceClass" placeholder="选择类别"
+                      <a-form-item label="国家">
+                        <a-select v-model:value="eventSearchForm.countryCode" placeholder="选择国家"
                                   style="width: 120px">
                           <a-select-option value="">全部</a-select-option>
-                          <a-select-option value="I">I类</a-select-option>
-                          <a-select-option value="II">II类</a-select-option>
-                          <a-select-option value="III">III类</a-select-option>
+                          <a-select-option value="US">美国</a-select-option>
+                          <a-select-option value="CN">中国</a-select-option>
+                          <a-select-option value="EU">欧盟</a-select-option>
                         </a-select>
                       </a-form-item>
                       <a-form-item>
@@ -652,11 +640,17 @@
                 <div class="tab-content">
                   <div class="search-section">
                     <a-form layout="inline" :model="registrationSearchForm">
-                      <a-form-item label="设备名称">
-                        <a-input v-model:value="registrationSearchForm.deviceName" placeholder="输入设备名称"/>
+                      <a-form-item label="关键词">
+                        <a-input v-model:value="registrationSearchForm.keyword" placeholder="输入关键词搜索"/>
                       </a-form-item>
-                      <a-form-item label="制造商">
-                        <a-input v-model:value="registrationSearchForm.manufacturerName" placeholder="输入制造商名称"/>
+                      <a-form-item label="国家">
+                        <a-select v-model:value="registrationSearchForm.countryCode" placeholder="选择国家"
+                                  style="width: 120px">
+                          <a-select-option value="">全部</a-select-option>
+                          <a-select-option value="US">美国</a-select-option>
+                          <a-select-option value="CN">中国</a-select-option>
+                          <a-select-option value="EU">欧盟</a-select-option>
+                        </a-select>
                       </a-form-item>
                       <a-form-item>
                         <a-button type="primary" @click="searchRegistrationRecords" :loading="registrationLoading">
@@ -691,11 +685,17 @@
                 <div class="tab-content">
                   <div class="search-section">
                     <a-form layout="inline" :model="guidanceSearchForm">
-                      <a-form-item label="文档标题">
-                        <a-input v-model:value="guidanceSearchForm.title" placeholder="输入文档标题"/>
+                      <a-form-item label="关键词">
+                        <a-input v-model:value="guidanceSearchForm.keyword" placeholder="输入关键词搜索"/>
                       </a-form-item>
-                      <a-form-item label="文档类型">
-                        <a-input v-model:value="guidanceSearchForm.documentType" placeholder="输入文档类型"/>
+                      <a-form-item label="国家">
+                        <a-select v-model:value="guidanceSearchForm.countryCode" placeholder="选择国家"
+                                  style="width: 120px">
+                          <a-select-option value="">全部</a-select-option>
+                          <a-select-option value="US">美国</a-select-option>
+                          <a-select-option value="CN">中国</a-select-option>
+                          <a-select-option value="EU">欧盟</a-select-option>
+                        </a-select>
                       </a-form-item>
                       <a-form-item>
                         <a-button type="primary" @click="searchGuidanceDocuments" :loading="guidanceLoading">
@@ -730,11 +730,17 @@
                 <div class="tab-content">
                   <div class="search-section">
                     <a-form layout="inline" :model="customsSearchForm">
-                      <a-form-item label="案例标题">
-                        <a-input v-model:value="customsSearchForm.title" placeholder="输入案例标题"/>
+                      <a-form-item label="关键词">
+                        <a-input v-model:value="customsSearchForm.keyword" placeholder="输入关键词搜索"/>
                       </a-form-item>
-                      <a-form-item label="案例类型">
-                        <a-input v-model:value="customsSearchForm.caseType" placeholder="输入案例类型"/>
+                      <a-form-item label="国家">
+                        <a-select v-model:value="customsSearchForm.countryCode" placeholder="选择国家"
+                                  style="width: 120px">
+                          <a-select-option value="">全部</a-select-option>
+                          <a-select-option value="US">美国</a-select-option>
+                          <a-select-option value="CN">中国</a-select-option>
+                          <a-select-option value="EU">欧盟</a-select-option>
+                        </a-select>
                       </a-form-item>
                       <a-form-item>
                         <a-button type="primary" @click="searchCustomsCases" :loading="customsLoading">
@@ -1409,8 +1415,7 @@ const recallPagination = reactive({
   showQuickJumper: true
 })
 const recallSearchForm = reactive({
-  productCode: '',
-  recallStatus: '',
+  keyword: '',
   countryCode: ''
 })
 
@@ -1425,8 +1430,8 @@ const device510KPagination = reactive({
   showQuickJumper: true
 })
 const device510KSearchForm = reactive({
-  deviceName: '',
-  deviceClass: ''
+  keyword: '',
+  countryCode: ''
 })
 
 // 事件报告相关
@@ -1440,9 +1445,8 @@ const eventPagination = reactive({
   showQuickJumper: true
 })
 const eventSearchForm = reactive({
-  eventType: '',
-  manufacturerName: '',
-  deviceClass: ''
+  keyword: '',
+  countryCode: ''
 })
 
 // 注册记录相关
@@ -1456,9 +1460,8 @@ const registrationPagination = reactive({
   showQuickJumper: true
 })
 const registrationSearchForm = reactive({
-  deviceName: '',
-  manufacturerName: '',
-  createdDate: ''
+  keyword: '',
+  countryCode: ''
 })
 
 // 指导文档相关
@@ -1472,8 +1475,8 @@ const guidancePagination = reactive({
   showQuickJumper: true
 })
 const guidanceSearchForm = reactive({
-  title: '',
-  documentType: ''
+  keyword: '',
+  countryCode: ''
 })
 
 // 海关案例相关
@@ -1487,8 +1490,8 @@ const customsPagination = reactive({
   showQuickJumper: true
 })
 const customsSearchForm = reactive({
-  title: '',
-  caseType: ''
+  keyword: '',
+  countryCode: ''
 })
 
 // 统一关键词搜索相关
@@ -1917,6 +1920,8 @@ const searchRecallRecords = async () => {
     const params = {
       page: recallPagination.current - 1,
       size: recallPagination.pageSize,
+      sortBy: 'eventDate', // 按事件日期排序
+      sortDir: 'desc', // 降序排列
       ...recallSearchForm
     }
     console.log('搜索参数:', params)
@@ -1944,6 +1949,8 @@ const searchDevice510KRecords = async () => {
     const params = {
       page: device510KPagination.current - 1,
       size: device510KPagination.pageSize,
+      sortBy: 'dateReceived', // 按接收日期排序
+      sortDir: 'desc', // 降序排列
       ...device510KSearchForm
     }
     const result = await getDevice510KRecords(params)
@@ -1965,6 +1972,8 @@ const searchEventReports = async () => {
     const params = {
       page: eventPagination.current - 1,
       size: eventPagination.pageSize,
+      sortBy: 'dateReceived', // 按接收日期排序
+      sortDir: 'desc', // 降序排列
       ...eventSearchForm
     }
     const result = await getDeviceEventReports(params)
@@ -1986,6 +1995,8 @@ const searchRegistrationRecords = async () => {
     const params = {
       page: registrationPagination.current - 1,
       size: registrationPagination.pageSize,
+      sortBy: 'createdDate', // 按创建日期排序
+      sortDir: 'desc', // 降序排列
       ...registrationSearchForm
     }
     const result = await getDeviceRegistrationRecords(params)
@@ -2007,6 +2018,8 @@ const searchGuidanceDocuments = async () => {
     const params = {
       page: guidancePagination.current - 1,
       size: guidancePagination.pageSize,
+      sortBy: 'publishDate', // 按发布日期排序
+      sortDir: 'desc', // 降序排列
       ...guidanceSearchForm
     }
     const result = await getGuidanceDocuments(params)
@@ -2092,6 +2105,8 @@ const searchCustomsCases = async () => {
     const params = {
       page: customsPagination.current - 1,
       size: customsPagination.pageSize,
+      sortBy: 'processDate', // 按处理日期排序
+      sortDir: 'desc', // 降序排列
       ...customsSearchForm
     }
     const result = await getCustomsCases(params)
@@ -2109,36 +2124,35 @@ const searchCustomsCases = async () => {
 
 // 重置搜索
 const resetRecallSearch = () => {
-  Object.assign(recallSearchForm, {productCode: '', recallStatus: '', countryCode: ''})
+  Object.assign(recallSearchForm, {keyword: '', countryCode: ''})
   searchRecallRecords()
 }
 
 const resetDevice510KSearch = () => {
-  Object.assign(device510KSearchForm, {deviceName: '', deviceClass: ''})
+  Object.assign(device510KSearchForm, {keyword: '', countryCode: ''})
   searchDevice510KRecords()
 }
 
 const resetEventSearch = () => {
-  Object.assign(eventSearchForm, {eventType: '', manufacturerName: '', deviceClass: ''})
+  Object.assign(eventSearchForm, {keyword: '', countryCode: ''})
   searchEventReports()
 }
 
 const resetRegistrationSearch = () => {
   Object.assign(registrationSearchForm, {
-    deviceName: '',
-    manufacturerName: '',
-    createdDate: ''
+    keyword: '',
+    countryCode: ''
   })
   searchRegistrationRecords()
 }
 
 const resetGuidanceSearch = () => {
-  Object.assign(guidanceSearchForm, {title: '', documentType: ''})
+  Object.assign(guidanceSearchForm, {keyword: '', countryCode: ''})
   searchGuidanceDocuments()
 }
 
 const resetCustomsSearch = () => {
-  Object.assign(customsSearchForm, {title: '', caseType: ''})
+  Object.assign(customsSearchForm, {keyword: '', countryCode: ''})
   searchCustomsCases()
 }
 

@@ -219,8 +219,8 @@
       </a-form>
     </a-modal>
 
-    <!-- 高风险相关数据 - 国家风险分布 -->
-    <a-card title="高风险相关数据 - 国家风险分布" style="margin-top: 24px;">
+    <!-- 高风险数据 - 国家风险分布 -->
+    <a-card title="高风险数据 - 国家风险分布" style="margin-top: 24px;">
       <template #extra>
         <a-space>
           <a-button @click="refreshCountryRiskData" :loading="countryRiskLoading" size="small">
@@ -236,28 +236,35 @@
       <!-- 国家风险统计概览 -->
       <div class="country-risk-overview" style="margin-bottom: 24px;">
         <a-row :gutter="16">
-          <a-col :span="6">
+          <a-col :span="5">
             <a-statistic
               title="高风险国家数"
               :value="highRiskCountries.length"
               :value-style="{ color: '#cf1322' }"
             />
           </a-col>
-          <a-col :span="6">
+          <a-col :span="5">
             <a-statistic
               title="中风险国家数"
               :value="mediumRiskCountries.length"
               :value-style="{ color: '#fa8c16' }"
             />
           </a-col>
-          <a-col :span="6">
+          <a-col :span="5">
             <a-statistic
               title="低风险国家数"
               :value="lowRiskCountries.length"
               :value-style="{ color: '#52c41a' }"
             />
           </a-col>
-          <a-col :span="6">
+          <a-col :span="5">
+            <a-statistic
+              title="其它国家数"
+              :value="otherRiskCountries.length"
+              :value-style="{ color: '#722ed1' }"
+            />
+          </a-col>
+          <a-col :span="4">
             <a-statistic
               title="监控国家总数"
               :value="countryRiskStats.length"
@@ -267,44 +274,143 @@
         </a-row>
       </div>
 
-      <!-- 国家风险卡片网格 -->
+      <!-- 国家风险卡片网格 - 按风险等级分组显示 -->
       <div class="country-risk-cards">
-        <a-row :gutter="16">
-          <a-col :span="6" v-for="country in countryRiskStats" :key="country.name">
-            <a-card 
-              class="country-risk-card" 
-              hoverable 
-              @click="viewCountryRiskDetail(country)"
-              :class="getCountryRiskCardClass(country.riskLevel)"
-            >
-              <div class="country-card-header">
-                <a-tag :color="getCountryColor(country.name)">{{ country.name }}</a-tag>
-                <a-tag :color="getRiskColor(country.riskLevel)" style="margin-left: 8px;">
-                  {{ getRiskText(country.riskLevel) }}
-                </a-tag>
-              </div>
-              <div class="country-card-body">
-                <a-statistic 
-                  title="高风险数据总数"
-                  :value="country.total" 
-                  :value-style="{ fontSize: '18px', fontWeight: 'bold' }"
-                />
-                <div class="risk-stats">
-                  <a-tag color="red">高：{{ country.highRisk }}</a-tag>
-                  <a-tag color="orange">中：{{ country.mediumRisk }}</a-tag>
-                  <a-tag color="green">低：{{ country.lowRisk }}</a-tag>
+        <!-- 高风险国家 -->
+        <div v-if="highRiskCountries.length > 0" class="risk-group">
+          <h3 class="risk-group-title">
+            <a-tag color="red" style="font-size: 14px; padding: 4px 8px;">高风险国家</a-tag>
+            <span style="margin-left: 8px; color: #666;">{{ highRiskCountries.length }} 个国家</span>
+          </h3>
+          <a-row :gutter="16" style="margin-bottom: 24px;">
+            <a-col :span="6" v-for="country in highRiskCountries" :key="country.name">
+              <a-card 
+                class="country-risk-card high-risk-card" 
+                hoverable 
+                @click="viewCountryRiskDetail(country)"
+              >
+                <div class="country-card-header">
+                  <a-tag :color="getCountryColor(country.name)">{{ country.name }}</a-tag>
+                  <a-tag color="red" style="margin-left: 8px;">高风险</a-tag>
                 </div>
-                <!-- 暂时隐藏风险指数显示 -->
-                <!-- <div class="risk-score" v-if="country.riskScore">
-                  <span class="score-label">风险指数：</span>
-                  <span class="score-value" :style="{ color: getRiskScoreColor(country.riskScore) }">
-                    {{ country.riskScore }}
-                  </span>
-                </div> -->
-              </div>
-            </a-card>
-          </a-col>
-        </a-row>
+                <div class="country-card-body">
+                  <a-statistic 
+                    title="总数据量"
+                    :value="country.total" 
+                    :value-style="{ fontSize: '18px', fontWeight: 'bold' }"
+                  />
+                  <div class="risk-stats">
+                    <a-tag color="red">高：{{ country.highRisk }}</a-tag>
+                    <a-tag color="orange">中：{{ country.mediumRisk }}</a-tag>
+                    <a-tag color="green">低：{{ country.lowRisk }}</a-tag>
+                  </div>
+                </div>
+              </a-card>
+            </a-col>
+          </a-row>
+        </div>
+
+        <!-- 中风险国家 -->
+        <div v-if="mediumRiskCountries.length > 0" class="risk-group">
+          <h3 class="risk-group-title">
+            <a-tag color="orange" style="font-size: 14px; padding: 4px 8px;">中风险国家</a-tag>
+            <span style="margin-left: 8px; color: #666;">{{ mediumRiskCountries.length }} 个国家</span>
+          </h3>
+          <a-row :gutter="16" style="margin-bottom: 24px;">
+            <a-col :span="6" v-for="country in mediumRiskCountries" :key="country.name">
+              <a-card 
+                class="country-risk-card medium-risk-card" 
+                hoverable 
+                @click="viewCountryRiskDetail(country)"
+              >
+                <div class="country-card-header">
+                  <a-tag :color="getCountryColor(country.name)">{{ country.name }}</a-tag>
+                  <a-tag color="orange" style="margin-left: 8px;">中风险</a-tag>
+                </div>
+                <div class="country-card-body">
+                  <a-statistic 
+                    title="总数据量"
+                    :value="country.total" 
+                    :value-style="{ fontSize: '18px', fontWeight: 'bold' }"
+                  />
+                  <div class="risk-stats">
+                    <a-tag color="red">高：{{ country.highRisk }}</a-tag>
+                    <a-tag color="orange">中：{{ country.mediumRisk }}</a-tag>
+                    <a-tag color="green">低：{{ country.lowRisk }}</a-tag>
+                  </div>
+                </div>
+              </a-card>
+            </a-col>
+          </a-row>
+        </div>
+
+        <!-- 低风险国家 -->
+        <div v-if="lowRiskCountries.length > 0" class="risk-group">
+          <h3 class="risk-group-title">
+            <a-tag color="green" style="font-size: 14px; padding: 4px 8px;">低风险国家</a-tag>
+            <span style="margin-left: 8px; color: #666;">{{ lowRiskCountries.length }} 个国家</span>
+          </h3>
+          <a-row :gutter="16" style="margin-bottom: 24px;">
+            <a-col :span="6" v-for="country in lowRiskCountries" :key="country.name">
+              <a-card 
+                class="country-risk-card low-risk-card" 
+                hoverable 
+                @click="viewCountryRiskDetail(country)"
+              >
+                <div class="country-card-header">
+                  <a-tag :color="getCountryColor(country.name)">{{ country.name }}</a-tag>
+                  <a-tag color="green" style="margin-left: 8px;">低风险</a-tag>
+                </div>
+                <div class="country-card-body">
+                  <a-statistic 
+                    title="总数据量"
+                    :value="country.total" 
+                    :value-style="{ fontSize: '18px', fontWeight: 'bold' }"
+                  />
+                  <div class="risk-stats">
+                    <a-tag color="red">高：{{ country.highRisk }}</a-tag>
+                    <a-tag color="orange">中：{{ country.mediumRisk }}</a-tag>
+                    <a-tag color="green">低：{{ country.lowRisk }}</a-tag>
+                  </div>
+                </div>
+              </a-card>
+            </a-col>
+          </a-row>
+        </div>
+
+        <!-- 其它国家和未确定 -->
+        <div v-if="otherRiskCountries.length > 0" class="risk-group">
+          <h3 class="risk-group-title">
+            <a-tag color="purple" style="font-size: 14px; padding: 4px 8px;">其它国家/未确定</a-tag>
+            <span style="margin-left: 8px; color: #666;">{{ otherRiskCountries.length }} 个</span>
+          </h3>
+          <a-row :gutter="16" style="margin-bottom: 24px;">
+            <a-col :span="6" v-for="country in otherRiskCountries" :key="country.name">
+              <a-card 
+                class="country-risk-card other-risk-card" 
+                hoverable 
+                @click="viewCountryRiskDetail(country)"
+              >
+                <div class="country-card-header">
+                  <a-tag :color="getCountryColor(country.name)">{{ country.name }}</a-tag>
+                  <a-tag color="purple" style="margin-left: 8px;">其它</a-tag>
+                </div>
+                <div class="country-card-body">
+                  <a-statistic 
+                    title="总数据量"
+                    :value="country.total" 
+                    :value-style="{ fontSize: '18px', fontWeight: 'bold' }"
+                  />
+                  <div class="risk-stats">
+                    <a-tag color="red">高：{{ country.highRisk }}</a-tag>
+                    <a-tag color="orange">中：{{ country.mediumRisk }}</a-tag>
+                    <a-tag color="green">低：{{ country.lowRisk }}</a-tag>
+                  </div>
+                </div>
+              </a-card>
+            </a-col>
+          </a-row>
+        </div>
       </div>
 
 <!--      &lt;!&ndash; 国家风险详情表格 &ndash;&gt;-->
@@ -377,7 +483,7 @@ import {
 import {
   triggerUpdate
 } from '@/api/biaozhunguanli'
-import { getCrawlerData } from '@/api/pachongshujuguanli'
+import { getCrawlerData, getDashboardStatistics, getCountryRiskStatistics, getLatestHighRiskData } from '@/api/pachongshujuguanli'
 import { updateRiskLevel } from '@/api/highRiskData'
 import { PerformanceOptimizer } from '@/utils/performanceOptimizer'
 // 暂时注释掉不存在的API导入
@@ -413,10 +519,10 @@ const loading = ref(false)
 const updating = ref(false)
 
 const stats = ref([
-  { title: '高风险相关数据', value: 0, icon: AlertOutlined, color: '#ff4d4f' },
-  { title: '中风险相关数据', value: 0, icon: ClockCircleOutlined, color: '#faad14' },
-  { title: '低风险相关数据', value: 0, icon: CheckCircleOutlined, color: '#52c41a' },
-  { title: '相关数据总数', value: 0, icon: DatabaseOutlined, color: '#1890ff' }
+  { title: '高风险数据', value: 0, icon: AlertOutlined, color: '#ff4d4f' },
+  { title: '中风险数据', value: 0, icon: ClockCircleOutlined, color: '#faad14' },
+  { title: '低风险数据', value: 0, icon: CheckCircleOutlined, color: '#52c41a' },
+  { title: '数据总数', value: 0, icon: DatabaseOutlined, color: '#1890ff' }
 ])
 
 const relatedData = ref<any[]>([])
@@ -478,68 +584,81 @@ const mediumLowRiskAreas = ref<any[]>([])
 
 // 国家风险统计计算属性
 const highRiskCountries = computed(() => 
-  countryRiskStats.value.filter(country => country.riskLevel === 'HIGH')
+  countryRiskStats.value.filter(country => 
+    country.riskLevel === 'HIGH' && 
+    country.name !== '其他国家' && 
+    country.name !== '未确定'
+  )
 )
 
 const mediumRiskCountries = computed(() => 
-  countryRiskStats.value.filter(country => country.riskLevel === 'MEDIUM')
+  countryRiskStats.value.filter(country => 
+    country.riskLevel === 'MEDIUM' && 
+    country.name !== '其他国家' && 
+    country.name !== '未确定'
+  )
 )
 
 const lowRiskCountries = computed(() => 
-  countryRiskStats.value.filter(country => country.riskLevel === 'LOW')
+  countryRiskStats.value.filter(country => 
+    country.riskLevel === 'LOW' && 
+    country.name !== '其他国家' && 
+    country.name !== '未确定'
+  )
 )
 
-// 国家风险表格列配置
-const countryRiskColumns = [
-  {
-    title: '国家/地区',
-    dataIndex: 'name',
-    key: 'name',
-    width: 120
-  },
-  {
-    title: '风险等级',
-    dataIndex: 'riskLevel',
-    key: 'riskLevel',
-    width: 100
-  },
-  // {
-  //   title: '风险指数',
-  //   dataIndex: 'riskScore',
-  //   key: 'riskScore',
-  //   width: 100
-  // },
-  {
-    title: '总数据量',
-    dataIndex: 'total',
-    key: 'total',
-    width: 100
-  },
-  {
-    title: '高风险',
-    dataIndex: 'highRisk',
-    key: 'highRisk',
-    width: 80
-  },
-  {
-    title: '中风险',
-    dataIndex: 'mediumRisk',
-    key: 'mediumRisk',
-    width: 80
-  },
-  {
-    title: '低风险',
-    dataIndex: 'lowRisk',
-    key: 'lowRisk',
-    width: 80
-  },
-  {
-    title: '趋势',
-    dataIndex: 'trend',
-    key: 'trend',
-    width: 100
-  }
-]
+// 其它国家和未确定国家（包括"其他国家"和"未确定"）
+const otherRiskCountries = computed(() => 
+  countryRiskStats.value.filter(country => 
+    country.name === '其他国家' || country.name === '未确定'
+  )
+)
+
+// 国家风险表格列配置（已注释，因为现在使用卡片显示）
+// const countryRiskColumns = [
+//   {
+//     title: '国家/地区',
+//     dataIndex: 'name',
+//     key: 'name',
+//     width: 120
+//   },
+//   {
+//     title: '风险等级',
+//     dataIndex: 'riskLevel',
+//     key: 'riskLevel',
+//     width: 100
+//   },
+//   {
+//     title: '总数据量',
+//     dataIndex: 'total',
+//     key: 'total',
+//     width: 100
+//   },
+//   {
+//     title: '高风险',
+//     dataIndex: 'highRisk',
+//     key: 'highRisk',
+//     width: 80
+//   },
+//   {
+//     title: '中风险',
+//     dataIndex: 'mediumRisk',
+//     key: 'mediumRisk',
+//     width: 80
+//   },
+//   {
+//     title: '低风险',
+//     dataIndex: 'lowRisk',
+//     key: 'lowRisk',
+//     width: 80
+//   },
+//   {
+//     title: '趋势',
+//     dataIndex: 'trend',
+//     key: 'trend',
+//     width: 100
+//   }
+// ]
 
 
 
@@ -593,7 +712,7 @@ const updateData = async () => {
 
 
 
-// 加载统计数据 - 优化版本
+// 加载统计数据 - 使用专门的统计接口
 const loadStatistics = async () => {
   try {
     // 检查缓存
@@ -608,53 +727,52 @@ const loadStatistics = async () => {
       return
     }
 
-    console.log('=== 开始加载相关数据统计 ===')
+    console.log('=== 开始加载数据统计 ===')
+    const startTime = Date.now()
     
-    // 减少数据量，只获取必要的统计信息
-    const allDataResult = await getCrawlerData({ 
-      page: 0, 
-      size: 1000, // 从10000减少到1000
-      related: true 
-    }) as any
+    // 使用专门的统计接口，高效获取统计数据
+    const result = await getDashboardStatistics()
     
-    const allData = (allDataResult?.data as any)?.content || []
-    console.log('所有相关数据数量:', allData.length)
+    const fetchTime = Date.now() - startTime
+    console.log(`📊 统计数据获取完成，耗时: ${fetchTime}ms`)
     
-    // 手动计算各风险等级数量
-    const highCount = allData.filter((item: any) => item.riskLevel === 'HIGH').length
-    const mediumCount = allData.filter((item: any) => item.riskLevel === 'MEDIUM').length
-    const lowCount = allData.filter((item: any) => item.riskLevel === 'LOW').length
-    
-    // 更新统计数据
-    stats.value[0].value = highCount
-    stats.value[1].value = mediumCount
-    stats.value[2].value = lowCount
-    stats.value[3].value = allData.length
-    
-    // 缓存结果
-    PerformanceOptimizer.setCache(cacheKey, {
-      highCount,
-      mediumCount,
-      lowCount,
-      total: allData.length
-    }, 3 * 60 * 1000) // 3分钟缓存
-    
-    console.log('=== 最终统计数据 ===', {
-      highCount,
-      mediumCount,
-      lowCount,
-      total: allData.length
-    })
+    if (result && result.data) {
+      const statistics = result.data
+      console.log('获取到的统计数据:', statistics)
+      
+      // 更新统计数据
+      stats.value[0].value = statistics.highCount || 0
+      stats.value[1].value = statistics.mediumCount || 0
+      stats.value[2].value = statistics.lowCount || 0
+      stats.value[3].value = statistics.total || 0
+      
+      // 缓存结果
+      PerformanceOptimizer.setCache(cacheKey, {
+        highCount: statistics.highCount || 0,
+        mediumCount: statistics.mediumCount || 0,
+        lowCount: statistics.lowCount || 0,
+        total: statistics.total || 0
+      }, 3 * 60 * 1000) // 3分钟缓存
+      
+      console.log('=== 最终统计数据 ===', {
+        highCount: statistics.highCount || 0,
+        mediumCount: statistics.mediumCount || 0,
+        lowCount: statistics.lowCount || 0,
+        total: statistics.total || 0
+      })
+    } else {
+      console.error('获取统计数据失败')
+    }
     
   } catch (error) {
     console.error('加载统计数据失败:', error)
   }
 }
 
-// 加载最新相关数据（按发布时间排序）
+// 加载最新数据（按发布时间排序）
 const loadRecentStandards = async () => {
   try {
-    // 获取按发布时间排序的最新相关数据
+    // 获取按发布时间排序的最新数据
     const result = await getCrawlerData({ 
       page: 0, 
       size: 3, 
@@ -665,59 +783,46 @@ const loadRecentStandards = async () => {
     
     if (result && result.data) {
       relatedData.value = (result.data as any).content || []
-      // console.log('最新相关数据（按发布时间排序）:', relatedData.value)
+      // console.log('最新数据（按发布时间排序）:', relatedData.value)
     } else {
-      // console.error('获取最新相关数据失败')
+      // console.error('获取最新数据失败')
     }
   } catch (error) {
-    // console.error('加载最新相关数据失败:', error)
+    // console.error('加载最新数据失败:', error)
   }
 }
 
-// 加载高风险相关数据
+// 加载高风险数据 - 使用专门的最新高风险数据接口
 const loadUpcomingStandards = async () => {
   try {
-    // 获取高风险相关数据
-    const result = await getCrawlerData({ 
-      page: 0, 
-      size: 3, 
-      related: true,
-      sortBy: 'publishDate',
-      sortDirection: 'desc'
-    }) as any
+    // 使用专门的最新高风险数据接口
+    const result = await getLatestHighRiskData({ limit: 3 })
     
-    // 手动过滤高风险数据
     if (result && result.data) {
-      const allData = (result.data as any).content || []
-      highRiskData.value = allData.filter((item: any) => item.riskLevel === 'HIGH').slice(0, 3)
-      // console.log('高风险相关数据:', highRiskData.value)
+      highRiskData.value = Array.isArray(result.data) ? result.data : []
+      console.log('高风险数据:', highRiskData.value)
     } else {
-      // console.error('获取高风险相关数据失败')
+      console.error('获取高风险数据失败')
     }
   } catch (error) {
-    // console.error('加载高风险相关数据失败:', error)
+    console.error('加载高风险数据失败:', error)
   }
 }
 
-// 加载风险等级统计
+// 加载风险等级统计 - 使用专门的统计接口
 const loadRiskLevelStats = async () => {
   try {
     riskChartLoading.value = true
     
-    // 获取所有相关数据用于风险等级统计
-    const result = await getCrawlerData({ 
-      page: 0, 
-      size: 10000, 
-      related: true 
-    }) as any
+    // 使用专门的统计接口获取风险等级数据
+    const result = await getDashboardStatistics()
     
     if (result && result.data) {
-      const allData = (result.data as any).content || []
-      
-      const highRiskCount = allData.filter((item: any) => item.riskLevel === 'HIGH').length
-      const mediumRiskCount = allData.filter((item: any) => item.riskLevel === 'MEDIUM').length
-      const lowRiskCount = allData.filter((item: any) => item.riskLevel === 'LOW').length
-      const total = allData.length
+      const statistics = result.data
+      const total = statistics.total || 0
+      const highRiskCount = statistics.highCount || 0
+      const mediumRiskCount = statistics.mediumCount || 0
+      const lowRiskCount = statistics.lowCount || 0
       
       riskStats.value = {
         highRisk: { 
@@ -738,18 +843,18 @@ const loadRiskLevelStats = async () => {
         total: total
       }
       
-      // console.log('风险等级统计数据:', riskStats.value)
+      console.log('风险等级统计数据:', riskStats.value)
     } else {
-      // console.error('获取风险等级统计失败')
+      console.error('获取风险等级统计失败')
     }
   } catch (error) {
-    // console.error('加载风险等级统计失败:', error)
+    console.error('加载风险等级统计失败:', error)
   } finally {
     riskChartLoading.value = false
   }
 }
 
-// 加载国家风险统计数据 - 优化版本
+// 加载国家风险统计数据 - 临时回退到原有接口
 const loadCountryRiskStats = async () => {
   try {
     // 检查缓存
@@ -762,169 +867,34 @@ const loadCountryRiskStats = async () => {
     }
 
     console.log('=== 开始加载国家风险统计 ===')
+    const startTime = Date.now()
     
-    // 减少数据量，只获取必要的统计信息
-    const result = await getCrawlerData({ 
-      page: 0, 
-      size: 2000, // 从10000减少到2000
-      related: true 
-    }) as any
+    // 使用专门的国家风险统计接口
+    const result = await getCountryRiskStatistics()
+    
+    const fetchTime = Date.now() - startTime
+    console.log(`🌍 国家风险统计数据获取完成，耗时: ${fetchTime}ms`)
     
     if (result && result.data) {
-      const allData = (result.data as any).content || []
-      console.log('获取到的相关数据总数:', allData.length)
-      
-      // 定义指定的国家列表
-      const specifiedCountries = [
-        '美国', '欧盟', '中国', '韩国', '日本', '阿联酋', '印度', '泰国', 
-        '新加坡', '台湾', '澳大利亚', '智利', '马来西亚', '秘鲁', '南非', '以色列', '印尼'
-      ]
-      
-      // 按国家统计风险数据
-      const countryStats = new Map<string, any>()
-      
-      // 首先为所有指定国家初始化统计数据（包括没有数据的国家）
-      specifiedCountries.forEach(country => {
-        countryStats.set(country, {
-          name: country,
-          total: 0,
-          highRisk: 0,
-          mediumRisk: 0,
-          lowRisk: 0,
-          riskScore: 0,
-          riskLevel: 'LOW',
-          trend: Math.random() * 20 - 10, // 模拟趋势数据
-          riskFactors: [
-            { name: '政策变化', score: Math.floor(Math.random() * 30) },
-            { name: '技术标准', score: Math.floor(Math.random() * 25) },
-            { name: '市场影响', score: Math.floor(Math.random() * 20) }
-          ]
-        })
-      })
-      
-      // 为"其他国家"和"未确定"也初始化
-      countryStats.set('其他国家', {
-        name: '其他国家',
-        total: 0,
-        highRisk: 0,
-        mediumRisk: 0,
-        lowRisk: 0,
-        riskScore: 0,
-        riskLevel: 'LOW',
-        trend: Math.random() * 20 - 10,
-        riskFactors: [
-          { name: '政策变化', score: Math.floor(Math.random() * 30) },
-          { name: '技术标准', score: Math.floor(Math.random() * 25) },
-          { name: '市场影响', score: Math.floor(Math.random() * 20) }
-        ]
-      })
-      
-      countryStats.set('未确定', {
-        name: '未确定',
-        total: 0,
-        highRisk: 0,
-        mediumRisk: 0,
-        lowRisk: 0,
-        riskScore: 0,
-        riskLevel: 'LOW',
-        trend: Math.random() * 20 - 10,
-        riskFactors: [
-          { name: '政策变化', score: Math.floor(Math.random() * 30) },
-          { name: '技术标准', score: Math.floor(Math.random() * 25) },
-          { name: '市场影响', score: Math.floor(Math.random() * 20) }
-        ]
-      })
-      
-      // 统计实际数据
-      allData.forEach((item: any) => {
-        let country = item.country || '未确定'
-        
-        // 如果国家不在指定列表中，归类到"其他国家"
-        if (!specifiedCountries.includes(country) && country !== '未确定') {
-          country = '其他国家'
-        }
-        
-        const stats = countryStats.get(country)!
-        stats.total++
-        
-        if (item.riskLevel === 'HIGH') {
-          stats.highRisk++
-        } else if (item.riskLevel === 'MEDIUM') {
-          stats.mediumRisk++
-        } else if (item.riskLevel === 'LOW') {
-          stats.lowRisk++
-        }
-      })
-      
-      // 计算风险分数和等级
-      const countryList = Array.from(countryStats.values()).map((stats, index) => {
-        const highRiskRatio = stats.total > 0 ? stats.highRisk / stats.total : 0
-        const mediumRiskRatio = stats.total > 0 ? stats.mediumRisk / stats.total : 0
-        
-        // 基于高风险和中风险比例计算风险分数
-        if (stats.total === 0) {
-          // 没有数据的国家，设置为低风险
-          stats.riskScore = 10
-          stats.riskLevel = 'LOW'
-        } else {
-          // 有数据的国家，正常计算风险分数
-          stats.riskScore = Math.round((highRiskRatio * 80 + mediumRiskRatio * 40) + Math.random() * 20)
-          
-          // 确定风险等级
-          if (stats.riskScore >= 60) {
-            stats.riskLevel = 'HIGH'
-          } else if (stats.riskScore >= 30) {
-            stats.riskLevel = 'MEDIUM'
-          } else {
-            stats.riskLevel = 'LOW'
-          }
-        }
-        
-        stats.id = index + 1
-        return stats
-      })
-      
-      // 按指定国家顺序排序，其他国家放在最后
-      const countryOrder = [
-        '美国', '欧盟', '中国', '韩国', '日本', '阿联酋', '印度', '泰国', 
-        '新加坡', '台湾', '澳大利亚', '智利', '马来西亚', '秘鲁', '南非', '以色列', '印尼', '其他国家', '未确定'
-      ]
-      
-      countryList.sort((a, b) => {
-        const indexA = countryOrder.indexOf(a.name)
-        const indexB = countryOrder.indexOf(b.name)
-        
-        // 如果都在列表中，按列表顺序排序
-        if (indexA !== -1 && indexB !== -1) {
-          return indexA - indexB
-        }
-        // 如果a在列表中，b不在，a排在前面
-        if (indexA !== -1 && indexB === -1) {
-          return -1
-        }
-        // 如果b在列表中，a不在，b排在前面
-        if (indexA === -1 && indexB !== -1) {
-          return 1
-        }
-        // 如果都不在列表中，按风险分数排序
-        return b.riskScore - a.riskScore
-      })
+      const countryList = Array.isArray(result.data) ? result.data : []
+      console.log('获取到的国家风险统计数据:', countryList)
       
       // 分离高风险和中低风险地区
-      highRiskAreas.value = countryList.filter(country => country.riskLevel === 'HIGH')
-      mediumLowRiskAreas.value = countryList.filter(country => country.riskLevel !== 'HIGH')
+      highRiskAreas.value = countryList.filter((country: any) => country.riskLevel === 'HIGH')
+      mediumLowRiskAreas.value = countryList.filter((country: any) => country.riskLevel !== 'HIGH')
       
-      // console.log('国家风险统计完成:', {
-      //   highRiskAreas: highRiskAreas.value.length,
-      //   mediumLowRiskAreas: mediumLowRiskAreas.value.length,
-      //   totalCountries: countryList.length,
-      //   countryList: countryList.map(c => ({ name: c.name, total: c.total, riskLevel: c.riskLevel }))
-      // })
+      console.log('国家风险统计完成:', {
+        highRiskAreas: highRiskAreas.value.length,
+        mediumLowRiskAreas: mediumLowRiskAreas.value.length,
+        totalCountries: countryList.length
+      })
       
       countryRiskStats.value = countryList
       
       // 缓存结果
       PerformanceOptimizer.setCache(cacheKey, countryList, 5 * 60 * 1000) // 5分钟缓存
+    } else {
+      console.error('获取国家风险统计失败')
     }
   } catch (error) {
     console.error('加载国家风险统计失败:', error)
@@ -1009,10 +979,10 @@ const loadRiskTrendData = async () => {
       dates.push(d.toISOString().split('T')[0])
     }
 
-    // 获取所有相关数据
+    // 获取所有数据
     const result = await getCrawlerData({
       page: 0,
-      size: 10000,
+      size: 999999, // 获取所有数据，不限制数量
       related: true
     }) as any
 
@@ -1144,7 +1114,7 @@ const loadRiskTrendData = async () => {
 // }
 
 const viewCountryRiskDetail = (country: any) => {
-  // 跳转到相关数据管理页面，并传递国家参数
+  // 跳转到数据管理页面，并传递国家参数
   console.log('跳转到国家数据管理:', country.name)
   
   // 跳转到CrawlerDataManagement页面，并传递国家参数
@@ -1159,14 +1129,7 @@ const viewCountryRiskDetail = (country: any) => {
   message.success(`正在跳转到 ${country.name} 的数据管理页面`)
 }
 
-const getCountryRiskCardClass = (riskLevel: string) => {
-  switch (riskLevel) {
-    case 'HIGH': return 'high-risk-card'
-    case 'MEDIUM': return 'medium-risk-card'
-    case 'LOW': return 'low-risk-card'
-    default: return ''
-  }
-}
+// 已删除 getCountryRiskCardClass 函数，因为现在直接在模板中使用类名
 
 // const getRiskScoreColor = (score: number) => {
 //   if (score >= 60) return '#ff4d4f'
@@ -1516,35 +1479,25 @@ const loadDailyCountryRiskStats = async () => {
 // 注意：已移除模拟数据生成函数，图表只显示真实的历史数据
 
 
-// 加载最新风险数据
+// 加载最新风险数据 - 临时回退到原有接口
 const loadLatestRiskData = async () => {
   latestRiskDataLoading.value = true
   
   try {
-    // console.log('加载最新风险数据...')
+    console.log('加载最新风险数据...')
     
-    // 获取最新的相关数据，按发布时间排序，然后过滤出高风险数据
-    const result = await getCrawlerData({ 
-      page: 0, 
-      size: 100, // 获取更多数据以便过滤出高风险数据
-      related: true,
-      sortBy: 'publishDate',
-      sortDirection: 'desc'
-    }) as any
+    // 使用专门的最新高风险数据接口
+    const result = await getLatestHighRiskData({ limit: 3 })
     
     if (result && result.data) {
-      const allData = (result.data as any).content || []
-      // 只保留高风险数据，并限制为最新的3条
-      latestRiskData.value = allData
-        .filter((item: any) => item.riskLevel === 'HIGH')
-        .slice(0, 3)
-      // console.log('最新高风险数据加载成功:', latestRiskData.value)
+      latestRiskData.value = Array.isArray(result.data) ? result.data : []
+      console.log('最新高风险数据加载成功:', latestRiskData.value.length, '条')
     } else {
-      // console.error('获取最新风险数据失败')
+      console.error('获取最新风险数据失败')
       latestRiskData.value = []
     }
   } catch (error) {
-    // console.error('加载最新风险数据失败:', error)
+    console.error('加载最新风险数据失败:', error)
     latestRiskData.value = []
   } finally {
     latestRiskDataLoading.value = false
@@ -1739,11 +1692,25 @@ onMounted(() => {
   margin-bottom: 24px;
 }
 
+.risk-group {
+  margin-bottom: 32px;
+}
+
+.risk-group-title {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+}
+
 .country-risk-card {
   cursor: pointer;
   transition: all 0.3s ease;
   border-radius: 8px;
   overflow: hidden;
+  height: 100%;
 }
 
 .country-risk-card:hover {
@@ -1753,14 +1720,38 @@ onMounted(() => {
 
 .high-risk-card {
   border-left: 4px solid #ff4d4f;
+  background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);
+}
+
+.high-risk-card:hover {
+  box-shadow: 0 4px 12px rgba(255, 77, 79, 0.2);
 }
 
 .medium-risk-card {
   border-left: 4px solid #faad14;
+  background: linear-gradient(135deg, #fffbe6 0%, #ffffff 100%);
+}
+
+.medium-risk-card:hover {
+  box-shadow: 0 4px 12px rgba(250, 173, 20, 0.2);
 }
 
 .low-risk-card {
   border-left: 4px solid #52c41a;
+  background: linear-gradient(135deg, #f6ffed 0%, #ffffff 100%);
+}
+
+.low-risk-card:hover {
+  box-shadow: 0 4px 12px rgba(82, 196, 26, 0.2);
+}
+
+.other-risk-card {
+  border-left: 4px solid #722ed1;
+  background: linear-gradient(135deg, #f9f0ff 0%, #ffffff 100%);
+}
+
+.other-risk-card:hover {
+  box-shadow: 0 4px 12px rgba(114, 46, 209, 0.2);
 }
 
 .country-card-header {
@@ -1890,6 +1881,7 @@ onMounted(() => {
   margin-bottom: 12px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

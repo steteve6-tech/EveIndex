@@ -1,5 +1,6 @@
-package com.certification.crawler.countrydata.us;
+package com.certification.crawler.countrydata.us.others;
 
+import com.certification.config.MedcertCrawlerConfig;
 import com.certification.entity.common.DeviceEventReport;
 import com.certification.entity.common.CrawlerCheckpoint;
 import com.certification.repository.common.DeviceEventReportRepository;
@@ -39,9 +40,6 @@ public class US_event_api {
 
     private static final String BASE_URL = "https://api.fda.gov";
     private static final String API_KEY = "xSSE0jrA316WGLwkRQzPhSlgmYbHIEsZck6H62ji";
-    private static final int RETRY_COUNT = 3;
-    private static final int RETRY_DELAY = 5;
-    private static final int BATCH_SAVE_SIZE = 50; // 每50条数据保存一次
 
     private final CloseableHttpClient httpClient;
     private final ObjectMapper objectMapper;
@@ -51,6 +49,9 @@ public class US_event_api {
     
     @Autowired
     private CrawlerCheckpointRepository crawlerCheckpointRepository;
+    
+    @Autowired
+    private MedcertCrawlerConfig crawlerConfig;
 
     public US_event_api() {
         this.httpClient = HttpClients.createDefault();
@@ -614,7 +615,7 @@ public class US_event_api {
 
         HttpGet httpGet = new HttpGet(uriBuilder.build());
 
-        for (int attempt = 1; attempt <= RETRY_COUNT; attempt++) {
+        for (int attempt = 1; attempt <= crawlerConfig.getRetry().getMaxAttempts(); attempt++) {
             try (var response = httpClient.executeOpen(null, httpGet, null)) {
                 int statusCode = response.getCode();
                 String reasonPhrase = response.getReasonPhrase();
@@ -653,9 +654,9 @@ public class US_event_api {
                     }
                 } else {
                     System.err.printf("请求失败，状态码: %d，原因: %s（第%d次重试）%n", statusCode, reasonPhrase, attempt);
-                    if (attempt < RETRY_COUNT) {
+                    if (attempt < crawlerConfig.getRetry().getMaxAttempts()) {
                         try {
-                            TimeUnit.SECONDS.sleep(RETRY_DELAY);
+                            TimeUnit.SECONDS.sleep(crawlerConfig.getRetry().getDelaySeconds());
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
                             break;
@@ -664,9 +665,9 @@ public class US_event_api {
                 }
             } catch (Exception e) {
                 System.err.printf("请求异常: %s（第%d次重试）%n", e.getMessage(), attempt);
-                if (attempt < RETRY_COUNT) {
+                if (attempt < crawlerConfig.getRetry().getMaxAttempts()) {
                     try {
-                        TimeUnit.SECONDS.sleep(RETRY_DELAY);
+                        TimeUnit.SECONDS.sleep(crawlerConfig.getRetry().getDelaySeconds());
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         break;
@@ -675,7 +676,7 @@ public class US_event_api {
             }
         }
 
-        throw new IOException("请求失败，已重试 " + RETRY_COUNT + " 次");
+        throw new IOException("请求失败，已重试 " + crawlerConfig.getRetry().getMaxAttempts() + " 次");
     }
 
     /**
@@ -690,8 +691,8 @@ public class US_event_api {
         int savedCount = 0;
         int batchCount = 0;
 
-        for (int i = 0; i < records.size(); i += BATCH_SAVE_SIZE) {
-            int endIndex = Math.min(i + BATCH_SAVE_SIZE, records.size());
+        for (int i = 0; i < records.size(); i += crawlerConfig.getBatch().getSaveSize()) {
+            int endIndex = Math.min(i + crawlerConfig.getBatch().getSaveSize(), records.size());
             List<DeviceEvent> batch = records.subList(i, endIndex);
             batchCount++;
 

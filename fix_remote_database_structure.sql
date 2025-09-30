@@ -80,3 +80,4 @@ DESCRIBE t_crawler_data;
 -- 显示执行结果
 SELECT 'Table structure fix completed successfully' as result;
 
+

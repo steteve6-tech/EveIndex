@@ -1,7 +1,9 @@
 package com.certification.crawler.countrydata.us;
 
+import com.certification.config.MedcertCrawlerConfig;
 import com.certification.entity.common.DeviceRecallRecord;
 import com.certification.entity.common.CrawlerCheckpoint;
+import com.certification.exception.AllDataDuplicateException;
 import com.certification.repository.common.DeviceRecallRecordRepository;
 import com.certification.repository.common.CrawlerCheckpointRepository;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -45,18 +47,18 @@ public class US_recall_api {
 
     private static final String BASE_URL = "https://api.fda.gov";
     private static final String API_KEY = "xSSE0jrA316WGLwkRQzPhSlgmYbHIEsZck6H62ji";
-    private static final int RETRY_COUNT = 3;
-    private static final int RETRY_DELAY = 5;
-    private static final int BATCH_SAVE_SIZE = 50; // 每50条数据保存一次
 
     private final CloseableHttpClient httpClient;
     private final ObjectMapper objectMapper;
-
+    
     @Autowired
     private DeviceRecallRecordRepository deviceRecallRecordRepository;
 
     @Autowired
     private CrawlerCheckpointRepository crawlerCheckpointRepository;
+    
+    @Autowired
+    private MedcertCrawlerConfig crawlerConfig;
 
     public US_recall_api() {
         this.httpClient = HttpClients.createDefault();
@@ -556,7 +558,7 @@ public class US_recall_api {
 
         HttpGet httpGet = new HttpGet(uriBuilder.build());
 
-        for (int attempt = 1; attempt <= RETRY_COUNT; attempt++) {
+        for (int attempt = 1; attempt <= crawlerConfig.getRetry().getMaxAttempts(); attempt++) {
             try (var response = httpClient.executeOpen(null, httpGet, null)) {
                 int statusCode = response.getCode();
                 String reasonPhrase = response.getReasonPhrase();
@@ -595,9 +597,9 @@ public class US_recall_api {
                     }
                 } else {
                     System.err.printf("请求失败，状态码: %d，原因: %s（第%d次重试）%n", statusCode, reasonPhrase, attempt);
-                    if (attempt < RETRY_COUNT) {
+                    if (attempt < crawlerConfig.getRetry().getMaxAttempts()) {
                         try {
-                            TimeUnit.SECONDS.sleep(RETRY_DELAY);
+                            TimeUnit.SECONDS.sleep(crawlerConfig.getRetry().getDelaySeconds());
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
                             break;
@@ -606,9 +608,9 @@ public class US_recall_api {
                 }
             } catch (Exception e) {
                 System.err.printf("请求异常: %s（第%d次重试）%n", e.getMessage(), attempt);
-                if (attempt < RETRY_COUNT) {
+                if (attempt < crawlerConfig.getRetry().getMaxAttempts()) {
                     try {
-                        TimeUnit.SECONDS.sleep(RETRY_DELAY);
+                        TimeUnit.SECONDS.sleep(crawlerConfig.getRetry().getDelaySeconds());
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         break;
@@ -617,7 +619,7 @@ public class US_recall_api {
             }
         }
 
-        throw new IOException("请求失败，已重试 " + RETRY_COUNT + " 次");
+        throw new IOException("请求失败，已重试 " + crawlerConfig.getRetry().getMaxAttempts() + " 次");
     }
 
     /**
@@ -630,10 +632,11 @@ public class US_recall_api {
         }
 
         int savedCount = 0;
+        int totalSkipped = 0;
         int batchCount = 0;
 
-        for (int i = 0; i < records.size(); i += BATCH_SAVE_SIZE) {
-            int endIndex = Math.min(i + BATCH_SAVE_SIZE, records.size());
+        for (int i = 0; i < records.size(); i += crawlerConfig.getBatch().getSaveSize()) {
+            int endIndex = Math.min(i + crawlerConfig.getBatch().getSaveSize(), records.size());
             List<MedicalDeviceRecall> batch = records.subList(i, endIndex);
             batchCount++;
 
@@ -698,6 +701,7 @@ public class US_recall_api {
                     try {
                         List<DeviceRecallRecord> savedRecords = deviceRecallRecordRepository.saveAll(newRecords);
                         savedCount += savedRecords.size();
+                        totalSkipped += batchDuplicateCount;
                         System.out.println("第 " + batchCount + " 批次保存成功，新增: " + newRecords.size() + " 条，重复: " + batchDuplicateCount + " 条");
                         saveSuccess = true;
                     } catch (Exception e) {
@@ -718,7 +722,7 @@ public class US_recall_api {
             }
         }
 
-        return savedCount + " 条记录";
+        return String.format("保存成功: %d 条新记录, 跳过重复: %d 条", savedCount, totalSkipped);
     }
 
     /**
@@ -835,41 +839,4 @@ public class US_recall_api {
         }
     }
 
-    /**
-     * 主函数用于测试
-     */
-    public static void main(String[] args) {
-        System.out.println("=== US_Recall 爬虫测试 ===");
-
-        try {
-            US_recall_api crawler = new US_recall_api();
-
-            // 测试1: 按召回公司搜索
-            System.out.println("\n1. 测试按召回公司搜索...");
-            String result1 = crawler.crawlAndSaveByRecallingFirm("medtronic", 10, 5);
-            System.out.println("   结果: " + result1);
-
-            // 测试2: 按brand name搜索
-            System.out.println("\n2. 测试按brand name搜索...");
-            String result2 = crawler.crawlAndSaveByBrandName("visia", 10, 5);
-            System.out.println("   结果: " + result2);
-
-            // 测试3: 按产品描述搜索
-            System.out.println("\n3. 测试按产品描述搜索...");
-            String result3 = crawler.crawlAndSaveByProductDescription("monitor", 10, 5);
-            System.out.println("   结果: " + result3);
-
-            // 测试4: 基于关键词列表搜索
-            System.out.println("\n4. 测试基于关键词列表搜索...");
-            List<String> keywords = Arrays.asList("skin", "analyzer", "monitor");
-            String result4 = crawler.crawlAndSaveWithKeywords(keywords, 20, 5, null, null);
-            System.out.println("   结果: " + result4);
-
-            crawler.close();
-
-        } catch (Exception e) {
-            System.err.println("测试失败: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
 }

@@ -1,4 +1,4 @@
-package com.certification.crawler.countrydata.eu;
+package com.certification.crawler.countrydata.eu.others;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -176,3 +176,4 @@ DROP TABLE IF EXISTS t_device_pma;
 
 执行此脚本后，远程数据库的表结构将与本地保持一致，导入数据时就不会再出现"too many columns"错误。
 
+

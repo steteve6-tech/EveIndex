@@ -157,4 +157,24 @@ public interface CustomsCaseRepository extends JpaRepository<CustomsCase, Long> 
      * 根据HS编码和裁定结果模糊查询（用于重复检测）
      */
     List<CustomsCase> findByHsCodeUsedContainingAndRulingResultContaining(String hsCode, String rulingResult);
+
+    /**
+     * 根据关键词搜索（支持多个字段）
+     */
+    @Query("SELECT d FROM CustomsCase d WHERE " +
+           "(d.rulingResult LIKE %:keyword% OR " +
+           "d.violationType LIKE %:keyword% OR " +
+           "d.hsCodeUsed LIKE %:keyword%) " +
+           "AND (:countryCode IS NULL OR d.jdCountry = :countryCode)")
+    List<CustomsCase> findByKeywordAndCountry(@Param("keyword") String keyword, @Param("countryCode") String countryCode);
+
+    /**
+     * 根据关键词搜索（支持多个字段，分页）
+     */
+    @Query("SELECT d FROM CustomsCase d WHERE " +
+           "(d.rulingResult LIKE %:keyword% OR " +
+           "d.violationType LIKE %:keyword% OR " +
+           "d.hsCodeUsed LIKE %:keyword%) " +
+           "AND (:countryCode IS NULL OR d.jdCountry = :countryCode)")
+    org.springframework.data.domain.Page<CustomsCase> findByKeywordAndCountry(@Param("keyword") String keyword, @Param("countryCode") String countryCode, org.springframework.data.domain.Pageable pageable);
 }

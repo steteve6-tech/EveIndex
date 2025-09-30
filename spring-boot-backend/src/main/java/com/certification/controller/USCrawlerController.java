@@ -17,9 +17,9 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/us-crawler")
+@RequestMapping("/us-crawler")
 @Tag(name = "美国爬虫管理", description = "美国相关爬虫的测试和管理接口")
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3100", "http://127.0.0.1:3000", "http://127.0.0.1:3100"})
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3100", "http://localhost:3101", "http://127.0.0.1:3000", "http://127.0.0.1:3100", "http://127.0.0.1:3101"})
 public class USCrawlerController {
 
     @Autowired

@@ -60,4 +60,24 @@ public interface Device510KRepository extends JpaRepository<Device510K, Long> {
      */
     long countByRiskLevel(CertNewsData.RiskLevel riskLevel);
 
+    /**
+     * 根据关键词搜索（支持多个字段）
+     */
+    @Query("SELECT d FROM Device510K d WHERE " +
+           "(d.deviceName LIKE %:keyword% OR " +
+           "d.applicant LIKE %:keyword% OR " +
+           "d.tradeName LIKE %:keyword%) " +
+           "AND (:countryCode IS NULL OR d.jdCountry = :countryCode)")
+    List<Device510K> findByKeywordAndCountry(@Param("keyword") String keyword, @Param("countryCode") String countryCode);
+
+    /**
+     * 根据关键词搜索（支持多个字段，分页）
+     */
+    @Query("SELECT d FROM Device510K d WHERE " +
+           "(d.deviceName LIKE %:keyword% OR " +
+           "d.applicant LIKE %:keyword% OR " +
+           "d.tradeName LIKE %:keyword%) " +
+           "AND (:countryCode IS NULL OR d.jdCountry = :countryCode)")
+    org.springframework.data.domain.Page<Device510K> findByKeywordAndCountry(@Param("keyword") String keyword, @Param("countryCode") String countryCode, org.springframework.data.domain.Pageable pageable);
+
 }

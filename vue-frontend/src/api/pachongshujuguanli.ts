@@ -435,3 +435,37 @@ export async function updateCrawlerDataFull(
     ...(options || {}),
   });
 }
+
+// ========== Dashboard专用统计接口 ==========
+
+/** 获取Dashboard统计数据 获取各风险等级的数据统计，专门为Dashboard页面优化 GET /crawler-data/dashboard/statistics */
+export async function getDashboardStatistics(options?: { [key: string]: any }) {
+  return request<Record<string, any>>("/crawler-data/dashboard/statistics", {
+    method: "GET",
+    ...(options || {}),
+  });
+}
+
+/** 获取国家风险统计数据 获取各国风险等级分布统计，专门为Dashboard国家风险分析优化 GET /crawler-data/dashboard/country-risk-stats */
+export async function getCountryRiskStatistics(options?: { [key: string]: any }) {
+  return request<Record<string, any>>("/crawler-data/dashboard/country-risk-stats", {
+    method: "GET",
+    ...(options || {}),
+  });
+}
+
+/** 获取最新高风险数据 获取最新的高风险数据列表，专门为Dashboard最新风险信息优化 GET /crawler-data/dashboard/latest-high-risk */
+export async function getLatestHighRiskData(
+  params: { limit?: number },
+  options?: { [key: string]: any }
+) {
+  return request<Record<string, any>>("/crawler-data/dashboard/latest-high-risk", {
+    method: "GET",
+    params: {
+      // limit has a default value: 3
+      limit: "3",
+      ...params,
+    },
+    ...(options || {}),
+  });
+}
