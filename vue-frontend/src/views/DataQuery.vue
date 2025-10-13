@@ -181,6 +181,12 @@
                  </template>
                  自动处理
                </a-button>
+               <a-button @click="showAIJudgePanel = !showAIJudgePanel" type="primary" style="background: #722ed1; border-color: #722ed1;">
+                 <template #icon>
+                   <RobotOutlined />
+                 </template>
+                 AI判断
+               </a-button>
                <a-form-item label="处理方式" style="margin-left: 16px; margin-bottom: 0;">
                  <a-select
                    v-model:value="processingMethod"
@@ -193,11 +199,10 @@
                        <span>关键词匹配</span>
                      </div>
                    </a-select-option>
-                   <a-select-option value="ai" disabled>
+                   <a-select-option value="ai">
                      <div class="processing-option">
                        <span class="option-icon">🤖</span>
                        <span>AI处理</span>
-                       <span class="option-status">(待开发)</span>
                      </div>
                    </a-select-option>
                  </a-select>
@@ -237,6 +242,11 @@
           </a-form-item>
         </a-form>
       </a-card>
+    </div>
+
+    <!-- AI判断面板 -->
+    <div v-if="showAIJudgePanel" class="ai-judge-panel" style="margin-bottom: 24px;">
+      <CertNewsAIJudge ref="aiJudgeRef" @judgeCompleted="handleAIJudgeCompleted" />
     </div>
 
     <!-- 统计信息 -->
@@ -1101,6 +1111,8 @@ import {
   GlobalOutlined,
 } from '@ant-design/icons-vue'
 
+import CertNewsAIJudge from '@/components/CertNewsAIJudge.vue'
+
 // 搜索表单
 const searchForm = reactive({
   keyword: '',
@@ -1142,6 +1154,10 @@ const batchUpdatingRiskLevel = ref(false)
 
 // 处理方式选择
 const processingMethod = ref('keyword') // 默认使用关键词匹配
+
+// AI判断相关
+const showAIJudgePanel = ref(false)
+const aiJudgeRef = ref()
 
 // 关键词管理相关
 const keywordModalVisible = ref(false)
@@ -1359,8 +1375,17 @@ const handleProcessingMethodChange = (value: string) => {
   if (value === 'keyword') {
     message.info('已切换到关键词匹配模式')
   } else if (value === 'ai') {
-    message.info('AI处理功能正在开发中，敬请期待')
+    message.info('已切换到AI判断模式')
+    showAIJudgePanel.value = true
   }
+}
+
+// AI判断完成后的回调
+const handleAIJudgeCompleted = async () => {
+  console.log('AI判断完成，刷新数据...')
+  await loadData()
+  await loadStatistics()
+  message.success('数据已刷新')
 }
 
 const handleSearch = async () => {

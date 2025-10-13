@@ -102,4 +102,10 @@ public class    DeviceRegistrationRecord {
     @Column(name = "update_time", insertable = false, updatable = false)
     @Schema(description = "更新时间")
     private LocalDateTime updateTime;
+
+    // 备注信息（AI判断原因、人工审核意见等）
+    @Lob
+    @Column(name = "remark", columnDefinition = "TEXT")
+    @Schema(description = "备注信息（AI判断原因、人工审核意见等）")
+    private String remark;
 }

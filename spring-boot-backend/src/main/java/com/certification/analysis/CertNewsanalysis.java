@@ -20,9 +20,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.certification.entity.common.CertNewsData.RiskLevel.MEDIUM;
 
@@ -46,6 +49,9 @@ public class CertNewsanalysis {
     
     @Autowired
     private DailyCountryRiskStatsRepository dailyCountryRiskStatsRepository;
+    
+    @Autowired
+    private com.certification.service.ai.CertNewsAIJudgeService certNewsAIJudgeService;
     
     // 关键词文件路径 - 支持多种路径
     private static final String[] KEYWORDS_FILE_PATHS = {
@@ -355,11 +361,13 @@ public class CertNewsanalysis {
      */
     public boolean saveKeywordsToFile(List<String> keywords) {
         try {
-            // 优先使用运行环境路径
-            Path filePath = Paths.get(KEYWORDS_FILE_PATHS[0]);
+            // 优先使用开发环境路径（带目录结构）
+            Path filePath = Paths.get(KEYWORDS_FILE_PATHS[1]);
             
             // 确保目录存在
-            Files.createDirectories(filePath.getParent());
+            if (filePath.getParent() != null) {
+                Files.createDirectories(filePath.getParent());
+            }
             
             // 写入关键词到文件
             StringBuilder content = new StringBuilder();
@@ -913,5 +921,331 @@ public class CertNewsanalysis {
             .replaceAll("[\\r\\n\\t]+", " ")    // 将换行和制表符替换为空格
             .replaceAll("\\s+", " ")         // 合并多个空格
             .trim();
+    }
+    
+    /**
+     * 执行AI判断认证新闻
+     * 判断认证新闻是否与无线电子设备认证标准相关
+     * 
+     * @param riskLevel 风险等级筛选（可选）
+     * @param sourceName 数据源筛选（可选）
+     * @param limit 处理数量限制
+     * @param judgeAll 是否判断所有数据
+     * @return 处理结果
+     */
+    public Map<String, Object> executeAIJudgeForCertNews(
+        String riskLevel, 
+        String sourceName, 
+        Integer limit,
+        Boolean judgeAll
+    ) {
+        log.info("开始执行认证新闻AI判断: riskLevel={}, sourceName={}, limit={}, judgeAll={}", 
+            riskLevel, sourceName, limit, judgeAll);
+        
+        Map<String, Object> result = new HashMap<>();
+        List<com.certification.dto.ai.CertNewsAuditItem> auditItems = new ArrayList<>();
+        Set<String> allExtractedKeywords = new HashSet<>();
+        
+        try {
+            // 获取待判断数据
+            List<CertNewsData> dataToJudge = getDataForAIJudge(riskLevel, sourceName, limit, judgeAll);
+            log.info("找到 {} 条数据需要AI判断", dataToJudge.size());
+            
+            if (dataToJudge.isEmpty()) {
+                result.put("success", true);
+                result.put("message", "没有符合条件的数据需要处理");
+                result.put("totalCount", 0);
+                result.put("aiKept", 0);
+                result.put("aiDowngraded", 0);
+                result.put("auditItems", auditItems);
+                result.put("newExtractedKeywords", new ArrayList<>());
+                return result;
+            }
+            
+            int aiKept = 0;
+            int aiDowngraded = 0;
+            
+            for (CertNewsData data : dataToJudge) {
+                try {
+                    com.certification.dto.ai.CertNewsAuditItem item = new com.certification.dto.ai.CertNewsAuditItem();
+                    item.setId(data.getId());
+                    item.setTitle(data.getTitle());
+                    item.setCountry(data.getCountry());
+                    item.setSourceName(data.getSourceName());
+                    
+                    // AI判断
+                    Map<String, Object> newsData = buildNewsDataMap(data);
+                    com.certification.dto.ai.CertNewsClassificationResult aiResult = 
+                        judgeNewsWithAI(newsData);
+                    
+                    item.setRelatedToCertification(aiResult.isRelatedToCertification());
+                    item.setConfidence(aiResult.getConfidence());
+                    item.setReason(aiResult.getReason());
+                    item.setExtractedKeywords(aiResult.getExtractedKeywords());
+                    
+                    // 构建备注信息
+                    StringBuilder remarkBuilder = new StringBuilder();
+                    remarkBuilder.append("AI判断: ")
+                                 .append(aiResult.isRelatedToCertification() ? "相关" : "不相关")
+                                 .append(", 置信度: ")
+                                 .append(String.format("%.1f%%", aiResult.getConfidence() * 100));
+                    
+                    if (aiResult.getReason() != null && !aiResult.getReason().isEmpty()) {
+                        remarkBuilder.append(", 理由: ").append(aiResult.getReason());
+                    }
+                    
+                    if (aiResult.isRelatedToCertification()) {
+                        // AI判断为相关 - 设置为高风险
+                        data.setRiskLevel(CertNewsData.RiskLevel.HIGH);
+                        data.setRelated(true);
+                        
+                        // 写入提取的认证关键词到matched_keywords
+                        if (aiResult.getExtractedKeywords() != null && !aiResult.getExtractedKeywords().isEmpty()) {
+                            data.setMatchedKeywords(String.join(",", aiResult.getExtractedKeywords()));
+                            allExtractedKeywords.addAll(aiResult.getExtractedKeywords());
+                            remarkBuilder.append(", 提取关键词: ").append(aiResult.getExtractedKeywords());
+                        }
+                        
+                        aiKept++;
+                        log.debug("AI判断为相关: {} - {}, 关键词: {}", 
+                            data.getId(), aiResult.getReason(), aiResult.getExtractedKeywords());
+                    } else {
+                        // AI判断为不相关 - 设置为低风险
+                        data.setRiskLevel(CertNewsData.RiskLevel.LOW);
+                        data.setRelated(false);
+                        data.setMatchedKeywords(null);  // 清空关键词
+                        
+                        aiDowngraded++;
+                        log.debug("AI判断为不相关: {} - {}", data.getId(), aiResult.getReason());
+                    }
+                    
+                    // 写入判断依据到remarks字段
+                    data.setRemarks(remarkBuilder.toString());
+                    item.setRemark(remarkBuilder.toString());
+                    
+                    // 设置处理状态
+                    data.setStatus(CertNewsData.DataStatus.PROCESSED);
+                    data.setIsProcessed(true);
+                    data.setProcessedTime(java.time.LocalDateTime.now());
+                    
+                    // 保存更新
+                    crawlerDataRepository.save(data);
+                    
+                    auditItems.add(item);
+                    
+                    // 避免API速率限制
+                    Thread.sleep(1000);
+                    
+                } catch (Exception e) {
+                    log.error("处理数据 {} 失败: {}", data.getId(), e.getMessage(), e);
+                }
+            }
+            
+            // 将新提取的关键词添加到关键词文件
+            List<String> newKeywords = new ArrayList<>(allExtractedKeywords);
+            if (!newKeywords.isEmpty()) {
+                updateCertificationKeywords(newKeywords);
+                log.info("提取了 {} 个认证关键词，已更新到关键词文件", newKeywords.size());
+            }
+            
+            result.put("success", true);
+            result.put("message", String.format("AI判断完成：相关%d条，不相关%d条，提取关键词%d个",
+                aiKept, aiDowngraded, newKeywords.size()));
+            result.put("totalCount", dataToJudge.size());
+            result.put("aiKept", aiKept);
+            result.put("aiDowngraded", aiDowngraded);
+            result.put("auditItems", auditItems);
+            result.put("newExtractedKeywords", newKeywords);
+            result.put("extractedKeywordCount", newKeywords.size());
+            
+            log.info("AI判断执行完成: 总计{}, 相关{}, 不相关{}, 提取关键词{}",
+                dataToJudge.size(), aiKept, aiDowngraded, newKeywords.size());
+            
+        } catch (Exception e) {
+            log.error("执行AI判断失败: {}", e.getMessage(), e);
+            result.put("success", false);
+            result.put("error", "AI判断失败: " + e.getMessage());
+        }
+        
+        return result;
+    }
+    
+    /**
+     * 获取待AI判断的数据
+     */
+    private List<CertNewsData> getDataForAIJudge(
+        String riskLevel, String sourceName, Integer limit, Boolean judgeAll
+    ) {
+        List<CertNewsData> dataList = new ArrayList<>();
+        
+        try {
+            // 解析风险等级
+            CertNewsData.RiskLevel targetRiskLevel = null;
+            if (riskLevel != null && !riskLevel.trim().isEmpty()) {
+                try {
+                    targetRiskLevel = CertNewsData.RiskLevel.valueOf(riskLevel.toUpperCase());
+                    log.info("筛选风险等级: {}", targetRiskLevel);
+                } catch (IllegalArgumentException e) {
+                    log.warn("无效的风险等级: {}, 将查询中风险数据", riskLevel);
+                    targetRiskLevel = CertNewsData.RiskLevel.MEDIUM;
+                }
+            } else {
+                // 默认查询中风险数据
+                targetRiskLevel = CertNewsData.RiskLevel.MEDIUM;
+                log.info("未指定风险等级，默认查询中风险数据");
+            }
+            
+            List<CertNewsData> allData;
+            if (judgeAll != null && judgeAll) {
+                // 查询所有符合风险等级的数据
+                allData = crawlerDataRepository.findByRiskLevelAndDeleted(targetRiskLevel, 0);
+                log.info("查询所有{}数据，共{}条", targetRiskLevel, allData.size());
+            } else {
+                // 限制数量查询
+                allData = crawlerDataRepository.findByRiskLevelAndDeleted(targetRiskLevel, 0);
+            }
+            
+            // 应用筛选条件
+            int queryLimit = (limit != null && limit > 0) ? limit : 10;
+            for (CertNewsData data : allData) {
+                if (sourceName != null && !sourceName.isEmpty() && !sourceName.equals(data.getSourceName())) {
+                    continue;
+                }
+                dataList.add(data);
+                
+                if (!(judgeAll != null && judgeAll) && dataList.size() >= queryLimit) {
+                    break;
+                }
+            }
+            
+            log.info("筛选后得到{}条数据", dataList.size());
+        } catch (Exception e) {
+            log.error("获取待判断数据失败: {}", e.getMessage(), e);
+        }
+        
+        return dataList;
+    }
+    
+    /**
+     * 构建新闻数据Map用于AI判断
+     */
+    private Map<String, Object> buildNewsDataMap(CertNewsData data) {
+        Map<String, Object> newsData = new HashMap<>();
+        newsData.put("id", data.getId());
+        newsData.put("title", data.getTitle() != null ? data.getTitle() : "");
+        newsData.put("content", data.getContent() != null ? data.getContent() : "");
+        newsData.put("summary", data.getSummary() != null ? data.getSummary() : "");
+        newsData.put("country", data.getCountry() != null ? data.getCountry() : "");
+        newsData.put("sourceName", data.getSourceName() != null ? data.getSourceName() : "");
+        return newsData;
+    }
+    
+    /**
+     * 使用AI判断新闻
+     */
+    private com.certification.dto.ai.CertNewsClassificationResult judgeNewsWithAI(Map<String, Object> newsData) {
+        return certNewsAIJudgeService.classifyCertificationNews(newsData);
+    }
+    
+    /**
+     * 将提取的认证关键词添加到关键词文件
+     */
+    public void updateCertificationKeywords(List<String> newKeywords) {
+        try {
+            // 加载现有关键词
+            List<String> existingKeywords = loadKeywordsFromFile();
+            Set<String> allKeywords = new HashSet<>(existingKeywords);
+            
+            // 添加新关键词
+            int addedCount = 0;
+            for (String keyword : newKeywords) {
+                if (keyword != null && !keyword.trim().isEmpty()) {
+                    String trimmed = keyword.trim();
+                    if (!allKeywords.contains(trimmed)) {
+                        allKeywords.add(trimmed);
+                        addedCount++;
+                    }
+                }
+            }
+            
+            if (addedCount > 0) {
+                // 保存到文件
+                List<String> sortedKeywords = new ArrayList<>(allKeywords);
+                Collections.sort(sortedKeywords);
+                saveKeywordsToFile(sortedKeywords);
+                log.info("成功添加 {} 个新认证关键词到关键词文件", addedCount);
+            } else {
+                log.info("没有新的认证关键词需要添加");
+            }
+            
+        } catch (Exception e) {
+            log.error("更新认证关键词失败: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 从关键词文件中删除指定关键词
+     */
+    public boolean deleteKeywordFromFile(String keyword) {
+        try {
+            if (keyword == null || keyword.trim().isEmpty()) {
+                log.warn("删除关键词失败：关键词为空");
+                return false;
+            }
+            
+            // 加载现有关键词
+            List<String> existingKeywords = loadKeywordsFromFile();
+            
+            // 删除指定关键词
+            boolean removed = existingKeywords.remove(keyword.trim());
+            
+            if (removed) {
+                // 保存到文件
+                saveKeywordsToFile(existingKeywords);
+                log.info("成功从关键词文件中删除关键词: {}", keyword);
+                return true;
+            } else {
+                log.warn("关键词文件中未找到关键词: {}", keyword);
+                return false;
+            }
+            
+        } catch (Exception e) {
+            log.error("删除关键词失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+    
+    /**
+     * 更新关键词文件中的关键词
+     */
+    public boolean updateKeywordInFile(String oldKeyword, String newKeyword) {
+        try {
+            if (oldKeyword == null || oldKeyword.trim().isEmpty() || 
+                newKeyword == null || newKeyword.trim().isEmpty()) {
+                log.warn("更新关键词失败：关键词为空");
+                return false;
+            }
+            
+            // 加载现有关键词
+            List<String> existingKeywords = loadKeywordsFromFile();
+            
+            // 查找并替换关键词
+            int index = existingKeywords.indexOf(oldKeyword.trim());
+            if (index >= 0) {
+                existingKeywords.set(index, newKeyword.trim());
+                
+                // 保存到文件
+                saveKeywordsToFile(existingKeywords);
+                log.info("成功更新关键词: {} -> {}", oldKeyword, newKeyword);
+                return true;
+            } else {
+                log.warn("关键词文件中未找到关键词: {}", oldKeyword);
+                return false;
+            }
+            
+        } catch (Exception e) {
+            log.error("更新关键词失败: {}", e.getMessage(), e);
+            return false;
+        }
     }
 }

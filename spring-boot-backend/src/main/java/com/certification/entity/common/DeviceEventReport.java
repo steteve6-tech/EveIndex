@@ -76,8 +76,17 @@ public class DeviceEventReport {
     @Column(name = "jd_country", length = 20)
     private String jdCountry;
 
-    
+    // 爬取时间
+    @Column(name = "crawl_time")
+    @Schema(description = "爬取时间（数据抓取时的时间戳）")
+    private LocalDateTime crawlTime;
 
     @Column(name = "create_time", insertable = false, updatable = false)
     private LocalDateTime createTime;
+
+    // 备注信息（AI判断原因、人工审核意见等）
+    @Lob
+    @Column(name = "remark", columnDefinition = "TEXT")
+    @Schema(description = "备注信息（AI判断原因、人工审核意见等）")
+    private String remark;
 }

@@ -1,117 +1,59 @@
 package com.certification.config;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-
-import java.util.Arrays;
-import java.util.List;
+import org.springframework.web.filter.CorsFilter;
 
 /**
- * CORS配置类
- * 解决跨域资源共享问题
+ * 全局CORS跨域配置
+ * 
+ * 解决前后端分离时的跨域问题
+ * 注意：生产环境应该配置具体的允许域名，而不是使用通配符
  */
 @Configuration
-public class CorsConfig implements WebMvcConfigurer {
+public class CorsConfig {
 
-    @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:3100,http://127.0.0.1:3000,http://127.0.0.1:3100}")
-    private String allowedOrigins;
-
-    @Value("${app.cors.allowed-methods:GET,POST,PUT,DELETE,OPTIONS,PATCH}")
-    private String allowedMethods;
-
-    @Value("${app.cors.allowed-headers:*}")
-    private String allowedHeaders;
-
-    @Value("${app.cors.max-age:3600}")
-    private long maxAge;
-
-    /**
-     * 配置CORS跨域
-     */
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        List<String> origins = Arrays.asList(allowedOrigins.split(","));
-        
-        registry.addMapping("/**")
-                // 允许的源
-                .allowedOriginPatterns(origins.toArray(new String[0]))
-                // 允许的HTTP方法
-                .allowedMethods(allowedMethods.split(","))
-                // 允许的请求头
-                .allowedHeaders(allowedHeaders.split(","))
-                // 允许的响应头
-                .exposedHeaders(
-                    "Access-Control-Allow-Origin",
-                    "Access-Control-Allow-Methods", 
-                    "Access-Control-Allow-Headers",
-                    "Access-Control-Max-Age",
-                    "Access-Control-Request-Headers",
-                    "Access-Control-Request-Method",
-                    "Content-Type",
-                    "Authorization",
-                    "X-Requested-With",
-                    "Accept",
-                    "Origin",
-                    "Cache-Control",
-                    "Pragma",
-                    "Expires"
-                )
-                // 是否允许发送Cookie
-                .allowCredentials(true)
-                // 预检请求的有效期，单位为秒
-                .maxAge(maxAge);
-    }
-
-    /**
-     * CORS配置源
-     */
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
+    public CorsFilter corsFilter() {
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        CorsConfiguration config = new CorsConfiguration();
         
-        // 允许的源
-        List<String> origins = Arrays.asList(allowedOrigins.split(","));
-        configuration.setAllowedOriginPatterns(origins);
+        // 允许凭证（cookies）
+        config.setAllowCredentials(true);
         
-        // 允许的HTTP方法
-        configuration.setAllowedMethods(Arrays.asList(allowedMethods.split(",")));
+        // 允许的源（使用originPatterns而不是origins）
+        // 开发环境：允许所有源
+        config.addAllowedOriginPattern("*");
+        
+        // 生产环境建议配置具体域名：
+        // config.addAllowedOriginPattern("https://yourdomain.com");
+        // config.addAllowedOriginPattern("http://localhost:3000");
+        // config.addAllowedOriginPattern("http://localhost:8080");
         
         // 允许的请求头
-        configuration.setAllowedHeaders(Arrays.asList(allowedHeaders.split(",")));
+        config.addAllowedHeader("*");
         
-        // 允许的响应头
-        configuration.setExposedHeaders(Arrays.asList(
-            "Access-Control-Allow-Origin",
-            "Access-Control-Allow-Methods", 
-            "Access-Control-Allow-Headers",
-            "Access-Control-Max-Age",
-            "Access-Control-Request-Headers",
-            "Access-Control-Request-Method",
-            "Content-Type",
-            "Authorization",
-            "X-Requested-With",
-            "Accept",
-            "Origin",
-            "Cache-Control",
-            "Pragma",
-            "Expires"
-        ));
+        // 允许的HTTP方法
+        config.addAllowedMethod("GET");
+        config.addAllowedMethod("POST");
+        config.addAllowedMethod("PUT");
+        config.addAllowedMethod("DELETE");
+        config.addAllowedMethod("OPTIONS");
+        config.addAllowedMethod("PATCH");
         
-        // 是否允许发送Cookie
-        configuration.setAllowCredentials(true);
+        // 暴露的响应头
+        config.addExposedHeader("Authorization");
+        config.addExposedHeader("Content-Type");
+        config.addExposedHeader("Accept");
         
-        // 预检请求的有效期，单位为秒
-        configuration.setMaxAge(maxAge);
+        // 预检请求的缓存时间（秒）
+        config.setMaxAge(3600L);
         
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        // 应用配置到所有路径
+        source.registerCorsConfiguration("/**", config);
         
-        return source;
+        return new CorsFilter(source);
     }
 }

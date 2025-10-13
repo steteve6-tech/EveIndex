@@ -113,4 +113,10 @@ public class CustomsCase {
     @Schema(description = "关键词数组", example = "[\"医疗器械\", \"海关\"]")
     @Column(name = "keywords", columnDefinition = "TEXT")
     private String keywords; // JSON格式存储关键词数组
+
+    // 备注信息（AI判断原因、人工审核意见等）
+    @Lob
+    @Column(name = "remark", columnDefinition = "TEXT")
+    @Schema(description = "备注信息（AI判断原因、人工审核意见等）")
+    private String remark;
 }

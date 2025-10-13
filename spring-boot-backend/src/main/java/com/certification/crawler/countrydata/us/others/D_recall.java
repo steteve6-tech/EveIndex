@@ -688,6 +688,9 @@ public class D_recall {
         record.setCountryCode((String) data.get("countryCode"));
         record.setJdCountry((String) data.get("jdCountry"));
         
+        // 设置爬取时间
+        record.setCrawlTime(java.time.LocalDateTime.now());
+        
         // 召回状态和等级
         String recallClass = (String) data.get("recallClass");
         record.setRecallStatus(recallClass);

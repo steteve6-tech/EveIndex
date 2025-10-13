@@ -6,7 +6,9 @@ server:
 spring:
   application:
     name: certification-monitor
-  
+
+
+      
   # 数据库配置
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
@@ -246,7 +248,7 @@ risk:
 # 火山引擎AI配置
 volc:
   ai:
-    api-key: ${ARK_API_KEY:a3e53f23-f797-4d39-9ad1-faf43521504e}  # 优先从环境变量获取
+    api-key: ${ARK_API_KEY:}  # 优先从环境变量获取
     model-id: "bot-20250915145921-rspmk"    # 模型ID
     api-url: "https://open.volcengineapi.com" # API基础地址
 
@@ -294,3 +296,30 @@ medcert:
         eu-guidance-max-per-page: 50         # EU_Guidance每页最大记录数
         eu-recall-max-per-page: 100          # EU_Recall每页最大记录数
         eu-registration-max-per-page: 100    # EU_Registration每页最大记录数
+
+# OpenAI API配置（用于AI智能审核功能）
+openai:
+  api:
+    key: sk-XgqsH6v22a9ZMLKJ6a6e69Ea04064aFbAd1325B278527cCb  # 从环境变量获取OpenAI API Key
+    model: gpt-4o     # 使用GPT-3.5-turbo模型（成本较低，准确率90%+）
+    # model: gpt-4           # 如需更高准确率可切换到GPT-4（成本较高，准确率95%+）
+    base-url: https://chat-api.ss5.xyz/v1  # OpenAI API基础URL（支持代理地址）
+    timeout: 60              # API超时时间（秒）
+    
+# AI智能审核配置
+ai:
+  classification:
+    enabled: true                  # 是否启用AI分类功能
+    batch-size: 50                 # 批量处理大小
+    confidence-threshold: 0.8      # 自动标记的置信度阈值
+    enable-cache: true             # 是否启用缓存（避免重复判断相同设备）
+    cache-ttl: 86400               # 缓存过期时间（秒），默认24小时
+    daily-limit: 1000              # 每日调用限制（避免超支）
+
+# 设备数据爬虫配置
+crawler:
+  device:
+    default-batch-size: 50        # 默认批次大小
+    default-max-records: 200      # 默认最大记录数
+    enable-auto-ai: true          # 是否启用爬取后自动AI判断
+    ai-judge-async: true          # 是否异步执行AI判断（true=不阻塞爬虫）

@@ -85,4 +85,14 @@ public interface GuidanceDocumentRepository extends JpaRepository<GuidanceDocume
            "LOWER(d.documentType) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
            "AND (:countryCode IS NULL OR d.jdCountry = :countryCode)")
     org.springframework.data.domain.Page<GuidanceDocument> findByKeywordAndCountry(@Param("keyword") String keyword, @Param("countryCode") String countryCode, org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * 根据国家查找（分页）
+     */
+    org.springframework.data.domain.Page<GuidanceDocument> findByJdCountry(String jdCountry, org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * 根据国家和风险等级查找（分页）
+     */
+    org.springframework.data.domain.Page<GuidanceDocument> findByJdCountryAndRiskLevel(String jdCountry, CertNewsData.RiskLevel riskLevel, org.springframework.data.domain.Pageable pageable);
 }

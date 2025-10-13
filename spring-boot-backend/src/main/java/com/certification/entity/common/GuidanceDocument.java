@@ -404,4 +404,10 @@ public class GuidanceDocument {
             return null;
         }
     }
+
+    // 备注信息（AI判断原因、人工审核意见等）
+    @Lob
+    @Column(name = "remark", columnDefinition = "TEXT")
+    @Schema(description = "备注信息（AI判断原因、人工审核意见等）")
+    private String remark;
 }

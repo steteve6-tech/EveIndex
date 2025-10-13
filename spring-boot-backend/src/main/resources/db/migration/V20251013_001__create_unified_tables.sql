@@ -1,0 +1,112 @@
+-- 创建统一任务配置表
+CREATE TABLE IF NOT EXISTS t_unified_task_config (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '任务ID',
+    task_name VARCHAR(100) NOT NULL COMMENT '任务名称',
+    crawler_name VARCHAR(50) NOT NULL COMMENT '爬虫名称',
+    country_code VARCHAR(10) COMMENT '国家代码',
+    task_type VARCHAR(50) COMMENT '任务类型',
+    params_version VARCHAR(10) DEFAULT 'v2' COMMENT '参数版本 (v1, v2)',
+    parameters TEXT COMMENT '参数配置 (JSON格式)',
+    keywords TEXT COMMENT '关键词列表 (V1兼容)',
+    cron_expression VARCHAR(100) COMMENT 'Cron表达式',
+    description VARCHAR(500) COMMENT '任务描述',
+    enabled BOOLEAN DEFAULT TRUE COMMENT '是否启用',
+    priority INT DEFAULT 5 COMMENT '优先级',
+    timeout_minutes INT DEFAULT 30 COMMENT '超时时间(分钟)',
+    retry_count INT DEFAULT 3 COMMENT '重试次数',
+    last_execution_time DATETIME COMMENT '最后执行时间',
+    next_execution_time DATETIME COMMENT '下次执行时间',
+    last_execution_status VARCHAR(20) COMMENT '最后执行状态',
+    last_execution_result TEXT COMMENT '最后执行结果',
+    execution_count INT DEFAULT 0 COMMENT '执行次数',
+    success_count INT DEFAULT 0 COMMENT '成功次数',
+    failure_count INT DEFAULT 0 COMMENT '失败次数',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    created_by VARCHAR(50) COMMENT '创建者',
+    updated_by VARCHAR(50) COMMENT '更新者',
+    remark TEXT COMMENT '备注',
+    INDEX idx_crawler_name (crawler_name),
+    INDEX idx_country_code (country_code),
+    INDEX idx_task_type (task_type),
+    INDEX idx_enabled (enabled),
+    INDEX idx_next_execution (next_execution_time),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='统一任务配置表';
+
+-- 创建统一任务日志表
+CREATE TABLE IF NOT EXISTS t_unified_task_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '日志ID',
+    task_id BIGINT NOT NULL COMMENT '任务ID',
+    batch_no VARCHAR(50) COMMENT '执行批次号',
+    task_name VARCHAR(100) COMMENT '任务名称',
+    crawler_name VARCHAR(50) COMMENT '爬虫名称',
+    country_code VARCHAR(10) COMMENT '国家代码',
+    status VARCHAR(20) NOT NULL COMMENT '执行状态',
+    start_time DATETIME NOT NULL COMMENT '开始时间',
+    end_time DATETIME COMMENT '结束时间',
+    duration_seconds BIGINT COMMENT '执行时长(秒)',
+    crawled_count INT DEFAULT 0 COMMENT '爬取数量',
+    saved_count INT DEFAULT 0 COMMENT '保存数量',
+    skipped_count INT DEFAULT 0 COMMENT '跳过数量',
+    failed_count INT DEFAULT 0 COMMENT '失败数量',
+    keywords_used TEXT COMMENT '使用的关键词',
+    crawl_params TEXT COMMENT '爬取参数',
+    result_message TEXT COMMENT '执行结果',
+    error_message TEXT COMMENT '错误信息',
+    is_manual BOOLEAN DEFAULT FALSE COMMENT '是否手动触发',
+    triggered_by VARCHAR(50) COMMENT '触发者',
+    execution_server VARCHAR(100) COMMENT '执行服务器',
+    execution_ip VARCHAR(50) COMMENT '执行IP',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    remark TEXT COMMENT '备注',
+    INDEX idx_task_id (task_id),
+    INDEX idx_crawler_name (crawler_name),
+    INDEX idx_country_code (country_code),
+    INDEX idx_status (status),
+    INDEX idx_start_time (start_time),
+    INDEX idx_batch_no (batch_no),
+    INDEX idx_is_manual (is_manual)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='统一任务执行日志表';
+
+-- 插入一些示例数据
+INSERT INTO t_unified_task_config (
+    task_name, crawler_name, country_code, task_type, params_version, 
+    parameters, cron_expression, description, enabled, priority
+) VALUES 
+(
+    '美国510K设备数据每日爬取',
+    'US_510K',
+    'US',
+    'KEYWORD_BATCH',
+    'v2',
+    '{"fieldKeywords": {"deviceNames": ["医疗设备", "诊断设备"], "applicants": ["强生", "美敦力"]}, "maxRecords": 100}',
+    '0 0 2 * * ?',
+    '每日凌晨2点爬取美国510K设备数据',
+    TRUE,
+    5
+),
+(
+    '欧盟设备召回数据爬取',
+    'EU_Recall',
+    'EU',
+    'DATE_RANGE',
+    'v2',
+    '{"fieldKeywords": {"searchKeywords": ["召回", "安全"]}, "dateFrom": "2024-01-01", "dateTo": "2024-12-31"}',
+    '0 0 3 * * ?',
+    '每日凌晨3点爬取欧盟设备召回数据',
+    TRUE,
+    6
+),
+(
+    '韩国设备召回数据爬取',
+    'KR_Recall',
+    'KR',
+    'FULL',
+    'v1',
+    '{"maxRecords": 50, "batchSize": 10}',
+    '0 0 4 * * ?',
+    '每日凌晨4点爬取韩国设备召回数据',
+    TRUE,
+    4
+);

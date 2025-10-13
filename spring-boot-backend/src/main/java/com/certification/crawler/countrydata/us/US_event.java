@@ -655,6 +655,9 @@ public class US_event {
         report.setDataSource("FDA MAUDE Database");
         report.setJdCountry("US");
         
+        // 设置爬取时间
+        report.setCrawlTime(java.time.LocalDateTime.now());
+        
         // 设置默认值
         report.setDeviceClass("Unknown");
         report.setRiskLevel(CertNewsData.RiskLevel.MEDIUM);

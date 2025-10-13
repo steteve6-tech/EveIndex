@@ -421,6 +421,14 @@ public class Eu_recall {
         // 设置产品代码
         record.setProductCode(data.getOrDefault("product_code", ""));
         
+        // 设置数据源信息
+        record.setDataSource("EU");
+        record.setCountryCode("EU");
+        record.setJdCountry("EU");
+        
+        // 设置爬取时间
+        record.setCrawlTime(java.time.LocalDateTime.now());
+        
         return record;
     }
     

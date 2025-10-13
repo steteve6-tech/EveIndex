@@ -597,13 +597,16 @@ public class USCrawlerService {
                         recallingFirm, brandName, productDescription, dateFrom, dateTo, 
                         maxRecords == -1 ? "所有数据" : "限制数量(" + maxRecords + ")");
                 
-                // 根据参数选择搜索方式
+                // 根据参数选择搜索方式（使用核心方法）
                 if (recallingFirm != null && !recallingFirm.trim().isEmpty()) {
-                    crawlResult = usRecallCrawler.crawlAndSaveByRecallingFirm(recallingFirm, maxRecords, 50, dateFrom, dateTo);
+                    String searchTerm = "recalling_firm:" + recallingFirm;
+                    crawlResult = usRecallCrawler.crawlAndSaveDeviceRecall(searchTerm, maxRecords, 50, dateFrom, dateTo);
                 } else if (brandName != null && !brandName.trim().isEmpty()) {
-                    crawlResult = usRecallCrawler.crawlAndSaveByBrandName(brandName, maxRecords, 50, dateFrom, dateTo);
+                    String searchTerm = "openfda.brand_name:" + brandName;
+                    crawlResult = usRecallCrawler.crawlAndSaveDeviceRecall(searchTerm, maxRecords, 50, dateFrom, dateTo);
                 } else if (productDescription != null && !productDescription.trim().isEmpty()) {
-                    crawlResult = usRecallCrawler.crawlAndSaveByProductDescription(productDescription, maxRecords, 50, dateFrom, dateTo);
+                    String searchTerm = "product_description:" + productDescription;
+                    crawlResult = usRecallCrawler.crawlAndSaveDeviceRecall(searchTerm, maxRecords, 50, dateFrom, dateTo);
                 } else {
                     crawlResult = usRecallCrawler.crawlAndSaveDeviceRecall("recalling_firm:medical", maxRecords, 50, dateFrom, dateTo);
                 }

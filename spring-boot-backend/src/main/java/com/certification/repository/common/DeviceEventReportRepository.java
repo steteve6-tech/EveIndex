@@ -27,6 +27,9 @@ public interface DeviceEventReportRepository extends JpaRepository<DeviceEventRe
 
     // 新增：按国家过滤
     List<DeviceEventReport> findByJdCountry(String jdCountry);
+    
+    // 新增：按国家过滤（分页）
+    org.springframework.data.domain.Page<DeviceEventReport> findByJdCountry(String jdCountry, org.springframework.data.domain.Pageable pageable);
 
     // 常用组合查询
     List<DeviceEventReport> findByDataSourceAndJdCountry(String dataSource, String jdCountry);
@@ -44,6 +47,16 @@ public interface DeviceEventReportRepository extends JpaRepository<DeviceEventRe
      * 统计指定风险等级的记录数量
      */
     long countByRiskLevel(CertNewsData.RiskLevel riskLevel);
+    
+    /**
+     * 根据风险等级和国家查找记录
+     */
+    List<DeviceEventReport> findByRiskLevelAndJdCountry(CertNewsData.RiskLevel riskLevel, String jdCountry);
+    
+    /**
+     * 根据国家和风险等级查找记录（分页）
+     */
+    org.springframework.data.domain.Page<DeviceEventReport> findByJdCountryAndRiskLevel(String jdCountry, CertNewsData.RiskLevel riskLevel, org.springframework.data.domain.Pageable pageable);
 
     /**
      * 根据品牌名称搜索（忽略大小写）

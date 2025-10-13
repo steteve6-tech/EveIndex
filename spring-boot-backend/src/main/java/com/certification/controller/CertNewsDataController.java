@@ -1621,4 +1621,275 @@ public class CertNewsDataController {
 //            return ResponseEntity.badRequest().body(result);
 //        }
 //    }
+    
+    /**
+     * 执行AI判断（认证新闻）
+     * 判断中风险数据是否与无线电子设备认证标准相关
+     */
+    @Operation(summary = "执行AI判断", description = "AI判断认证新闻相关性，自动提取认证关键词并写入matched_keywords和remarks字段")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "执行成功"),
+        @ApiResponse(responseCode = "500", description = "执行失败")
+    })
+    @PostMapping("/ai-judge/execute-direct")
+    public ResponseEntity<Map<String, Object>> executeAIJudge(
+            @RequestParam(required = false) String riskLevel,
+            @RequestParam(required = false) String sourceName,
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(required = false) Boolean judgeAll) {
+        
+        log.info("收到认证新闻AI判断请求: riskLevel={}, sourceName={}, limit={}, judgeAll={}", 
+            riskLevel, sourceName, limit, judgeAll);
+        
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            // 执行AI判断
+            Map<String, Object> judgeResult = certNewsanalysis.executeAIJudgeForCertNews(
+                riskLevel, sourceName, limit, judgeAll
+            );
+            
+            if (judgeResult != null && (Boolean) judgeResult.getOrDefault("success", false)) {
+                result.put("success", true);
+                result.put("message", judgeResult.get("message"));
+                result.put("data", judgeResult);
+                
+                log.info("认证新闻AI判断执行完成: {}", judgeResult.get("message"));
+                return ResponseEntity.ok(result);
+            } else {
+                result.put("success", false);
+                result.put("error", judgeResult != null ? judgeResult.get("error") : "AI判断执行失败");
+                return ResponseEntity.badRequest().body(result);
+            }
+            
+        } catch (Exception e) {
+            log.error("认证新闻AI判断执行失败: {}", e.getMessage(), e);
+            result.put("success", false);
+            result.put("error", "AI判断执行失败: " + e.getMessage());
+            return ResponseEntity.status(500).body(result);
+        }
+    }
+    
+    /**
+     * 获取单个新闻详情
+     */
+    @Operation(summary = "获取新闻详情", description = "根据ID获取单个新闻的完整信息")
+    @GetMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> getNewsDetail(@PathVariable String id) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            CertNewsData newsData = crawlerDataRepository.findById(id).orElse(null);
+            if (newsData != null) {
+                result.put("success", true);
+                result.put("data", newsData);
+                result.put("message", "获取新闻详情成功");
+                return ResponseEntity.ok(result);
+            } else {
+                result.put("success", false);
+                result.put("error", "新闻不存在");
+                return ResponseEntity.status(404).body(result);
+            }
+        } catch (Exception e) {
+            log.error("获取新闻详情失败: {}", e.getMessage(), e);
+            result.put("success", false);
+            result.put("error", "获取新闻详情失败: " + e.getMessage());
+            return ResponseEntity.status(500).body(result);
+        }
+    }
+    
+    /**
+     * 删除关键词
+     */
+    @Operation(summary = "删除关键词", description = "从关键词文件中删除指定关键词")
+    @DeleteMapping("/keywords/{keyword}")
+    public ResponseEntity<Map<String, Object>> deleteKeyword(@PathVariable String keyword) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            boolean success = certNewsanalysis.deleteKeywordFromFile(keyword);
+            if (success) {
+                result.put("success", true);
+                result.put("message", "关键词已删除");
+                return ResponseEntity.ok(result);
+            } else {
+                result.put("success", false);
+                result.put("error", "删除关键词失败");
+                return ResponseEntity.badRequest().body(result);
+            }
+        } catch (Exception e) {
+            log.error("删除关键词失败: {}", e.getMessage(), e);
+            result.put("success", false);
+            result.put("error", "删除关键词失败: " + e.getMessage());
+            return ResponseEntity.status(500).body(result);
+        }
+    }
+    
+    /**
+     * 更新关键词
+     */
+    @Operation(summary = "更新关键词", description = "在关键词文件中替换关键词")
+    @PutMapping("/keywords")
+    public ResponseEntity<Map<String, Object>> updateKeyword(@RequestBody Map<String, String> requestBody) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            String oldKeyword = requestBody.get("oldKeyword");
+            String newKeyword = requestBody.get("newKeyword");
+            
+            if (oldKeyword == null || oldKeyword.trim().isEmpty()) {
+                result.put("success", false);
+                result.put("error", "旧关键词不能为空");
+                return ResponseEntity.badRequest().body(result);
+            }
+            
+            if (newKeyword == null || newKeyword.trim().isEmpty()) {
+                result.put("success", false);
+                result.put("error", "新关键词不能为空");
+                return ResponseEntity.badRequest().body(result);
+            }
+            
+            boolean success = certNewsanalysis.updateKeywordInFile(oldKeyword, newKeyword);
+            if (success) {
+                result.put("success", true);
+                result.put("message", "关键词已更新");
+                return ResponseEntity.ok(result);
+            } else {
+                result.put("success", false);
+                result.put("error", "更新关键词失败");
+                return ResponseEntity.badRequest().body(result);
+            }
+        } catch (Exception e) {
+            log.error("更新关键词失败: {}", e.getMessage(), e);
+            result.put("success", false);
+            result.put("error", "更新关键词失败: " + e.getMessage());
+            return ResponseEntity.status(500).body(result);
+        }
+    }
+    
+    // ========== 异步AI判断任务相关接口 ==========
+    
+    @Autowired
+    private com.certification.service.ai.AsyncAIJudgeService asyncAIJudgeService;
+    
+    @Autowired
+    private com.certification.repository.AIJudgeTaskRepository aiJudgeTaskRepository;
+    
+    /**
+     * 创建异步AI判断任务
+     */
+    @Operation(summary = "创建异步AI判断任务", description = "创建异步任务处理大批量数据（适合几千条数据）")
+    @PostMapping("/ai-judge/task/create")
+    public ResponseEntity<Map<String, Object>> createAIJudgeTask(
+            @RequestParam(required = false) String riskLevel,
+            @RequestParam(required = false) String sourceName,
+            @RequestParam(required = false) Integer limit) {
+        
+        log.info("创建AI判断任务: riskLevel={}, sourceName={}, limit={}", riskLevel, sourceName, limit);
+        
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            // 创建任务记录
+            String taskId = java.util.UUID.randomUUID().toString();
+            com.certification.entity.common.AIJudgeTask task = new com.certification.entity.common.AIJudgeTask();
+            task.setTaskId(taskId);
+            task.setTaskType("CERT_NEWS");
+            task.setStatus("PENDING");
+            
+            // 保存筛选条件
+            Map<String, Object> filterParams = new HashMap<>();
+            filterParams.put("riskLevel", riskLevel);
+            filterParams.put("sourceName", sourceName);
+            filterParams.put("limit", limit);
+            task.setFilterParams(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(filterParams));
+            
+            task = aiJudgeTaskRepository.save(task);
+            
+            // 启动异步任务
+            asyncAIJudgeService.executeAsyncJudge(taskId, riskLevel, sourceName, limit);
+            
+            result.put("success", true);
+            result.put("taskId", taskId);
+            result.put("message", "AI判断任务已创建，正在后台处理");
+            log.info("AI判断任务已创建: taskId={}", taskId);
+            return ResponseEntity.ok(result);
+            
+        } catch (Exception e) {
+            log.error("创建AI判断任务失败: {}", e.getMessage(), e);
+            result.put("success", false);
+            result.put("error", "创建任务失败: " + e.getMessage());
+            return ResponseEntity.status(500).body(result);
+        }
+    }
+    
+    /**
+     * 查询任务进度
+     */
+    @Operation(summary = "查询AI判断任务进度", description = "根据任务ID查询处理进度和状态")
+    @GetMapping("/ai-judge/task/{taskId}")
+    public ResponseEntity<Map<String, Object>> getTaskProgress(@PathVariable String taskId) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            com.certification.entity.common.AIJudgeTask task = aiJudgeTaskRepository.findByTaskId(taskId).orElse(null);
+            
+            if (task == null) {
+                result.put("success", false);
+                result.put("error", "任务不存在");
+                return ResponseEntity.status(404).body(result);
+            }
+            
+            result.put("success", true);
+            result.put("task", task);
+            result.put("progress", task.getProgress());
+            return ResponseEntity.ok(result);
+            
+        } catch (Exception e) {
+            log.error("查询任务进度失败: {}", e.getMessage(), e);
+            result.put("success", false);
+            result.put("error", "查询失败: " + e.getMessage());
+            return ResponseEntity.status(500).body(result);
+        }
+    }
+    
+    /**
+     * 取消任务
+     */
+    @Operation(summary = "取消AI判断任务", description = "取消正在运行的任务")
+    @PostMapping("/ai-judge/task/{taskId}/cancel")
+    public ResponseEntity<Map<String, Object>> cancelTask(@PathVariable String taskId) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            com.certification.entity.common.AIJudgeTask task = aiJudgeTaskRepository.findByTaskId(taskId).orElse(null);
+            
+            if (task == null) {
+                result.put("success", false);
+                result.put("error", "任务不存在");
+                return ResponseEntity.status(404).body(result);
+            }
+            
+            if ("COMPLETED".equals(task.getStatus()) || "FAILED".equals(task.getStatus())) {
+                result.put("success", false);
+                result.put("error", "任务已结束，无法取消");
+                return ResponseEntity.badRequest().body(result);
+            }
+            
+            task.setStatus("CANCELLED");
+            task.setEndTime(java.time.LocalDateTime.now());
+            aiJudgeTaskRepository.save(task);
+            
+            result.put("success", true);
+            result.put("message", "任务已取消");
+            log.info("AI判断任务已取消: taskId={}", taskId);
+            return ResponseEntity.ok(result);
+            
+        } catch (Exception e) {
+            log.error("取消任务失败: {}", e.getMessage(), e);
+            result.put("success", false);
+            result.put("error", "取消失败: " + e.getMessage());
+            return ResponseEntity.status(500).body(result);
+        }
+    }
 }

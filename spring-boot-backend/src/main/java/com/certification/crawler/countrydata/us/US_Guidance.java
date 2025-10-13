@@ -776,4 +776,48 @@ public class US_Guidance {
         return null;
     }
 
+    /**
+     * 基于关键词列表爬取FDA指导文档数据
+     * 注意：FDA指导文档爬虫不支持关键词搜索，此方法会忽略关键词参数
+     * 仅用于适配统一的爬虫接口
+     * 
+     * @param inputKeywords 关键词列表（此爬虫不使用）
+     * @param maxRecords 最大记录数（-1表示全部）
+     * @param batchSize 批次大小（未使用，由配置决定）
+     * @param dateFrom 开始日期（未使用）
+     * @param dateTo 结束日期（未使用）
+     * @return 爬取结果描述
+     */
+    public String crawlAndSaveWithKeywords(List<String> inputKeywords, int maxRecords, int batchSize, String dateFrom, String dateTo) {
+        log.info("开始爬取FDA指导文档数据...");
+        log.info("注意：此爬虫不支持关键词搜索，将爬取所有数据");
+        log.info("最大记录数: " + (maxRecords == -1 ? "所有数据" : maxRecords));
+        
+        try {
+            // 调用主爬取方法
+            if (maxRecords == -1) {
+                crawl();
+            } else {
+                crawlWithLimit(maxRecords);
+            }
+            
+            // 返回成功消息
+            String result = String.format("FDA指导文档爬取完成，最大记录数: %d", maxRecords);
+            log.info(result);
+            return result;
+            
+        } catch (Exception e) {
+            String errorMsg = "FDA指导文档爬取失败: " + e.getMessage();
+            log.error(errorMsg, e);
+            throw new RuntimeException(errorMsg, e);
+        }
+    }
+
+    /**
+     * 基于关键词列表爬取FDA指导文档数据（简化版本，无时间范围）
+     */
+    public String crawlAndSaveWithKeywords(List<String> inputKeywords, int maxRecords, int batchSize) {
+        return crawlAndSaveWithKeywords(inputKeywords, maxRecords, batchSize, null, null);
+    }
+
 }

@@ -25,6 +25,11 @@ public interface Device510KRepository extends JpaRepository<Device510K, Long> {
     List<Device510K> findByDateReceived(LocalDate dateReceived);
 
     List<Device510K> findByCountryCode(String countryCode);
+    
+    /**
+     * 根据国家代码查找记录（分页）
+     */
+    org.springframework.data.domain.Page<Device510K> findByCountryCode(String countryCode, org.springframework.data.domain.Pageable pageable);
 
     List<Device510K> findByDataSource(String dataSource);
 
@@ -59,6 +64,16 @@ public interface Device510KRepository extends JpaRepository<Device510K, Long> {
      * 统计指定风险等级的记录数量
      */
     long countByRiskLevel(CertNewsData.RiskLevel riskLevel);
+    
+    /**
+     * 根据风险等级和国家查找记录
+     */
+    List<Device510K> findByRiskLevelAndJdCountry(CertNewsData.RiskLevel riskLevel, String jdCountry);
+    
+    /**
+     * 根据国家代码和风险等级查找记录（分页）
+     */
+    org.springframework.data.domain.Page<Device510K> findByCountryCodeAndRiskLevel(String countryCode, CertNewsData.RiskLevel riskLevel, org.springframework.data.domain.Pageable pageable);
 
     /**
      * 根据关键词搜索（支持多个字段）

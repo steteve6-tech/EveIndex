@@ -335,6 +335,12 @@ public class US_event_api {
 
     /**
      * 通用爬取方法（支持时间范围）
+     * @param searchTerm 搜索词（可选）
+     * @param maxRecords 最大记录数（-1表示全部）
+     * @param batchSize 批次大小
+     * @param dateFrom 起始日期（格式：YYYYMMDD，如：20240101）
+     * @param dateTo 结束日期（格式：YYYYMMDD，如：20241231，为空则查询到未来）
+     * @return 爬取结果信息
      */
     public String crawlAndSaveDeviceEvent(String searchTerm, int maxRecords, int batchSize, String dateFrom, String dateTo) {
         if (maxRecords == -1) {
@@ -526,18 +532,32 @@ public class US_event_api {
                     skip / batchSize + 1, skip, currentLimit);
 
             Map<String, String> params = new HashMap<>();
-            if (searchTerm != null && !searchTerm.trim().isEmpty()) {
-                params.put("search", searchTerm);
-            }
             params.put("limit", String.valueOf(currentLimit));
             params.put("skip", String.valueOf(skip));
             
-            // 添加时间范围参数
-            if (dateFrom != null && dateTo != null) {
-                String dateRange = String.format("date_received:[%s TO %s]", dateFrom, dateTo);
-                String currentSearch = searchTerm != null && !searchTerm.isEmpty() ? 
-                    searchTerm + " AND " + dateRange : dateRange;
-                params.put("search", currentSearch);
+            // 构建搜索查询（支持时间范围）
+            StringBuilder searchQuery = new StringBuilder();
+            
+            // 添加搜索词
+            if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+                searchQuery.append(searchTerm.trim());
+            }
+            
+            // 添加时间范围参数（使用date_received字段，这是FDA接收报告的日期）
+            if (dateFrom != null && !dateFrom.trim().isEmpty()) {
+                String effectiveDateTo = (dateTo != null && !dateTo.trim().isEmpty()) ? dateTo.trim() : "20991231";
+                String dateRange = String.format("date_received:[%s+TO+%s]", dateFrom.trim(), effectiveDateTo);
+                
+                if (searchQuery.length() > 0) {
+                    searchQuery.append("+AND+").append(dateRange);
+                } else {
+                    searchQuery.append(dateRange);
+                }
+            }
+            
+            // 设置search参数
+            if (searchQuery.length() > 0) {
+                params.put("search", searchQuery.toString());
             }
 
             try {
@@ -604,16 +624,29 @@ public class US_event_api {
      * 获取数据
      */
     private FDAResponse fetchData(String endpoint, Map<String, String> params) throws IOException, URISyntaxException {
-        URIBuilder uriBuilder = new URIBuilder(BASE_URL + endpoint);
-        uriBuilder.addParameter("api_key", API_KEY);
-
-        // 然后添加其他请求参数
-        params.forEach(uriBuilder::addParameter);
-
-        String requestUrl = uriBuilder.build().toString();
+        // 手动构建URL，对search参数特殊处理
+        StringBuilder urlBuilder = new StringBuilder(BASE_URL + endpoint);
+        urlBuilder.append("?api_key=").append(API_KEY);
+        
+        // 处理其他参数
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            
+            if ("search".equals(key)) {
+                // search参数不进行URL编码，FDA API需要特定格式
+                // 直接附加，保持+号和括号
+                urlBuilder.append("&search=").append(value);
+            } else {
+                // 其他参数正常编码
+                urlBuilder.append("&").append(key).append("=").append(value);
+            }
+        }
+        
+        String requestUrl = urlBuilder.toString();
         System.out.println("请求URL: " + requestUrl);
 
-        HttpGet httpGet = new HttpGet(uriBuilder.build());
+        HttpGet httpGet = new HttpGet(requestUrl);
 
         for (int attempt = 1; attempt <= crawlerConfig.getRetry().getMaxAttempts(); attempt++) {
             try (var response = httpClient.executeOpen(null, httpGet, null)) {
@@ -795,6 +828,8 @@ public class US_event_api {
         entity.setDataSource("FDA");
         entity.setJdCountry(src.getJdCountry());
         
+        // 设置爬取时间
+        entity.setCrawlTime(java.time.LocalDateTime.now());
         
         // 从设备信息中提取字段
         if (src.getDevices() != null && !src.getDevices().isEmpty()) {

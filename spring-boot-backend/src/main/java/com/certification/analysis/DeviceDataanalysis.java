@@ -485,6 +485,9 @@ public class DeviceDataanalysis {
         map.put("matchedKeywords", parseKeywords(device.getKeywords())); // 匹配的关键词数组
         map.put("matchedFields", getMatchedFields(device)); // 匹配的字段
         
+        // 添加备注字段
+        map.put("remarks", device.getRemark()); // 备注信息
+        
         return map;
     }
 
@@ -506,6 +509,9 @@ public class DeviceDataanalysis {
         map.put("matchedKeywords", parseKeywords(recall.getKeywords())); // 匹配的关键词数组
         map.put("matchedFields", getMatchedFields(recall)); // 匹配的字段
         
+        // 添加备注字段
+        map.put("remarks", recall.getRemark()); // 备注信息
+        
         return map;
     }
 
@@ -524,6 +530,9 @@ public class DeviceDataanalysis {
         map.put("keywords", event.getKeywords()); // 关键词
         map.put("matchedKeywords", parseKeywords(event.getKeywords())); // 匹配的关键词数组
         map.put("matchedFields", getMatchedFields(event)); // 匹配的字段
+        
+        // 添加备注字段
+        map.put("remarks", event.getRemark()); // 备注信息
         
         return map;
     }
@@ -550,6 +559,9 @@ public class DeviceDataanalysis {
         map.put("matchedKeywords", parseKeywords(registration.getKeywords())); // 匹配的关键词数组
         map.put("matchedFields", getMatchedFields(registration)); // 匹配的字段
         
+        // 添加备注字段
+        map.put("remarks", registration.getRemark()); // 备注信息
+        
         return map;
     }
 
@@ -567,6 +579,9 @@ public class DeviceDataanalysis {
         map.put("keywords", guidance.getKeywords()); // 关键词
         map.put("matchedKeywords", parseKeywords(guidance.getKeywords())); // 匹配的关键词数组
         map.put("matchedFields", getMatchedFields(guidance)); // 匹配的字段
+        
+        // 添加备注字段
+        map.put("remarks", guidance.getRemark()); // 备注信息
         
         return map;
     }
@@ -589,6 +604,9 @@ public class DeviceDataanalysis {
         map.put("keywords", customs.getKeywords()); // 关键词
         map.put("matchedKeywords", parseKeywords(customs.getKeywords())); // 匹配的关键词数组
         map.put("matchedFields", getMatchedFields(customs)); // 匹配的字段
+        
+        // 添加备注字段
+        map.put("remarks", customs.getRemark()); // 备注信息
         
         return map;
     }
@@ -1328,5 +1346,77 @@ public class DeviceDataanalysis {
                 .orElse(false);
     }
 
+    /**
+     * 更新数据备注
+     * 根据ID更新任意类型数据的备注字段
+     */
+    @Transactional
+    public boolean updateDataRemarks(Long id, String remarks) {
+        try {
+            log.info("开始更新数据备注，ID: {}, 备注: {}", id, remarks);
+            
+            // 尝试在所有可能的表中查找并更新
+            // 1. Device510K
+            Optional<Device510K> device510k = device510KRepository.findById(id);
+            if (device510k.isPresent()) {
+                device510k.get().setRemark(remarks);
+                device510KRepository.save(device510k.get());
+                log.info("成功更新Device510K备注，ID: {}", id);
+                return true;
+            }
+            
+            // 2. DeviceRecallRecord
+            Optional<DeviceRecallRecord> recallRecord = deviceRecallRecordRepository.findById(id);
+            if (recallRecord.isPresent()) {
+                recallRecord.get().setRemark(remarks);
+                deviceRecallRecordRepository.save(recallRecord.get());
+                log.info("成功更新DeviceRecallRecord备注，ID: {}", id);
+                return true;
+            }
+            
+            // 3. DeviceEventReport
+            Optional<DeviceEventReport> eventReport = deviceEventReportRepository.findById(id);
+            if (eventReport.isPresent()) {
+                eventReport.get().setRemark(remarks);
+                deviceEventReportRepository.save(eventReport.get());
+                log.info("成功更新DeviceEventReport备注，ID: {}", id);
+                return true;
+            }
+            
+            // 4. DeviceRegistrationRecord
+            Optional<DeviceRegistrationRecord> registrationRecord = deviceRegistrationRecordRepository.findById(id);
+            if (registrationRecord.isPresent()) {
+                registrationRecord.get().setRemark(remarks);
+                deviceRegistrationRecordRepository.save(registrationRecord.get());
+                log.info("成功更新DeviceRegistrationRecord备注，ID: {}", id);
+                return true;
+            }
+            
+            // 5. GuidanceDocument
+            Optional<GuidanceDocument> guidanceDocument = guidanceDocumentRepository.findById(id);
+            if (guidanceDocument.isPresent()) {
+                guidanceDocument.get().setRemark(remarks);
+                guidanceDocumentRepository.save(guidanceDocument.get());
+                log.info("成功更新GuidanceDocument备注，ID: {}", id);
+                return true;
+            }
+            
+            // 6. CustomsCase
+            Optional<CustomsCase> customsCase = customsCaseRepository.findById(id);
+            if (customsCase.isPresent()) {
+                customsCase.get().setRemark(remarks);
+                customsCaseRepository.save(customsCase.get());
+                log.info("成功更新CustomsCase备注，ID: {}", id);
+                return true;
+            }
+            
+            log.warn("未找到ID为{}的数据记录", id);
+            return false;
+            
+        } catch (Exception e) {
+            log.error("更新数据备注失败，ID: {}, 错误: {}", id, e.getMessage(), e);
+            return false;
+        }
+    }
 
 }

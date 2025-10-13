@@ -192,6 +192,85 @@ public class DeviceMatchKeywordsService {
     }
 
     /**
+     * 批量检查数据字段是否匹配黑名单
+     * @param textToCheck 要检查的文本
+     * @return 匹配的黑名单关键词，如果不匹配返回null
+     */
+    public String checkBlacklistMatch(String textToCheck) {
+        if (textToCheck == null || textToCheck.isEmpty()) {
+            return null;
+        }
+        
+        List<String> blacklist = getKeywordStrings(DeviceMatchKeywords.KeywordType.BLACKLIST);
+        String lowerText = textToCheck.toLowerCase();
+        
+        for (String keyword : blacklist) {
+            if (lowerText.contains(keyword.toLowerCase())) {
+                return keyword;
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * 检查多个字段是否匹配黑名单
+     * @param fields 要检查的字段列表
+     * @return 匹配的黑名单关键词，如果不匹配返回null
+     */
+    public String checkBlacklistMatchMultiple(String... fields) {
+        for (String field : fields) {
+            String matched = checkBlacklistMatch(field);
+            if (matched != null) {
+                return matched;
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * 智能添加黑名单关键词（避免重复）
+     * @param keywords 要添加的关键词列表
+     * @return 实际添加的数量
+     */
+    public int smartAddBlacklistKeywords(List<String> keywords) {
+        if (keywords == null || keywords.isEmpty()) {
+            return 0;
+        }
+        
+        int added = 0;
+        for (String keyword : keywords) {
+            if (keyword == null || keyword.trim().isEmpty()) {
+                continue;
+            }
+            
+            String trimmedKeyword = keyword.trim();
+            
+            // 检查是否已存在
+            Optional<DeviceMatchKeywords> existing = deviceMatchKeywordsRepository
+                    .findByKeywordAndKeywordType(trimmedKeyword, DeviceMatchKeywords.KeywordType.BLACKLIST);
+            
+            if (!existing.isPresent()) {
+                try {
+                    addKeyword(trimmedKeyword, DeviceMatchKeywords.KeywordType.BLACKLIST);
+                    added++;
+                } catch (Exception e) {
+                    System.err.println("添加黑名单关键词失败: " + trimmedKeyword + ", 错误: " + e.getMessage());
+                }
+            }
+        }
+        
+        return added;
+    }
+    
+    /**
+     * 获取黑名单关键词字符串列表（仅启用的）
+     */
+    public List<String> getBlacklistKeywordStrings() {
+        return getKeywordStrings(DeviceMatchKeywords.KeywordType.BLACKLIST);
+    }
+    
+    /**
      * 统一关键词配置DTO
      */
     public static class UnifiedKeywordConfig {

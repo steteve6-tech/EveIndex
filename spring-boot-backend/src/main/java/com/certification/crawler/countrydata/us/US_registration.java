@@ -618,6 +618,9 @@ public class US_registration {
         entity.setDataSource("US_FDA");
         entity.setJdCountry("US");
 
+        // 设置爬取时间
+        entity.setCrawlTime(java.time.LocalDateTime.now());
+
         return entity;
     }
 

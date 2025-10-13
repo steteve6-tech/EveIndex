@@ -84,4 +84,10 @@ public class Device510K {
     // 数据状态
     @Column(name = "data_status", length = 20)
     private String dataStatus;
+
+    // 备注信息（AI判断原因、人工审核意见等）
+    @Lob
+    @Column(name = "remark", columnDefinition = "TEXT")
+    @Schema(description = "备注信息（AI判断原因、人工审核意见等）")
+    private String remark;
 }

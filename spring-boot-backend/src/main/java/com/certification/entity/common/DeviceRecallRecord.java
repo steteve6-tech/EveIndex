@@ -9,6 +9,7 @@ import lombok.experimental.Accessors;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import com.certification.entity.common.CertNewsData.RiskLevel;
 
 @Data
@@ -79,4 +80,16 @@ public class DeviceRecallRecord {
     @Column(name = "jd_country", length = 20)
     @Schema(description = "数据适用国家")
     private String jdCountry;
+
+    // 爬取时间
+    @Column(name = "crawl_time")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Schema(description = "爬取时间（数据抓取时的时间戳）")
+    private LocalDateTime crawlTime;
+
+    // 备注信息（AI判断原因、人工审核意见等）
+    @Lob
+    @Column(name = "remark", columnDefinition = "TEXT")
+    @Schema(description = "备注信息（AI判断原因、人工审核意见等）")
+    private String remark;
 }

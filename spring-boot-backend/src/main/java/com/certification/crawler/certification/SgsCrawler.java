@@ -1334,8 +1334,8 @@ public class SgsCrawler implements BaseCrawler {
             // 设置风险等级为MEDIUM
             certNewsData.setRiskLevel(CertNewsData.RiskLevel.MEDIUM);
 
-            // 设置备注
-            certNewsData.setRemarks("通过SGS爬虫自动抓取");
+            // 备注字段默认为空，由AI判断或人工标注时填写
+            // certNewsData.setRemarks("通过SGS爬虫自动抓取");
 
             certNewsDataList.add(certNewsData);
         }

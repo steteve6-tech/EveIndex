@@ -125,6 +125,13 @@
             <span>爬虫管理</span>
           </a-menu-item>
 
+          <a-menu-item key="/unified-crawler-management">
+            <template #icon>
+              <ClockCircleOutlined />
+            </template>
+            <span>爬虫调度平台</span>
+          </a-menu-item>
+
 <!--          <a-menu-item key="/keyword-management">-->
 <!--            <template #icon>-->
 <!--              <SearchOutlined />-->
@@ -245,7 +252,9 @@ import {
   BugOutlined,
   ExperimentOutlined,
   TrophyOutlined,
-  WarningOutlined
+  WarningOutlined,
+  ScheduleOutlined,
+  ClockCircleOutlined
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 
@@ -268,7 +277,7 @@ const isCertificationManagementPage = computed(() => {
 })
 
 const isMedicalRiskManagementPage = computed(() => {
-  return ['/crawler-management', '/device-data', '/competitor-info', '/high-risk-data-management', '/api-test'].includes(route.path)
+  return ['/crawler-management', '/unified-crawler-management', '/device-data', '/competitor-info', '/high-risk-data-management', '/api-test'].includes(route.path)
 })
 
 // 监听路由变化
@@ -285,7 +294,7 @@ watch(
     }
     
     // 如果当前路径是医疗认证风险管理下的子页面，确保父菜单展开
-    if (['/crawler-management', '/device-data', '/competitor-info', '/high-risk-data-management', '/api-test'].includes(newPath)) {
+    if (['/crawler-management', '/unified-crawler-management', '/device-data', '/competitor-info', '/high-risk-data-management', '/api-test'].includes(newPath)) {
       if (!openKeys.value.includes('medical-risk-management')) {
         openKeys.value.push('medical-risk-management')
       }

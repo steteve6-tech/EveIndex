@@ -9,6 +9,7 @@ import DataQuery from '@/views/DataQuery.vue'
 import CrawlerManagement from '@/views/CrawlerManagement.vue'
 import CrawlerDataManagement from '@/views/CrawlerDataManagement.vue'
 import DeviceData from '@/views/DeviceData.vue'
+import UnifiedCrawlerManagement from '@/views/UnifiedCrawlerManagement.vue'
 // import CrawlerTest from '@/views/CrawlerTest.vue' // 文件不存在
 // import UnifiedCrawlerTest from '@/views/UnifiedCrawlerTest.vue' // 文件不存在
 import HighRiskDataManagement from '@/views/HighRiskDataManagement.vue'
@@ -91,6 +92,12 @@ const routes = [
         name: 'HighRiskDataManagement',
         component: HighRiskDataManagement,
         meta: { title: '高风险数据管理' }
+      },
+      {
+        path: '/unified-crawler-management',
+        name: 'UnifiedCrawlerManagement',
+        component: UnifiedCrawlerManagement,
+        meta: { title: '爬虫调度管理平台' }
       },
       // {
       //   path: '/keyword-management',

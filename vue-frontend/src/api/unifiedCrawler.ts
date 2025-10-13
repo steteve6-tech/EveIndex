@@ -1,164 +1,198 @@
-// @ts-ignore
-/* eslint-disable */
-import request from "@/request";
+import request from '../request';
 
-/** 执行统一爬虫 POST /unified-crawler/execute */
-export async function executeUnifiedCrawler(
-  params?: {
-    crawlerType?: string;
-    options?: any;
-  },
-  options?: { [key: string]: any }
-) {
-  return request<Record<string, any>>("/unified-crawler/execute", {
-    method: "POST",
-    data: params,
-    ...(options || {}),
-  });
+/**
+ * 爬虫信息接口
+ */
+export interface CrawlerInfo {
+  crawlerName: string;
+  displayName: string;
+  countryCode: string;
+  crawlerType: string;
+  description: string;
+  version: string;
+  available: boolean;
+  status: CrawlerStatus;
+  schema: any;
+  testing?: boolean;
 }
 
-/** 获取爬虫执行历史 GET /unified-crawler/history */
-export async function getExecutionHistory(
-  params?: {
-    page?: number;
-    size?: number;
-    crawlerType?: string;
-  },
-  options?: { [key: string]: any }
-) {
-  return request<Record<string, any>>("/unified-crawler/history", {
-    method: "GET",
-    params,
-    ...(options || {}),
-  });
+/**
+ * 爬虫状态接口
+ */
+export interface CrawlerStatus {
+  status: string;
+  lastExecutionTime: number;
+  lastExecutionResult: string;
+  totalExecutions: number;
+  successCount: number;
+  failureCount: number;
+  successRate: number;
 }
 
-/** 清除执行历史 DELETE /unified-crawler/history */
-export async function clearExecutionHistory(
-  options?: { [key: string]: any }
-) {
-  return request<Record<string, any>>("/unified-crawler/history", {
-    method: "DELETE",
-    ...(options || {}),
-  });
+/**
+ * 任务信息接口
+ */
+export interface TaskInfo {
+  id: number;
+  taskName: string;
+  crawlerName: string;
+  countryCode: string;
+  taskType: string;
+  description: string;
+  enabled: boolean;
+  successRate: number;
+  lastExecutionTime: string;
+  nextExecutionTime: string;
 }
 
-/** 执行统一爬取 POST /unified-crawler/execute */
-export async function executeUnifiedCrawl(
-  params?: {
-    crawlerType?: string;
-    options?: any;
-  },
-  options?: { [key: string]: any }
-) {
-  return request<Record<string, any>>("/unified-crawler/execute", {
-    method: "POST",
-    data: params,
-    ...(options || {}),
-  });
+/**
+ * 系统统计信息接口
+ */
+export interface SystemStatistics {
+  totalCrawlers: number;
+  runningCrawlers: number;
+  totalTasks: number;
+  overallSuccessRate: number;
 }
 
-/** 使用配置执行统一爬取 POST /unified-crawler/execute-with-config */
-export async function executeUnifiedCrawlWithConfig(
-  params?: {
-    config?: any;
-  },
-  options?: { [key: string]: any }
-) {
-  return request<Record<string, any>>("/unified-crawler/execute-with-config", {
-    method: "POST",
-    data: params,
-    ...(options || {}),
-  });
+/**
+ * 任务配置请求接口
+ */
+export interface TaskConfigRequest {
+  taskName: string;
+  crawlerName: string;
+  countryCode: string;
+  taskType: string;
+  paramsVersion: string;
+  parameters: string;
+  cronExpression?: string;
+  description: string;
+  enabled: boolean;
+  priority: number;
+  timeoutMinutes?: number;
+  retryCount?: number;
 }
 
-/** 执行快速测试 POST /unified-crawler/quick-test */
-export async function executeQuickTest(
-  params?: {
-    crawlerType?: string;
-    limit?: number;
-  },
-  options?: { [key: string]: any }
-) {
-  return request<Record<string, any>>("/unified-crawler/quick-test", {
-    method: "POST",
-    data: params,
-    ...(options || {}),
-  });
+/**
+ * 批量执行请求接口
+ */
+export interface BatchExecuteRequest {
+  crawlers: string[];
+  mode: string;
+  maxRecords?: number;
+  executeType: string;
+  failureStrategy: string;
+  interval?: number;
 }
 
-/** 测试特定爬虫 POST /unified-crawler/test */
-export async function testSpecificCrawler(
-  crawlerType: string,
-  keyword: string,
-  limit: number = 5,
-  options?: { [key: string]: any }
-) {
-  return request<Record<string, any>>("/unified-crawler/test", {
-    method: "POST",
-    data: {
-      crawlerType,
-      keyword,
-      limit
-    },
-    ...(options || {}),
-  });
-}
+/**
+ * 获取所有爬虫信息
+ */
+export const getAllCrawlers = () => {
+  return request.get('/unified/crawlers');
+};
 
-/** 获取可用爬虫列表 GET /unified-crawler/available */
-export async function getAvailableCrawlers(
-  options?: { [key: string]: any }
-) {
-  return request<Record<string, any>>("/unified-crawler/available", {
-    method: "GET",
-    ...(options || {}),
-  });
-}
+/**
+ * 获取指定爬虫信息
+ */
+export const getCrawler = (crawlerName: string) => {
+  return request.get(`/unified/crawlers/${crawlerName}`);
+};
 
-/** 获取默认配置 GET /unified-crawler/config/default */
-export async function getDefaultConfig(
-  options?: { [key: string]: any }
-) {
-  return request<Record<string, any>>("/unified-crawler/config/default", {
-    method: "GET",
-    ...(options || {}),
-  });
-}
+/**
+ * 获取爬虫状态
+ */
+export const getCrawlerStatus = (crawlerName: string) => {
+  return request.get(`/unified/crawlers/${crawlerName}/status`);
+};
 
-/** 获取快速测试配置 GET /unified-crawler/config/quick-test */
-export async function getQuickTestConfig(
-  options?: { [key: string]: any }
-) {
-  return request<Record<string, any>>("/unified-crawler/config/quick-test", {
-    method: "GET",
-    ...(options || {}),
-  });
-}
+/**
+ * 批量执行爬虫
+ */
+export const batchExecuteCrawlers = (data: BatchExecuteRequest) => {
+  return request.post('/unified/crawlers/batch-execute', data);
+};
 
-/** 验证关键词文件 POST /unified-crawler/validate-keywords */
-export async function validateKeywordsFile(
-  options?: { [key: string]: any }
-) {
-  return request<Record<string, any>>("/unified-crawler/validate-keywords", {
-    method: "POST",
-    ...(options || {}),
-  });
-}
+/**
+ * 批量测试爬虫
+ */
+export const batchTestCrawlers = (crawlerNames: string[]) => {
+  return request.post('/unified/crawlers/batch-test', crawlerNames);
+};
 
-/** 获取系统状态 GET /unified-crawler/status */
-export async function getSystemStatus(
-  options?: { [key: string]: any }
-) {
-  return request<Record<string, any>>("/unified-crawler/status", {
-    method: "GET",
-    ...(options || {}),
-  });
-}
+/**
+ * 获取所有爬虫Schema
+ */
+export const getAllSchemas = () => {
+  return request.get('/unified/schemas');
+};
 
-/** 统一爬取配置类型 */
-export interface UnifiedCrawlConfig {
-  crawlerType?: string;
-  keywords?: string[];
-  limit?: number;
-  options?: any;
-}
+/**
+ * 获取指定爬虫的Schema
+ */
+export const getCrawlerSchema = (crawlerName: string) => {
+  return request.get(`/unified/schemas/${crawlerName}`);
+};
+
+/**
+ * 创建任务
+ */
+export const createTask = (data: TaskConfigRequest) => {
+  return request.post('/unified/tasks', data);
+};
+
+/**
+ * 获取任务列表
+ */
+export const getTasks = (params?: {
+  countryCode?: string;
+  crawlerName?: string;
+  taskType?: string;
+  enabled?: boolean;
+  page?: number;
+  size?: number;
+}) => {
+  return request.get('/unified/tasks', { params });
+};
+
+/**
+ * 执行任务
+ */
+export const executeTask = (taskId: number) => {
+  return request.post(`/unified/tasks/${taskId}/execute`);
+};
+
+/**
+ * 获取任务执行历史
+ */
+export const getTaskHistory = (taskId: number) => {
+  return request.get(`/unified/tasks/${taskId}/history`);
+};
+
+/**
+ * 获取系统统计信息
+ */
+export const getSystemStatistics = () => {
+  return request.get('/unified/statistics');
+};
+
+/**
+ * 获取爬虫参数预设
+ */
+export const getCrawlerPreset = (crawlerName: string) => {
+  return request.get(`/unified/crawlers/${crawlerName}/preset`);
+};
+
+/**
+ * 更新爬虫参数预设
+ */
+export const updateCrawlerPreset = (crawlerName: string, parameters: any) => {
+  return request.put(`/unified/crawlers/${crawlerName}/preset`, { parameters });
+};
+
+/**
+ * 验证预设参数
+ */
+export const validateCrawlerPreset = (crawlerName: string, parameters: any) => {
+  return request.post(`/unified/crawlers/${crawlerName}/preset/validate`, parameters);
+};

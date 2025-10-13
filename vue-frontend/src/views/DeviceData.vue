@@ -135,12 +135,16 @@
           <!-- 美国主要内容区域 -->
           <div class="main-content">
             <a-tabs v-model:activeKey="activeTab" @change="handleTabChange">
-              <!-- 统一关键词搜索 -->
-              <a-tab-pane key="analysis" tab="数据分析">
+              <!-- 智能AI判断 -->
+              <a-tab-pane key="analysis" tab="智能AI判断">
                 <div class="tab-content">
                   <div class="analysis-section">
-                    <!-- 统一关键词搜索管理 -->
-                    <a-card title="数据分析" style="margin-bottom: 16px;">
+                    <!-- 智能AI判断组件（新） -->
+                    <SmartAIJudge @judge-completed="handleJudgeCompleted" />
+                    
+                    <!-- 统一关键词搜索（旧，已隐藏） -->
+                    <div style="display: none;">
+                    <a-card title="数据分析（旧版）" style="margin-bottom: 16px;">
                       <a-form layout="vertical">
                         <a-row :gutter="16">
                           <a-col :span="6">
@@ -240,33 +244,60 @@
                         </a-form-item>
                         
                         <a-form-item label="黑名单关键词">
-                          <div class="blacklist-keywords-container">
-                            <a-tag
-                                v-for="(keyword, index) in unifiedConfig.blacklistKeywords"
-                                :key="index"
-                                closable
-                                @close="removeBlacklistKeyword(index)"
-                                class="blacklist-keyword-tag"
-                                color="red"
-                            >
-                              <div class="keyword-content">
-                                <span class="keyword-text">{{ keyword }}</span>
-                              </div>
-                            </a-tag>
-                            <a-input
-                                v-if="showBlacklistKeywordInput"
-                                ref="blacklistKeywordInputRef"
-                                v-model:value="newBlacklistKeyword"
+                          <div class="blacklist-keywords-list-container">
+                            <!-- 添加关键词输入框 -->
+                            <div class="add-keyword-section">
+                              <a-input
+                                  v-if="showBlacklistKeywordInput"
+                                  ref="blacklistKeywordInputRef"
+                                  v-model:value="newBlacklistKeyword"
+                                  size="small"
+                                  style="width: 300px;"
+                                  @blur="addBlacklistKeyword"
+                                  @keyup.enter="addBlacklistKeyword"
+                                  placeholder="输入黑名单关键词后按回车"
+                              />
+                              <a-button v-else type="dashed" size="small" @click="showBlacklistKeywordInput = true">
+                                <PlusOutlined/>
+                                添加黑名单关键词
+                              </a-button>
+                            </div>
+                            
+                            <!-- 黑名单关键词列表 -->
+                            <a-list
+                                v-if="unifiedConfig.blacklistKeywords.length > 0"
+                                :data-source="unifiedConfig.blacklistKeywords"
+                                :bordered="true"
                                 size="small"
-                                style="width: 200px;"
-                                @blur="addBlacklistKeyword"
-                                @keyup.enter="addBlacklistKeyword"
-                                placeholder="输入黑名单关键词后按回车"
+                                class="blacklist-keywords-list"
+                            >
+                              <template #renderItem="{ item, index }">
+                                <a-list-item>
+                                  <template #actions>
+                                    <a-button 
+                                        type="link" 
+                                        danger 
+                                        size="small"
+                                        @click="removeBlacklistKeyword(index)"
+                                    >
+                                      删除
+                                    </a-button>
+                                  </template>
+                                  <div class="blacklist-keyword-item">
+                                    <span class="keyword-index">{{ index + 1 }}.</span>
+                                    <span class="keyword-text">{{ item }}</span>
+                                  </div>
+                                </a-list-item>
+                              </template>
+                            </a-list>
+                            
+                            <!-- 空状态提示 -->
+                            <a-empty 
+                                v-else
+                                description="暂无黑名单关键词"
+                                :image-style="{ height: '60px' }"
+                                style="padding: 20px 0;"
                             />
-                            <a-button v-else type="dashed" size="small" @click="showBlacklistKeywordInput = true">
-                              <PlusOutlined/>
-                              添加黑名单关键词
-                            </a-button>
                           </div>
 <!--                          <div class="blacklist-description">-->
 <!--                            <a-alert-->
@@ -494,6 +525,9 @@
                         </a-tabs>
                       </a-card>
                     </div>
+                    </div>
+                    <!-- 旧代码隐藏div结束 -->
+                    
                   </div>
                 </div>
               </a-tab-pane>
@@ -1344,6 +1378,7 @@ import {
   saveUnifiedKeywordConfig,
   getUnifiedKeywordConfig
 } from '@/api/keywordguanli'
+import SmartAIJudge from '@/components/SmartAIJudge.vue'
 
 // 为了兼容性，创建别名函数
 const getRecallRecords = getDeviceRecallRecords
@@ -1546,6 +1581,7 @@ const recallColumns = [
   {title: '召回公司', dataIndex: 'recallingFirm', key: 'recallingFirm'},
   {title: '事件日期', dataIndex: 'eventDatePosted', key: 'eventDatePosted'},
   {title: '匹配关键词', key: 'matchedKeywords', width: 200},
+  {title: '备注', dataIndex: 'remarks', key: 'remarks', width: 200, ellipsis: true},
   {title: '操作', key: 'action', width: 100}
 ]
 
@@ -1554,6 +1590,7 @@ const device510KColumns = [
   {title: '申请人', dataIndex: 'applicant', key: 'applicant'},
   {title: '接收日期', dataIndex: 'dateReceived', key: 'dateReceived'},
   {title: '匹配关键词', key: 'matchedKeywords', width: 200},
+  {title: '备注', dataIndex: 'remarks', key: 'remarks', width: 200, ellipsis: true},
   {title: '操作', key: 'action', width: 100}
 ]
 
@@ -1562,6 +1599,7 @@ const eventColumns = [
   {title: '制造商', dataIndex: 'manufacturerName', key: 'manufacturerName'},
   {title: '接收日期', dataIndex: 'dateReceived', key: 'dateReceived'},
   {title: '匹配关键词', key: 'matchedKeywords', width: 200},
+  {title: '备注', dataIndex: 'remarks', key: 'remarks', width: 200, ellipsis: true},
   {title: '操作', key: 'action', width: 100}
 ]
 
@@ -1604,6 +1642,7 @@ const registrationColumns = [
   },
   {title: '匹配关键词', key: 'matchedKeywords', width: 200},
   // {title: '匹配字段', key: 'matchedFields', width: 150},
+  {title: '备注', dataIndex: 'remarks', key: 'remarks', width: 200, ellipsis: true},
   {title: '操作', key: 'action', width: 100}
 ]
 
@@ -1612,6 +1651,7 @@ const guidanceColumns = [
   {title: '文档类型', dataIndex: 'topic', key: 'topic'},
   {title: '发布日期', dataIndex: 'publicationDate', key: 'publicationDate'},
   {title: '匹配关键词', key: 'matchedKeywords', width: 200},
+  {title: '备注', dataIndex: 'remarks', key: 'remarks', width: 200, ellipsis: true},
   {title: '操作', key: 'action', width: 100}
 ]
 
@@ -1622,6 +1662,7 @@ const customsColumns = [
   {title: '处理日期', dataIndex: 'caseDate', key: 'caseDate'},
   {title: '匹配关键词', key: 'matchedKeywords', width: 200},
   // {title: '匹配字段', key: 'matchedFields', width: 150},
+  {title: '备注', dataIndex: 'remarks', key: 'remarks', width: 200, ellipsis: true},
   {title: '操作', key: 'action', width: 100}
 ]
 
@@ -3387,6 +3428,16 @@ const handleCountryChange = (country: string) => {
   }
 }
 
+// AI判断完成后的回调
+const handleJudgeCompleted = () => {
+  console.log('AI判断完成，刷新数据')
+  // 重新加载统计数据
+  loadOverviewStatistics()
+  loadStatistics()
+  loadCountryDataStats()
+  message.success('数据已更新，黑名单已自动学习')
+}
+
 // 处理添加欧盟设备数据 - 暂时未使用
 // const handleAddEuDeviceData = () => {
 //   message.info('欧盟设备数据添加功能开发中，敬请期待！')
@@ -4229,29 +4280,51 @@ onMounted(async () => {
   color: #666;
 }
 
-/* 黑名单关键词样式 */
-.blacklist-keywords-container {
+/* 黑名单关键词列表样式 */
+.blacklist-keywords-list-container {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.add-keyword-section {
+  display: flex;
+  align-items: center;
   gap: 8px;
-  align-items: center;
-  min-height: 32px;
-  padding: 8px;
-  border: 1px dashed #d9d9d9;
+}
+
+.blacklist-keywords-list {
+  max-height: 300px;
+  overflow-y: auto;
   border-radius: 6px;
-  background-color: #fafafa;
 }
 
-.blacklist-keyword-tag {
-  background-color: #fff2f0 !important;
-  border-color: #ffccc7 !important;
-  color: #cf1322 !important;
+.blacklist-keywords-list :deep(.ant-list-item) {
+  padding: 8px 16px;
+  transition: background-color 0.2s;
 }
 
-.blacklist-keyword-tag .keyword-content {
+.blacklist-keywords-list :deep(.ant-list-item:hover) {
+  background-color: #fff2f0;
+}
+
+.blacklist-keyword-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
+  flex: 1;
+}
+
+.blacklist-keyword-item .keyword-index {
+  color: #999;
+  font-size: 12px;
+  min-width: 30px;
+}
+
+.blacklist-keyword-item .keyword-text {
+  color: #cf1322;
+  font-weight: 500;
+  word-break: break-all;
 }
 
 .blacklist-description {

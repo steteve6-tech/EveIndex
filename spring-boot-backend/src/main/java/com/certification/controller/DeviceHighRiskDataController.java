@@ -719,4 +719,30 @@ public class DeviceHighRiskDataController {
             return ResponseEntity.internalServerError().body(null);
         }
     }
+
+    /**
+     * 更新数据备注
+     */
+    @PutMapping("/remarks/{id}")
+    @Operation(summary = "更新数据备注", description = "更新指定数据的备注信息")
+    public ResponseEntity<Map<String, Object>> updateDataRemarks(
+            @Parameter(description = "数据ID") @PathVariable Long id,
+            @Parameter(description = "备注内容") @RequestBody Map<String, String> request) {
+        try {
+            String remarks = request.get("remarks");
+            if (remarks == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "备注内容不能为空"));
+            }
+            
+            boolean success = deviceDataanalysis.updateDataRemarks(id, remarks);
+            if (success) {
+                return ResponseEntity.ok(Map.of("message", "备注更新成功", "success", true));
+            } else {
+                return ResponseEntity.badRequest().body(Map.of("error", "更新失败，数据不存在"));
+            }
+        } catch (Exception e) {
+            log.error("更新备注失败", e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "更新失败: " + e.getMessage()));
+        }
+    }
 }

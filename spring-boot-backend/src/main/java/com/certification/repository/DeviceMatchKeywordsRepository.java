@@ -42,4 +42,9 @@ public interface DeviceMatchKeywordsRepository extends JpaRepository<DeviceMatch
      * 根据关键词内容模糊搜索（包括禁用的）
      */
     List<DeviceMatchKeywords> findByKeywordContainingIgnoreCase(String keyword);
+    
+    /**
+     * 根据关键词精确查找
+     */
+    Optional<DeviceMatchKeywords> findByKeyword(String keyword);
 }

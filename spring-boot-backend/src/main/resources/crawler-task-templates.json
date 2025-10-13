@@ -1,0 +1,211 @@
+{
+  "templates": [
+    {
+      "name": "美国510K每日爬取",
+      "crawlerName": "US_510K",
+      "countryCode": "US",
+      "moduleName": "device510k",
+      "taskType": "KEYWORD_BATCH",
+      "cronExpression": "0 0 2 * * ?",
+      "keywords": ["Skin Analyzer", "3D Scanner", "Facial Imaging", "AI Device"],
+      "crawlParams": {
+        "maxRecords": -1,
+        "batchSize": 100,
+        "recentDays": 7
+      },
+      "priority": 8,
+      "timeoutMinutes": 120,
+      "retryCount": 3,
+      "description": "每天凌晨2点爬取美国510K设备数据"
+    },
+    {
+      "name": "美国召回每日爬取",
+      "crawlerName": "US_Recall",
+      "countryCode": "US",
+      "moduleName": "devicerecall",
+      "taskType": "KEYWORD_BATCH",
+      "cronExpression": "0 30 2 * * ?",
+      "keywords": ["Medical Device", "Skin", "Analyzer", "3D", "AI"],
+      "crawlParams": {
+        "maxRecords": -1,
+        "batchSize": 50,
+        "recentDays": 30
+      },
+      "priority": 7,
+      "timeoutMinutes": 90,
+      "retryCount": 3,
+      "description": "每天凌晨2:30爬取美国召回数据"
+    },
+    {
+      "name": "美国事件报告每日爬取",
+      "crawlerName": "US_Event",
+      "countryCode": "US",
+      "moduleName": "deviceevent",
+      "taskType": "KEYWORD_BATCH",
+      "cronExpression": "0 0 3 * * ?",
+      "keywords": ["Skin", "Facial", "3D", "Analyzer"],
+      "crawlParams": {
+        "maxRecords": 500,
+        "batchSize": 100,
+        "recentDays": 90
+      },
+      "priority": 6,
+      "timeoutMinutes": 120,
+      "retryCount": 3,
+      "description": "每天凌晨3点爬取美国事件报告"
+    },
+    {
+      "name": "美国设备注册每周爬取",
+      "crawlerName": "US_Registration",
+      "countryCode": "US",
+      "moduleName": "deviceregistration",
+      "taskType": "KEYWORD_BATCH",
+      "cronExpression": "0 0 4 ? * MON",
+      "keywords": ["Medical Device", "Skin Care"],
+      "crawlParams": {
+        "maxRecords": 1000,
+        "batchSize": 100
+      },
+      "priority": 5,
+      "timeoutMinutes": 180,
+      "retryCount": 2,
+      "description": "每周一凌晨4点爬取美国设备注册数据"
+    },
+    {
+      "name": "美国指导文档每周爬取",
+      "crawlerName": "US_Guidance",
+      "countryCode": "US",
+      "moduleName": "guidance",
+      "taskType": "FULL",
+      "cronExpression": "0 0 5 ? * MON",
+      "keywords": [],
+      "crawlParams": {
+        "maxRecords": 200,
+        "batchSize": 20
+      },
+      "priority": 4,
+      "timeoutMinutes": 90,
+      "retryCount": 2,
+      "description": "每周一凌晨5点爬取FDA指导文档"
+    },
+    {
+      "name": "美国海关判例每周爬取",
+      "crawlerName": "US_CustomsCase",
+      "countryCode": "US",
+      "moduleName": "customscase",
+      "taskType": "KEYWORD_BATCH",
+      "cronExpression": "0 0 6 ? * MON",
+      "keywords": ["9018", "Medical"],
+      "crawlParams": {
+        "maxRecords": 500,
+        "batchSize": 50,
+        "recentDays": 90
+      },
+      "priority": 5,
+      "timeoutMinutes": 90,
+      "retryCount": 3,
+      "description": "每周一凌晨6点爬取美国海关判例数据"
+    },
+    {
+      "name": "欧盟召回每日爬取",
+      "crawlerName": "EU_Recall",
+      "countryCode": "EU",
+      "moduleName": "devicerecall",
+      "taskType": "KEYWORD_BATCH",
+      "cronExpression": "0 0 3 * * ?",
+      "keywords": ["Medical Device", "Safety", "Alert"],
+      "crawlParams": {
+        "maxRecords": -1,
+        "batchSize": 50,
+        "recentDays": 30
+      },
+      "priority": 7,
+      "timeoutMinutes": 90,
+      "retryCount": 3,
+      "description": "每天凌晨3点爬取欧盟召回数据"
+    },
+    {
+      "name": "欧盟设备注册每周爬取",
+      "crawlerName": "EU_Registration",
+      "countryCode": "EU",
+      "moduleName": "deviceregistration",
+      "taskType": "KEYWORD_BATCH",
+      "cronExpression": "0 30 4 ? * MON",
+      "keywords": ["Medical Device", "Skin"],
+      "crawlParams": {
+        "maxRecords": 500,
+        "batchSize": 50
+      },
+      "priority": 5,
+      "timeoutMinutes": 120,
+      "retryCount": 2,
+      "description": "每周一凌晨4:30爬取欧盟设备注册数据"
+    },
+    {
+      "name": "欧盟指导文档每周爬取",
+      "crawlerName": "EU_Guidance",
+      "countryCode": "EU",
+      "moduleName": "guidance",
+      "taskType": "FULL",
+      "cronExpression": "0 0 5 ? * MON",
+      "keywords": [],
+      "crawlParams": {
+        "maxRecords": 150,
+        "batchSize": 15
+      },
+      "priority": 4,
+      "timeoutMinutes": 60,
+      "retryCount": 2,
+      "description": "每周一凌晨5点爬取欧盟医疗设备新闻"
+    },
+    {
+      "name": "欧盟海关判例每周爬取",
+      "crawlerName": "EU_CustomsCase",
+      "countryCode": "EU",
+      "moduleName": "customscase",
+      "taskType": "KEYWORD_BATCH",
+      "cronExpression": "0 30 5 ? * MON",
+      "keywords": ["9018", "Medical"],
+      "crawlParams": {
+        "maxRecords": 300,
+        "batchSize": 20
+      },
+      "priority": 5,
+      "timeoutMinutes": 90,
+      "retryCount": 2,
+      "description": "每周一凌晨5:30爬取欧盟海关TARIC数据"
+    },
+    {
+      "name": "韩国召回每日爬取",
+      "crawlerName": "KR_Recall",
+      "countryCode": "KR",
+      "moduleName": "devicerecall",
+      "taskType": "KEYWORD_BATCH",
+      "cronExpression": "0 0 4 * * ?",
+      "keywords": ["의료기기", "리콜", "안전성"],
+      "crawlParams": {
+        "maxRecords": -1,
+        "batchSize": 50,
+        "recentDays": 30
+      },
+      "priority": 6,
+      "timeoutMinutes": 60,
+      "retryCount": 3,
+      "description": "每天凌晨4点爬取韩国召回数据"
+    }
+  ],
+  "cronExpressions": {
+    "每天凌晨2点": "0 0 2 * * ?",
+    "每天凌晨3点": "0 0 3 * * ?",
+    "每天凌晨4点": "0 0 4 * * ?",
+    "每天上午10点": "0 0 10 * * ?",
+    "每周一凌晨2点": "0 0 2 ? * MON",
+    "每周三凌晨3点": "0 0 3 ? * WED",
+    "每周五凌晨4点": "0 0 4 ? * FRI",
+    "每月1号凌晨2点": "0 0 2 1 * ?",
+    "每12小时": "0 0 */12 * * ?",
+    "每6小时": "0 0 */6 * * ?",
+    "每小时": "0 0 * * * ?"
+  }
+}
+

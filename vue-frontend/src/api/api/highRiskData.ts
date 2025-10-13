@@ -144,3 +144,11 @@ export async function searchKeywords(keyword: string) {
     params: { keyword }
   })
 }
+
+// 更新数据备注
+export async function updateDataRemarks(id: number, remarks: string) {
+  return request(`/high-risk-data/remarks/${id}`, {
+    method: 'PUT',
+    data: { remarks }
+  })
+}

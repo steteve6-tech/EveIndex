@@ -89,3 +89,11 @@ export async function batchUpdateRiskLevel(ids: number[], riskLevel: string) {
     data: { ids, riskLevel }
   })
 }
+
+// 更新数据备注
+export async function updateDataRemarks(id: number, remarks: string) {
+  return request(`/high-risk-data/remarks/${id}`, {
+    method: 'PUT',
+    data: { remarks }
+  })
+}

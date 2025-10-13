@@ -118,7 +118,7 @@
             <a-select
               v-model:value="record.riskLevel"
               style="width: 100px"
-              @change="(value) => handleRiskLevelChange(record.id, value)"
+              @change="(value: string) => handleRiskLevelChange(record.id, value)"
               :loading="record.updating"
             >
               <a-select-option value="HIGH">
@@ -196,19 +196,19 @@
         </a-descriptions-item>
         
         <!-- 显示其他字段 -->
-        <template v-for="(value, key) in filteredRecord" :key="key">
+        <template v-for="(value, key) in filteredRecord" :key="String(key)">
           <!-- 宽字段单独占一行 -->
           <a-descriptions-item 
-            v-if="isWideField(key)"
-            :label="getColumnLabel(key)"
+            v-if="isWideField(String(key))"
+            :label="getColumnLabel(String(key))"
             :span="2"
           >
-            <template v-if="key === 'riskLevel'">
+            <template v-if="String(key) === 'riskLevel'">
               <a-tag :color="getRiskLevelColor(value)">
                 {{ getRiskLevelLabel(value) }}
               </a-tag>
             </template>
-            <template v-else-if="key === 'keywords' && value">
+            <template v-else-if="String(key) === 'keywords' && value">
               <div v-if="typeof value === 'string'">
                 <a-tag v-for="keyword in parseKeywords(value)" :key="keyword" color="blue" style="margin: 2px;">
                   {{ keyword }}
@@ -218,10 +218,68 @@
                 {{ value }}
               </div>
             </template>
-            <template v-else-if="isDateField(key) && value">
+            <template v-else-if="String(key) === 'remarks'">
+              <div class="remarks-content" style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid #1890ff;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <div style="font-weight: 600; color: #1890ff; font-size: 14px;">
+                    <FileTextOutlined style="margin-right: 6px;" />
+                    AI判断备注
+                  </div>
+                  <div style="display: flex; gap: 8px;">
+                    <a-button 
+                      v-if="!editingRemarks" 
+                      type="link" 
+                      size="small" 
+                      @click="startEditRemarks"
+                      style="color: #1890ff; padding: 0; height: auto;"
+                    >
+                      <EditOutlined style="margin-right: 4px;" />
+                      编辑
+                    </a-button>
+                    <a-button 
+                      v-if="editingRemarks" 
+                      type="link" 
+                      size="small" 
+                      @click="saveRemarks"
+                      :loading="savingRemarks"
+                      style="color: #52c41a; padding: 0; height: auto;"
+                    >
+                      <CheckOutlined style="margin-right: 4px;" />
+                      保存
+                    </a-button>
+                    <a-button 
+                      v-if="editingRemarks" 
+                      type="link" 
+                      size="small" 
+                      @click="cancelEditRemarks"
+                      style="color: #ff4d4f; padding: 0; height: auto;"
+                    >
+                      <CloseOutlined style="margin-right: 4px;" />
+                      取消
+                    </a-button>
+                  </div>
+                </div>
+                
+                <!-- 显示模式 -->
+                <div v-if="!editingRemarks" style="color: #262626; line-height: 1.6; white-space: pre-wrap; min-height: 60px;">
+                  {{ value || '暂无备注' }}
+                </div>
+                
+                <!-- 编辑模式 -->
+                <div v-else>
+                  <a-textarea
+                    v-model:value="editingRemarksValue"
+                    :rows="4"
+                    placeholder="请输入备注内容..."
+                    style="resize: vertical;"
+                  />
+                </div>
+              </div>
+            </template>
+            <template v-else-if="isDateField(String(key)) && value">
               {{ formatDate(value) }}
             </template>
-            <template v-else-if="isUrlField(key) && value">
+            <template v-else-if="isUrlField(String(key)) && value">
               <a :href="value" target="_blank" rel="noopener noreferrer">
                 {{ value }}
               </a>
@@ -234,15 +292,15 @@
           <!-- 普通字段占一列 -->
           <a-descriptions-item 
             v-else
-            :label="getColumnLabel(key)"
+            :label="getColumnLabel(String(key))"
             :span="1"
           >
-            <template v-if="key === 'riskLevel'">
+            <template v-if="String(key) === 'riskLevel'">
               <a-tag :color="getRiskLevelColor(value)">
                 {{ getRiskLevelLabel(value) }}
               </a-tag>
             </template>
-            <template v-else-if="key === 'keywords' && value">
+            <template v-else-if="String(key) === 'keywords' && value">
               <div v-if="typeof value === 'string'">
                 <a-tag v-for="keyword in parseKeywords(value)" :key="keyword" color="blue" style="margin: 2px;">
                   {{ keyword }}
@@ -252,10 +310,21 @@
                 {{ value }}
               </div>
             </template>
-            <template v-else-if="isDateField(key) && value">
+            <template v-else-if="String(key) === 'remarks' && value">
+              <div class="remarks-content" style="background-color: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid #1890ff; max-height: 200px; overflow-y: auto;">
+                <div style="font-weight: 600; color: #1890ff; margin-bottom: 8px; font-size: 14px;">
+                  <FileTextOutlined style="margin-right: 6px;" />
+                  AI判断备注
+                </div>
+                <div style="color: #262626; line-height: 1.6; white-space: pre-wrap;">
+                  {{ value }}
+                </div>
+              </div>
+            </template>
+            <template v-else-if="isDateField(String(key)) && value">
               {{ formatDate(value) }}
             </template>
-            <template v-else-if="isUrlField(key) && value">
+            <template v-else-if="isUrlField(String(key)) && value">
               <a :href="value" target="_blank" rel="noopener noreferrer">
                 {{ value }}
               </a>
@@ -274,10 +343,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { message, Modal } from 'ant-design-vue'
+import { FileTextOutlined, EditOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons-vue'
 import { 
   getHighRiskDataByType, 
   updateRiskLevel, 
   batchUpdateRiskLevel,
+  updateDataRemarks,
   RISK_LEVEL_MAP,
   RISK_LEVEL_COLOR_MAP
 } from '@/api/highRiskData'
@@ -310,6 +381,11 @@ const selectedRowKeys = ref<number[]>([])
 const batchRiskLevel = ref<string>('')
 const detailModalVisible = ref(false)
 const currentRecord = ref<any>({})
+
+// 编辑备注相关
+const editingRemarks = ref(false)
+const editingRemarksValue = ref('')
+const savingRemarks = ref(false)
 
 
 // 搜索表单
@@ -361,6 +437,16 @@ const columns = computed(() => {
         { title: '接收日期', dataIndex: 'dateReceived', key: 'dateReceived' },
         { title: '匹配关键词', key: 'matchedKeywords', width: 200 },
         { title: '匹配字段', key: 'matchedFields', width: 150 },
+        { 
+          title: '备注', 
+          dataIndex: 'remarks', 
+          key: 'remarks', 
+          width: 150,
+          ellipsis: true,
+          customRender: ({text}: { text: any }) => {
+            return text ? (text.length > 50 ? text.substring(0, 50) + '...' : text) : '-'
+          }
+        },
         actionColumn
       ]
     case 'recall':
@@ -371,6 +457,16 @@ const columns = computed(() => {
         { title: '事件日期', dataIndex: 'eventDatePosted', key: 'eventDatePosted' },
         { title: '匹配关键词', key: 'matchedKeywords', width: 200 },
         { title: '匹配字段', key: 'matchedFields', width: 150 },
+        { 
+          title: '备注', 
+          dataIndex: 'remarks', 
+          key: 'remarks', 
+          width: 150,
+          ellipsis: true,
+          customRender: ({text}: { text: any }) => {
+            return text ? (text.length > 50 ? text.substring(0, 50) + '...' : text) : '-'
+          }
+        },
         actionColumn
       ]
     case 'event':
@@ -381,6 +477,16 @@ const columns = computed(() => {
         { title: '接收日期', dataIndex: 'dateReceived', key: 'dateReceived' },
         { title: '匹配关键词', key: 'matchedKeywords', width: 200 },
         { title: '匹配字段', key: 'matchedFields', width: 150 },
+        { 
+          title: '备注', 
+          dataIndex: 'remarks', 
+          key: 'remarks', 
+          width: 150,
+          ellipsis: true,
+          customRender: ({text}: { text: any }) => {
+            return text ? (text.length > 50 ? text.substring(0, 50) + '...' : text) : '-'
+          }
+        },
         actionColumn
       ]
     case 'registration':
@@ -415,6 +521,16 @@ const columns = computed(() => {
         },
         { title: '匹配关键词', key: 'matchedKeywords', width: 200 },
         { title: '匹配字段', key: 'matchedFields', width: 150 },
+        { 
+          title: '备注', 
+          dataIndex: 'remarks', 
+          key: 'remarks', 
+          width: 150,
+          ellipsis: true,
+          customRender: ({text}: { text: any }) => {
+            return text ? (text.length > 50 ? text.substring(0, 50) + '...' : text) : '-'
+          }
+        },
         actionColumn
       ]
     case 'guidance':
@@ -425,6 +541,16 @@ const columns = computed(() => {
         { title: '发布日期', dataIndex: 'publicationDate', key: 'publicationDate' },
         { title: '匹配关键词', key: 'matchedKeywords', width: 200 },
         { title: '匹配字段', key: 'matchedFields', width: 150 },
+        { 
+          title: '备注', 
+          dataIndex: 'remarks', 
+          key: 'remarks', 
+          width: 150,
+          ellipsis: true,
+          customRender: ({text}: { text: any }) => {
+            return text ? (text.length > 50 ? text.substring(0, 50) + '...' : text) : '-'
+          }
+        },
         actionColumn
       ]
     case 'customs':
@@ -436,6 +562,16 @@ const columns = computed(() => {
         { title: '处理日期', dataIndex: 'caseDate', key: 'caseDate' },
         { title: '匹配关键词', key: 'matchedKeywords', width: 200 },
         { title: '匹配字段', key: 'matchedFields', width: 150 },
+        { 
+          title: '备注', 
+          dataIndex: 'remarks', 
+          key: 'remarks', 
+          width: 150,
+          ellipsis: true,
+          customRender: ({text}: { text: any }) => {
+            return text ? (text.length > 50 ? text.substring(0, 50) + '...' : text) : '-'
+          }
+        },
         actionColumn
       ]
     default:
@@ -542,9 +678,9 @@ const loadData = async () => {
     
     console.log(`📊 ${props.dataType} 数据响应:`, response)
     
-    if (response && response.content && Array.isArray(response.content)) {
-      tableData.value = response.content
-      pagination.value.total = response.totalElements || 0
+    if (response && (response as any).content && Array.isArray((response as any).content)) {
+      tableData.value = (response as any).content
+      pagination.value.total = (response as any).totalElements || 0
       console.log(`✅ 数据加载成功: ${tableData.value.length} 条记录，总数: ${pagination.value.total}`)
       
       // 检查是否有搜索条件但结果为0
@@ -690,9 +826,9 @@ const handleBatchUpdate = async () => {
         console.log('📊 批量更新响应:', response)
         
         if (response) {
-          const updatedCount = response.updatedCount || 0
-          const totalCount = response.totalCount || selectedRowKeys.value.length
-          const errors = response.errors || []
+          const updatedCount = (response as any).updatedCount || 0
+          const totalCount = (response as any).totalCount || selectedRowKeys.value.length
+          const errors = (response as any).errors || []
           
           if (updatedCount > 0) {
             message.success(`批量更新成功，共更新 ${updatedCount} 条数据${totalCount > updatedCount ? `，失败 ${totalCount - updatedCount} 条` : ''}`)
@@ -713,10 +849,10 @@ const handleBatchUpdate = async () => {
         console.error('💥 批量更新失败:', error)
         
         let errorMessage = '批量更新失败'
-        if (error.response?.data?.error) {
-          errorMessage = error.response.data.error
-        } else if (error.message) {
-          errorMessage = `批量更新失败：${error.message}`
+        if ((error as any)?.response?.data?.error) {
+          errorMessage = (error as any).response.data.error
+        } else if ((error as any)?.message) {
+          errorMessage = `批量更新失败：${(error as any).message}`
         }
         
         message.error(errorMessage)
@@ -756,6 +892,52 @@ const handleViewDetail = (record: any) => {
   
   currentRecord.value = record
   detailModalVisible.value = true
+}
+
+// 编辑备注相关方法
+const startEditRemarks = () => {
+  editingRemarks.value = true
+  editingRemarksValue.value = currentRecord.value.remarks || ''
+}
+
+const cancelEditRemarks = () => {
+  editingRemarks.value = false
+  editingRemarksValue.value = ''
+}
+
+const saveRemarks = async () => {
+  if (!currentRecord.value.id) {
+    message.error('无法保存：记录ID不存在')
+    return
+  }
+  
+  savingRemarks.value = true
+  
+  try {
+    // 调用API保存备注
+    const response = await updateDataRemarks(currentRecord.value.id, editingRemarksValue.value)
+    
+    if (response) {
+      // 更新本地数据
+      currentRecord.value.remarks = editingRemarksValue.value
+      
+      // 更新表格中的数据
+      const index = tableData.value.findIndex(item => item.id === currentRecord.value.id)
+      if (index !== -1) {
+        tableData.value[index].remarks = editingRemarksValue.value
+      }
+      
+      message.success('备注保存成功')
+      editingRemarks.value = false
+    } else {
+      message.error('保存失败')
+    }
+  } catch (error) {
+    console.error('保存备注失败:', error)
+    message.error('保存失败：' + ((error as any)?.message || '未知错误'))
+  } finally {
+    savingRemarks.value = false
+  }
 }
 
 
@@ -981,28 +1163,6 @@ const getJdCountryValue = (record: any): string => {
   return 'Unknown'
 }
 
-// 获取使用的字段名（用于调试显示）
-const getJdCountryFieldName = (record: any): string => {
-  if (!record) return 'none'
-  
-  const possibleFields = [
-    'jdCountry',
-    'jd_country', 
-    'JdCountry',
-    'countryCode',
-    'country',
-    'manufacturerCountry',
-    'manufacturerCountryCode'
-  ]
-  
-  for (const field of possibleFields) {
-    if (record[field] !== undefined && record[field] !== null && record[field] !== '') {
-      return field
-    }
-  }
-  
-  return 'not found'
-}
 
 // 辅助函数：判断是否为宽字段
 const isWideField = (key: string) => {
@@ -1014,7 +1174,7 @@ const isWideField = (key: string) => {
     'proprietaryName', 'productDescription', 'mdrTextDescription', 'mdrTextAction',
     'riskDescription', 'measuresDescription', 'productProblemsList', 'remedialActionList',
     'openfda', 'title', 'summary', 'relatedDocuments', 'attachments', 'metadata',
-    'hsCodeUsed'
+    'hsCodeUsed', 'remarks'  // 添加remarks字段为宽字段
   ]
   return wideFields.includes(key)
 }

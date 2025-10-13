@@ -182,7 +182,7 @@ public class ULCrawler implements BaseCrawler {
                 .setCountry(country)
                 .setType(type)
                 .setProduct(productInfo)
-                .setRemarks(standardInfo != null && standardInfo.length() > 500 ? standardInfo.substring(0, 500) + "..." : standardInfo)  // 将标准信息保存到remarks字段，限制长度
+                // .setRemarks(standardInfo != null && standardInfo.length() > 500 ? standardInfo.substring(0, 500) + "..." : standardInfo)  // 备注字段默认为空，由AI判断填写
                 .setContent(detailedContent)
                 .setPublishDate(publishDate)
                 .setCrawlTime(LocalDateTime.now())
@@ -298,7 +298,7 @@ public class ULCrawler implements BaseCrawler {
                 .setCountry(country)
                 .setType("announcement")
                 .setProduct(productInfo)
-                .setRemarks(standardInfo != null && standardInfo.length() > 500 ? standardInfo.substring(0, 500) + "..." : standardInfo)  // 将标准信息保存到remarks字段，限制长度
+                // .setRemarks(standardInfo != null && standardInfo.length() > 500 ? standardInfo.substring(0, 500) + "..." : standardInfo)  // 备注字段默认为空，由AI判断填写
                 .setContent(detailedContent)
                 .setPublishDate(publishDate)
                 .setReleaseDate(releaseDateList)  // 设置发布日期列表（JSON格式）
@@ -416,7 +416,7 @@ public class ULCrawler implements BaseCrawler {
                     .setCountry(country)
                     .setType("announcement")
                     .setProduct(productInfo)
-                    .setRemarks(standardInfo != null && standardInfo.length() > 500 ? standardInfo.substring(0, 500) + "..." : standardInfo)  // 将标准信息保存到remarks字段，限制长度
+                    // .setRemarks(standardInfo != null && standardInfo.length() > 500 ? standardInfo.substring(0, 500) + "..." : standardInfo)  // 备注字段默认为空，由AI判断填写
                     .setContent(detailedContent)
                     .setPublishDate(publishDate)
                     .setReleaseDate(releaseDateList)  // 设置发布日期列表（JSON格式）

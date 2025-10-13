@@ -628,4 +628,47 @@ public class Eu_guidance {
         
         System.out.println("\n=== 测试完成 ===");
     }
+
+    /**
+     * 基于关键词列表爬取EU医疗设备新闻数据
+     * 注意：EU指导文档爬虫不支持关键词搜索，此方法会忽略关键词参数
+     * 仅用于适配统一的爬虫接口
+     * 
+     * @param inputKeywords 关键词列表（此爬虫不使用）
+     * @param maxRecords 最大记录数（-1表示全部，实际按页数计算）
+     * @param batchSize 批次大小（未使用，由配置决定）
+     * @param dateFrom 开始日期（未使用）
+     * @param dateTo 结束日期（未使用）
+     * @return 爬取结果描述
+     */
+    public String crawlAndSaveWithKeywords(List<String> inputKeywords, int maxRecords, int batchSize, String dateFrom, String dateTo) {
+        System.out.println("开始爬取EU医疗设备新闻数据...");
+        System.out.println("注意：此爬虫不支持关键词搜索，将爬取列表页面数据");
+        
+        try {
+            // 计算页数（假设每页15-20条数据）
+            int maxPages = maxRecords == -1 ? 10 : Math.max(1, maxRecords / 15);
+            System.out.println("最大爬取页数: " + maxPages);
+            
+            // 调用主爬取方法
+            int savedCount = crawlAndSaveToDatabase(maxPages);
+            
+            // 返回成功消息
+            String result = String.format("EU医疗设备新闻爬取完成，保存记录数: %d", savedCount);
+            System.out.println(result);
+            return result;
+            
+        } catch (Exception e) {
+            String errorMsg = "EU医疗设备新闻爬取失败: " + e.getMessage();
+            System.err.println(errorMsg);
+            throw new RuntimeException(errorMsg, e);
+        }
+    }
+
+    /**
+     * 基于关键词列表爬取EU医疗设备新闻数据（简化版本，无时间范围）
+     */
+    public String crawlAndSaveWithKeywords(List<String> inputKeywords, int maxRecords, int batchSize) {
+        return crawlAndSaveWithKeywords(inputKeywords, maxRecords, batchSize, null, null);
+    }
 }

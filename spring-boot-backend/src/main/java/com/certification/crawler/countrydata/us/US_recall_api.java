@@ -3,7 +3,6 @@ package com.certification.crawler.countrydata.us;
 import com.certification.config.MedcertCrawlerConfig;
 import com.certification.entity.common.DeviceRecallRecord;
 import com.certification.entity.common.CrawlerCheckpoint;
-import com.certification.exception.AllDataDuplicateException;
 import com.certification.repository.common.DeviceRecallRecordRepository;
 import com.certification.repository.common.CrawlerCheckpointRepository;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -18,7 +17,6 @@ import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
-import org.apache.hc.core5.net.URIBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,8 +29,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.LinkedHashSet;
-import java.util.regex.Pattern;
 import com.certification.util.RiskLevelUtil;
 import com.certification.util.KeywordUtil;
 import com.certification.entity.common.CertNewsData.RiskLevel;
@@ -270,14 +266,409 @@ public class US_recall_api {
     }
 
     /**
-     * 通用爬取方法
+     * 搜索字段类型枚举
      */
-    public String crawlAndSaveDeviceRecall(String searchTerm, int maxRecords, int batchSize) {
-        return crawlAndSaveDeviceRecall(searchTerm, maxRecords, batchSize, null, null);
+    public enum SearchFieldType {
+        BRAND_NAME("openfda.brand_name", "品牌名称"),
+        RECALLING_FIRM("recalling_firm", "召回公司"),
+        PRODUCT_DESCRIPTION("product_description", "产品描述"),
+        PRODUCT_CODE("product_code", "产品代码"),
+        REASON_FOR_RECALL("reason_for_recall", "召回原因"),
+        CUSTOM("", "自定义查询");
+        
+        private final String fieldName;
+        private final String description;
+        
+        SearchFieldType(String fieldName, String description) {
+            this.fieldName = fieldName;
+            this.description = description;
+        }
+        
+        public String getFieldName() {
+            return fieldName;
+        }
+        
+        public String getDescription() {
+            return description;
+        }
     }
-
+    
+    /**
+     * 召回数据爬取参数构建器
+     * 使用Builder模式，支持链式调用，支持多种灵活的查询方式
+     */
+    public static class RecallCrawlerParams {
+        // 单个字段查询
+        private String brandName;
+        private String recallingFirm;
+        private String productDescription;
+        
+        // 关键词列表（用于批量查询）
+        private List<String> keywords;
+        
+        // 自定义查询
+        private String customSearchTerm;
+        
+        // 查询参数
+        private int maxRecords = 100;
+        private int batchSize = 20;
+        
+        // 时间范围
+        private String dateFrom;
+        private String dateTo;
+        private Integer recentDays; // 最近N天
+        
+        public RecallCrawlerParams() {}
+        
+        // ========== 单字段查询方法 ==========
+        
+        /**
+         * 设置品牌名称查询
+         */
+        public RecallCrawlerParams brandName(String brandName) {
+            this.brandName = brandName;
+            return this;
+        }
+        
+        /**
+         * 设置召回公司查询
+         */
+        public RecallCrawlerParams recallingFirm(String recallingFirm) {
+            this.recallingFirm = recallingFirm;
+            return this;
+        }
+        
+        /**
+         * 设置产品描述查询
+         */
+        public RecallCrawlerParams productDescription(String productDescription) {
+            this.productDescription = productDescription;
+            return this;
+        }
+        
+        // ========== 兼容旧方法名 ==========
+        
+        public RecallCrawlerParams byBrandName(String brandName) {
+            return brandName(brandName);
+        }
+        
+        public RecallCrawlerParams byRecallingFirm(String firmName) {
+            return recallingFirm(firmName);
+        }
+        
+        public RecallCrawlerParams byProductDescription(String description) {
+            return productDescription(description);
+        }
+        
+        // ========== 关键词列表查询 ==========
+        
+        /**
+         * 设置关键词列表（会在品牌、公司、描述三个字段中查询）
+         */
+        public RecallCrawlerParams keywords(List<String> keywords) {
+            this.keywords = keywords;
+            return this;
+        }
+        
+        /**
+         * 设置关键词列表（可变参数形式）
+         */
+        public RecallCrawlerParams keywords(String... keywords) {
+            this.keywords = Arrays.asList(keywords);
+            return this;
+        }
+        
+        // ========== 自定义查询 ==========
+        
+        /**
+         * 设置自定义搜索词（直接传入完整的搜索表达式）
+         */
+        public RecallCrawlerParams customSearch(String searchTerm) {
+            this.customSearchTerm = searchTerm;
+            return this;
+        }
+        
+        // ========== 数量参数 ==========
+        
+        /**
+         * 设置最大记录数
+         */
+        public RecallCrawlerParams maxRecords(int maxRecords) {
+            this.maxRecords = maxRecords;
+            return this;
+        }
+        
+        /**
+         * 设置批次大小
+         */
+        public RecallCrawlerParams batchSize(int batchSize) {
+            this.batchSize = batchSize;
+            return this;
+        }
+        
+        // ========== 时间范围参数 ==========
+        
+        /**
+         * 设置日期范围
+         */
+        public RecallCrawlerParams dateRange(String dateFrom, String dateTo) {
+            this.dateFrom = dateFrom;
+            this.dateTo = dateTo;
+            this.recentDays = null; // 清除recentDays
+            return this;
+        }
+        
+        /**
+         * 设置最近N天（自动计算日期范围，考虑FDA数据延迟）
+         * @param days 天数（建议30-365天，避免最近30天内的数据）
+         */
+        public RecallCrawlerParams recentDays(int days) {
+            this.recentDays = days;
+            // 考虑FDA数据延迟（30天），计算实际查询日期
+            LocalDate today = LocalDate.now();
+            LocalDate endDate = today.minusDays(30); // 结束日期：30天前
+            LocalDate startDate = endDate.minusDays(days); // 起始日期：再往前N天
+            
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+            this.dateFrom = startDate.format(formatter);
+            this.dateTo = endDate.format(formatter);
+            
+            System.out.println("自动计算日期范围（考虑FDA 30天延迟）: " + dateFrom + " - " + dateTo);
+            return this;
+        }
+        
+        /**
+         * 设置最近N天（不考虑延迟，直接计算）
+         * @param days 天数
+         * @param ignoreDelay 是否忽略延迟（true=直接计算到今天）
+         */
+        public RecallCrawlerParams recentDays(int days, boolean ignoreDelay) {
+            if (ignoreDelay) {
+                LocalDate today = LocalDate.now();
+                LocalDate startDate = today.minusDays(days);
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+                this.dateFrom = startDate.format(formatter);
+                this.dateTo = today.format(formatter);
+            } else {
+                return recentDays(days);
+            }
+            return this;
+        }
+        
+        // ========== 内部方法 ==========
+        
+        /**
+         * 检查是否有搜索条件
+         */
+        boolean hasSearchConditions() {
+            return brandName != null || recallingFirm != null || 
+                   productDescription != null || customSearchTerm != null;
+        }
+        
+        /**
+         * 检查是否使用关键词列表模式
+         */
+        boolean isKeywordsMode() {
+            return keywords != null && !keywords.isEmpty();
+        }
+        
+        // Getters
+        public String getBrandName() { return brandName; }
+        public String getRecallingFirm() { return recallingFirm; }
+        public String getProductDescription() { return productDescription; }
+        public List<String> getKeywords() { return keywords; }
+        public String getCustomSearchTerm() { return customSearchTerm; }
+        public int getMaxRecords() { return maxRecords; }
+        public int getBatchSize() { return batchSize; }
+        public String getDateFrom() { return dateFrom; }
+        public String getDateTo() { return dateTo; }
+        public Integer getRecentDays() { return recentDays; }
+    }
+    
+    /**
+     * 统一的智能爬取方法（推荐使用）⭐
+     * 支持多种查询模式的自动识别和处理
+     * 
+     * @param params 爬取参数
+     * @return 爬取结果信息
+     * 
+     * 支持的查询模式：
+     * <pre>
+     * 1. 单字段查询：
+     *    crawl(new RecallCrawlerParams()
+     *        .brandName("Medtronic")
+     *        .dateRange("20240101", "20240630"));
+     * 
+     * 2. 多字段组合查询：
+     *    crawl(new RecallCrawlerParams()
+     *        .brandName("Heartware")
+     *        .recallingFirm("Abbott")
+     *        .dateRange("20240101", "20240630"));
+     * 
+     * 3. 关键词列表批量查询：
+     *    crawl(new RecallCrawlerParams()
+     *        .keywords("Abbott", "Medtronic", "Boston Scientific")
+     *        .dateRange("20240101", "20240630"));
+     * 
+     * 4. 最近N天查询：
+     *    crawl(new RecallCrawlerParams()
+     *        .recentDays(60)  // 自动计算日期范围，考虑30天延迟
+     *        .recallingFirm("Medtronic"));
+     * 
+     * 5. 自定义查询：
+     *    crawl(new RecallCrawlerParams()
+     *        .customSearch("product_code:FOZ+AND+recalling_firm:Medtronic"));
+     * </pre>
+     */
+    public String crawl(RecallCrawlerParams params) {
+        // 模式1：关键词列表批量查询
+        if (params.isKeywordsMode()) {
+            return handleKeywordsBatchCrawl(params);
+        }
+        
+        // 模式2：自定义查询
+        if (params.getCustomSearchTerm() != null && !params.getCustomSearchTerm().trim().isEmpty()) {
+            return crawlAndSaveDeviceRecall(
+                params.getCustomSearchTerm(), 
+                params.getMaxRecords(), 
+                params.getBatchSize(), 
+                params.getDateFrom(), 
+                params.getDateTo()
+            );
+        }
+        
+        // 模式3：单字段或多字段组合查询
+        return handleCombinedFieldsCrawl(params);
+    }
+    
+    /**
+     * 处理关键词列表批量爬取
+     */
+    private String handleKeywordsBatchCrawl(RecallCrawlerParams params) {
+        List<String> keywords = params.getKeywords();
+        System.out.println("\n========== 关键词列表批量爬取模式 ==========");
+        System.out.println("关键词数量: " + keywords.size());
+        System.out.println("关键词列表: " + keywords);
+        System.out.println("日期范围: " + params.getDateFrom() + " - " + params.getDateTo());
+        System.out.println("每个关键词最大记录数: " + params.getMaxRecords());
+        
+        int totalSaved = 0;
+        
+        for (String keyword : keywords) {
+            if (keyword == null || keyword.trim().isEmpty()) {
+                continue;
+            }
+            
+            keyword = keyword.trim();
+            System.out.println("\n处理关键词: " + keyword);
+            
+            try {
+                // 1. 在品牌名称字段中搜索
+                System.out.println("  [1/3] 在品牌名称中搜索 '" + keyword + "'");
+                String brandResult = crawlAndSaveDeviceRecall(
+                    "openfda.brand_name:" + keyword,
+                    params.getMaxRecords(),
+                    params.getBatchSize(),
+                    params.getDateFrom(),
+                    params.getDateTo()
+                );
+                int brandCount = extractSavedCount(brandResult);
+                System.out.println("  品牌名称搜索结果: " + brandCount + " 条");
+                
+                // 2. 在召回公司字段中搜索
+                System.out.println("  [2/3] 在召回公司中搜索 '" + keyword + "'");
+                String firmResult = crawlAndSaveDeviceRecall(
+                    "recalling_firm:" + keyword,
+                    params.getMaxRecords(),
+                    params.getBatchSize(),
+                    params.getDateFrom(),
+                    params.getDateTo()
+                );
+                int firmCount = extractSavedCount(firmResult);
+                System.out.println("  召回公司搜索结果: " + firmCount + " 条");
+                
+                // 3. 在产品描述字段中搜索
+                System.out.println("  [3/3] 在产品描述中搜索 '" + keyword + "'");
+                String descResult = crawlAndSaveDeviceRecall(
+                    "product_description:" + keyword,
+                    params.getMaxRecords(),
+                    params.getBatchSize(),
+                    params.getDateFrom(),
+                    params.getDateTo()
+                );
+                int descCount = extractSavedCount(descResult);
+                System.out.println("  产品描述搜索结果: " + descCount + " 条");
+                
+                int keywordTotal = brandCount + firmCount + descCount;
+                totalSaved += keywordTotal;
+                System.out.println("关键词 '" + keyword + "' 总计: " + keywordTotal + " 条");
+                
+            } catch (Exception e) {
+                System.err.println("处理关键词 '" + keyword + "' 时发生错误: " + e.getMessage());
+            }
+        }
+        
+        return String.format("关键词列表批量爬取完成，共处理 %d 个关键词，总计保存: %d 条记录", 
+            keywords.size(), totalSaved);
+    }
+    
+    /**
+     * 处理单字段或多字段组合爬取
+     */
+    private String handleCombinedFieldsCrawl(RecallCrawlerParams params) {
+        StringBuilder searchQuery = new StringBuilder();
+        List<String> conditions = new ArrayList<>();
+        
+        // 收集所有搜索条件
+        if (params.getBrandName() != null && !params.getBrandName().trim().isEmpty()) {
+            conditions.add("openfda.brand_name:" + params.getBrandName().trim());
+        }
+        
+        if (params.getRecallingFirm() != null && !params.getRecallingFirm().trim().isEmpty()) {
+            conditions.add("recalling_firm:" + params.getRecallingFirm().trim());
+        }
+        
+        if (params.getProductDescription() != null && !params.getProductDescription().trim().isEmpty()) {
+            conditions.add("product_description:" + params.getProductDescription().trim());
+        }
+        
+        // 使用AND连接多个条件
+        if (!conditions.isEmpty()) {
+            searchQuery.append(String.join("+AND+", conditions));
+        }
+        
+        String searchTerm = searchQuery.length() > 0 ? searchQuery.toString() : null;
+        
+        System.out.println("\n========== 单字段/多字段组合爬取模式 ==========");
+        if (params.getBrandName() != null) {
+            System.out.println("品牌名称: " + params.getBrandName());
+        }
+        if (params.getRecallingFirm() != null) {
+            System.out.println("召回公司: " + params.getRecallingFirm());
+        }
+        if (params.getProductDescription() != null) {
+            System.out.println("产品描述: " + params.getProductDescription());
+        }
+        System.out.println("组合查询: " + (searchTerm != null ? searchTerm : "无搜索条件"));
+        System.out.println("日期范围: " + params.getDateFrom() + " - " + params.getDateTo());
+        
+        return crawlAndSaveDeviceRecall(
+            searchTerm,
+            params.getMaxRecords(),
+            params.getBatchSize(),
+            params.getDateFrom(),
+            params.getDateTo()
+        );
+    }
+    
     /**
      * 通用爬取方法（支持时间范围）
+     * @param searchTerm 搜索词（可选）
+     * @param maxRecords 最大记录数（-1表示全部）
+     * @param batchSize 批次大小
+     * @param dateFrom 起始日期（格式：YYYYMMDD，如：20240101）
+     * @param dateTo 结束日期（格式：YYYYMMDD，如：20241231，为空则查询到未来）
+     * @return 爬取结果信息
      */
     public String crawlAndSaveDeviceRecall(String searchTerm, int maxRecords, int batchSize, String dateFrom, String dateTo) {
         if (maxRecords == -1) {
@@ -301,55 +692,14 @@ public class US_recall_api {
     }
 
     /**
-     * 按brand name搜索（使用openfda.brand_name字段）
-     */
-    public String crawlAndSaveByBrandName(String brandName, int maxRecords, int batchSize) {
-        String searchTerm = "openfda.brand_name:" + brandName;
-        return crawlAndSaveDeviceRecall(searchTerm, maxRecords, batchSize);
-    }
-
-    /**
-     * 按brand name搜索（支持时间范围）
-     */
-    public String crawlAndSaveByBrandName(String brandName, int maxRecords, int batchSize, String dateFrom, String dateTo) {
-        String searchTerm = "openfda.brand_name:" + brandName;
-        return crawlAndSaveDeviceRecall(searchTerm, maxRecords, batchSize, dateFrom, dateTo);
-    }
-
-    /**
-     * 按召回公司搜索
-     */
-    public String crawlAndSaveByRecallingFirm(String recallingFirm, int maxRecords, int batchSize) {
-        String searchTerm = "recalling_firm:" + recallingFirm;
-        return crawlAndSaveDeviceRecall(searchTerm, maxRecords, batchSize);
-    }
-
-    /**
-     * 按召回公司搜索（支持时间范围）
-     */
-    public String crawlAndSaveByRecallingFirm(String recallingFirm, int maxRecords, int batchSize, String dateFrom, String dateTo) {
-        String searchTerm = "recalling_firm:" + recallingFirm;
-        return crawlAndSaveDeviceRecall(searchTerm, maxRecords, batchSize, dateFrom, dateTo);
-    }
-
-    /**
-     * 按产品描述搜索
-     */
-    public String crawlAndSaveByProductDescription(String productDescription, int maxRecords, int batchSize) {
-        String searchTerm = "product_description:" + productDescription;
-        return crawlAndSaveDeviceRecall(searchTerm, maxRecords, batchSize);
-    }
-
-    /**
-     * 按产品描述搜索（支持时间范围）
-     */
-    public String crawlAndSaveByProductDescription(String productDescription, int maxRecords, int batchSize, String dateFrom, String dateTo) {
-        String searchTerm = "product_description:" + productDescription;
-        return crawlAndSaveDeviceRecall(searchTerm, maxRecords, batchSize, dateFrom, dateTo);
-    }
-
-    /**
      * 基于关键词列表爬取FDA设备召回数据
+     * 
+     * @param inputKeywords 关键词列表
+     * @param maxRecords 每个关键词的最大记录数
+     * @param batchSize 批次大小
+     * @param dateFrom 起始日期（格式：YYYYMMDD）
+     * @param dateTo 结束日期（格式：YYYYMMDD）
+     * @return 爬取结果信息
      */
     public String crawlAndSaveWithKeywords(List<String> inputKeywords, int maxRecords, int batchSize, String dateFrom, String dateTo) {
         if (inputKeywords == null || inputKeywords.isEmpty()) {
@@ -375,17 +725,20 @@ public class US_recall_api {
             try {
                 // 1. 使用关键词作为召回公司进行搜索
                 System.out.println("关键词 '" + keyword + "' 作为召回公司搜索");
-                String firmResult = crawlAndSaveByRecallingFirm(keyword, maxRecords, batchSize, dateFrom, dateTo);
+                String firmSearchTerm = "recalling_firm:" + keyword;
+                String firmResult = crawlAndSaveDeviceRecall(firmSearchTerm, maxRecords, batchSize, dateFrom, dateTo);
                 System.out.println("召回公司搜索结果: " + firmResult);
 
                 // 2. 使用关键词作为brand name进行搜索
                 System.out.println("关键词 '" + keyword + "' 作为brand name搜索");
-                String brandResult = crawlAndSaveByBrandName(keyword, maxRecords, batchSize, dateFrom, dateTo);
+                String brandSearchTerm = "openfda.brand_name:" + keyword;
+                String brandResult = crawlAndSaveDeviceRecall(brandSearchTerm, maxRecords, batchSize, dateFrom, dateTo);
                 System.out.println("brand name搜索结果: " + brandResult);
 
                 // 3. 使用关键词作为产品描述进行搜索
                 System.out.println("关键词 '" + keyword + "' 作为产品描述搜索");
-                String productResult = crawlAndSaveByProductDescription(keyword, maxRecords, batchSize, dateFrom, dateTo);
+                String productSearchTerm = "product_description:" + keyword;
+                String productResult = crawlAndSaveDeviceRecall(productSearchTerm, maxRecords, batchSize, dateFrom, dateTo);
                 System.out.println("产品描述搜索结果: " + productResult);
 
                 // 解析结果中的保存数量
@@ -469,19 +822,33 @@ public class US_recall_api {
                     skip / batchSize + 1, skip, currentLimit);
 
             Map<String, String> params = new HashMap<>();
-            if (searchTerm != null && !searchTerm.trim().isEmpty()) {
-                params.put("search", searchTerm);
-            }
             params.put("limit", String.valueOf(currentLimit));
             params.put("skip", String.valueOf(skip));
-//
-//            // 添加时间范围参数
-//            if (dateFrom != null && dateTo != null) {
-//                String dateRange = String.format("event_date_initiated:[%s TO %s]", dateFrom, dateTo);
-//                String currentSearch = searchTerm != null && !searchTerm.isEmpty() ?
-//                    searchTerm + " AND " + dateRange : dateRange;
-//                params.put("search", currentSearch);
-//            }
+            
+            // 构建搜索查询（支持时间范围）
+            StringBuilder searchQuery = new StringBuilder();
+            
+            // 添加搜索词
+            if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+                searchQuery.append(searchTerm.trim());
+            }
+            
+            // 添加时间范围参数（使用event_date_initiated或event_date_posted）
+            if (dateFrom != null && !dateFrom.trim().isEmpty()) {
+                String effectiveDateTo = (dateTo != null && !dateTo.trim().isEmpty()) ? dateTo.trim() : "20991231";
+                String dateRange = String.format("event_date_initiated:[%s+TO+%s]", dateFrom.trim(), effectiveDateTo);
+                
+                if (searchQuery.length() > 0) {
+                    searchQuery.append("+AND+").append(dateRange);
+                } else {
+                    searchQuery.append(dateRange);
+                }
+            }
+            
+            // 设置search参数
+            if (searchQuery.length() > 0) {
+                params.put("search", searchQuery.toString());
+            }
 
             try {
                 FDAResponse response = fetchData("/device/recall.json", params);
@@ -547,16 +914,29 @@ public class US_recall_api {
      * 获取数据
      */
     private FDAResponse fetchData(String endpoint, Map<String, String> params) throws IOException, URISyntaxException {
-        URIBuilder uriBuilder = new URIBuilder(BASE_URL + endpoint);
-        uriBuilder.addParameter("api_key", API_KEY);
-
-        // 然后添加其他请求参数
-        params.forEach(uriBuilder::addParameter);
-
-        String requestUrl = uriBuilder.build().toString();
+        // 手动构建URL，对search参数特殊处理
+        StringBuilder urlBuilder = new StringBuilder(BASE_URL + endpoint);
+        urlBuilder.append("?api_key=").append(API_KEY);
+        
+        // 处理其他参数
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            
+            if ("search".equals(key)) {
+                // search参数不进行URL编码，FDA API需要特定格式
+                // 直接附加，保持+号和括号
+                urlBuilder.append("&search=").append(value);
+            } else {
+                // 其他参数正常编码
+                urlBuilder.append("&").append(key).append("=").append(value);
+            }
+        }
+        
+        String requestUrl = urlBuilder.toString();
         System.out.println("请求URL: " + requestUrl);
 
-        HttpGet httpGet = new HttpGet(uriBuilder.build());
+        HttpGet httpGet = new HttpGet(requestUrl);
 
         for (int attempt = 1; attempt <= crawlerConfig.getRetry().getMaxAttempts(); attempt++) {
             try (var response = httpClient.executeOpen(null, httpGet, null)) {
@@ -576,6 +956,7 @@ public class US_recall_api {
                                     com.fasterxml.jackson.databind.JsonNode error = errorNode.get("error");
                                     String errorCode = error.has("code") ? error.get("code").asText() : "UNKNOWN";
                                     String errorMessage = error.has("message") ? error.get("message").asText() : "Unknown error";
+                                    String errorDetails = error.has("details") ? error.get("details").asText() : "";
 
                                     if ("NOT_FOUND".equals(errorCode) && "No matches found!".equals(errorMessage)) {
                                         System.out.println("API返回：未找到匹配记录 - " + errorMessage);
@@ -584,17 +965,34 @@ public class US_recall_api {
                                         return emptyResponse;
                                     } else {
                                         System.err.printf("API返回错误: code=%s, message=%s%n", errorCode, errorMessage);
-                                        throw new IOException("API错误: " + errorCode + " - " + errorMessage);
+                                        if (!errorDetails.isEmpty()) {
+                                            System.err.println("错误详情: " + errorDetails);
+                                        }
+                                        System.err.println("完整响应: " + json);
+                                        throw new IOException("API错误: " + errorCode + " - " + errorMessage + 
+                                            (errorDetails.isEmpty() ? "" : " | " + errorDetails));
                                     }
                                 }
+                            } catch (IOException ioe) {
+                                throw ioe; // 重新抛出IOException
                             } catch (Exception parseError) {
                                 System.err.println("解析错误响应失败: " + parseError.getMessage());
+                                System.err.println("原始响应: " + json);
                                 throw new IOException("API返回错误响应，解析失败: " + parseError.getMessage());
                             }
                         }
 
                         return objectMapper.readValue(json, FDAResponse.class);
                     }
+                } else if (statusCode == 500) {
+                    // 500错误特殊处理，尝试读取响应体
+                    HttpEntity entity = response.getEntity();
+                    if (entity != null) {
+                        String errorBody = EntityUtils.toString(entity, StandardCharsets.UTF_8);
+                        System.err.printf("服务器错误(500)响应内容: %s%n", errorBody);
+                        throw new IOException("FDA API服务器错误(500): " + errorBody);
+                    }
+                    System.err.printf("请求失败，状态码: %d，原因: %s（第%d次重试）%n", statusCode, reasonPhrase, attempt);
                 } else {
                     System.err.printf("请求失败，状态码: %d，原因: %s（第%d次重试）%n", statusCode, reasonPhrase, attempt);
                     if (attempt < crawlerConfig.getRetry().getMaxAttempts()) {
@@ -744,6 +1142,9 @@ public class US_recall_api {
         entity.setDataSource("FDA");
         entity.setCountryCode("US");
         entity.setJdCountry(src.getJdCountry());
+        
+        // 设置爬取时间为当前时间
+        entity.setCrawlTime(java.time.LocalDateTime.now());
 
         // 计算风险等级
         RiskLevel calculatedRiskLevel = RiskLevelUtil.calculateRiskLevelByRecallStatus(src.getRecallStatus());
@@ -791,33 +1192,6 @@ public class US_recall_api {
             "skin elasticity analysis", "monitor", "imaging", "medical device", "FDA",
             "recall", "withdrawal", "defect", "safety", "hazard", "medical specialty", "device class"
         );
-    }
-
-    /**
-     * K编号去重与标准化（去空、去重、统一大写，保持原始顺序）。
-     * 额外：仅保留合法格式（K+6位数字），并在发现重复/无效时输出提示日志。
-     */
-    private String joinDistinctKNumbers(List<String> kNumbers) {
-        if (kNumbers == null || kNumbers.isEmpty()) return null;
-        LinkedHashSet<String> set = new LinkedHashSet<>();
-        int total = 0;
-        int invalid = 0;
-        int duplicates = 0;
-        Pattern p = Pattern.compile("^K\\d{6}$"); // 典型510(k)编号格式
-        for (String k : kNumbers) {
-            if (k == null) { total++; invalid++; continue; }
-            String v = k.trim();
-            total++;
-            if (v.isEmpty()) { invalid++; continue; }
-            v = v.toUpperCase();
-            if (!p.matcher(v).matches()) { invalid++; continue; }
-            if (!set.add(v)) { duplicates++; }
-        }
-        if (set.isEmpty()) return null;
-        if (invalid > 0 || duplicates > 0) {
-            System.out.printf("K编号清洗：总计%d，过滤无效%d，去重%d，保留%d%n", total, invalid, duplicates, set.size());
-        }
-        return String.join(",", set);
     }
 
     /**
