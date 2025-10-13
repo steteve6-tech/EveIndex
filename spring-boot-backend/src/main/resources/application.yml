@@ -300,7 +300,7 @@ medcert:
 # OpenAI API配置（用于AI智能审核功能）
 openai:
   api:
-    key: sk-XgqsH6v22a9ZMLKJ6a6e69Ea04064aFbAd1325B278527cCb  # 从环境变量获取OpenAI API Key
+    key: # 从环境变量获取OpenAI API Key
     model: gpt-4o     # 使用GPT-3.5-turbo模型（成本较低，准确率90%+）
     # model: gpt-4           # 如需更高准确率可切换到GPT-4（成本较高，准确率95%+）
     base-url: https://chat-api.ss5.xyz/v1  # OpenAI API基础URL（支持代理地址）
