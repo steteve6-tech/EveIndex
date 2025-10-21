@@ -3,10 +3,12 @@ package com.certification.service.ai.strategy;
 import com.certification.dto.ai.AIJudgeResult;
 import com.certification.entity.common.DeviceRecallRecord;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import com.certification.repository.common.DeviceRecallRecordRepository;
 
 /**
  * 设备召回记录AI判断策略
@@ -86,5 +88,17 @@ public class RecallJudgeStrategy extends BaseAIJudgeStrategy {
 
         return remark.toString();
     }
-}
 
+    @Autowired
+    private DeviceRecallRecordRepository recallRepository;
+
+    @Override
+    public Object findEntityById(Long entityId) {
+        return recallRepository.findById(entityId).orElse(null);
+    }
+
+    @Override
+    public void saveEntity(Object entity) {
+        recallRepository.save((DeviceRecallRecord) entity);
+    }
+}

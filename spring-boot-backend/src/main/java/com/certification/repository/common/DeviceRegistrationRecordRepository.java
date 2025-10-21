@@ -109,4 +109,20 @@ public interface DeviceRegistrationRecordRepository extends JpaRepository<Device
            "d.proprietaryName LIKE %:keyword%) " +
            "AND (:countryCode IS NULL OR d.jdCountry = :countryCode)")
     org.springframework.data.domain.Page<DeviceRegistrationRecord> findByKeywordAndCountry(@Param("keyword") String keyword, @Param("countryCode") String countryCode, org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * 统计新增数据数量
+     */
+    long countByIsNew(Boolean isNew);
+
+    /**
+     * 查找新增数据（分页）
+     */
+    org.springframework.data.domain.Page<DeviceRegistrationRecord> findByIsNew(Boolean isNew, org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * 查找已查看的新增数据
+     */
+    List<DeviceRegistrationRecord> findByIsNewAndNewDataViewed(Boolean isNew, Boolean newDataViewed);
+
 }

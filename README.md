@@ -101,6 +101,16 @@
 
 ## 🚀 快速开始
 
+> 💡 **新手推荐**：查看 **[⚡ 快速启动指南 QUICK_START.md](./QUICK_START.md)** 获取最简单的一键启动方式！
+
+### 三种启动方式
+
+| 方式 | 适合场景 | 启动时间 | 难度 | 文档 |
+|------|----------|----------|------|------|
+| 🚀 **一键启动** | 快速体验、演示 | 1 分钟 | ⭐ | [QUICK_START.md](./QUICK_START.md) |
+| 🐳 **Docker 部署** | 开发/生产环境 | 3 分钟 | ⭐⭐ | [DEPLOYMENT_README.md](./DEPLOYMENT_README.md) |
+| 🛠️ **手动启动** | 开发调试 | 5 分钟 | ⭐⭐⭐ | [LOCAL_DEVELOPMENT_GUIDE.md](./LOCAL_DEVELOPMENT_GUIDE.md) |
+
 ### 前置要求
 
 - **JDK 17+**

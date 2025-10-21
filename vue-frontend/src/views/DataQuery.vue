@@ -175,38 +175,38 @@
                  </template>
                  刷新数据
                </a-button>
-               <a-button @click="autoProcess" :loading="autoProcessing" type="primary">
-                 <template #icon>
-                   <RobotOutlined />
-                 </template>
-                 自动处理
-               </a-button>
+<!--               <a-button @click="autoProcess" :loading="autoProcessing" type="primary">-->
+<!--                 <template #icon>-->
+<!--                   <RobotOutlined />-->
+<!--                 </template>-->
+<!--                 自动处理-->
+<!--               </a-button>-->
                <a-button @click="showAIJudgePanel = !showAIJudgePanel" type="primary" style="background: #722ed1; border-color: #722ed1;">
                  <template #icon>
                    <RobotOutlined />
                  </template>
                  AI判断
                </a-button>
-               <a-form-item label="处理方式" style="margin-left: 16px; margin-bottom: 0;">
-                 <a-select
-                   v-model:value="processingMethod"
-                   style="width: 160px"
-                   @change="handleProcessingMethodChange"
-                 >
-                   <a-select-option value="keyword">
-                     <div class="processing-option">
-                       <span class="option-icon">🔍</span>
-                       <span>关键词匹配</span>
-                     </div>
-                   </a-select-option>
-                   <a-select-option value="ai">
-                     <div class="processing-option">
-                       <span class="option-icon">🤖</span>
-                       <span>AI处理</span>
-                     </div>
-                   </a-select-option>
-                 </a-select>
-               </a-form-item>
+<!--               <a-form-item label="处理方式" style="margin-left: 16px; margin-bottom: 0;">-->
+<!--                 <a-select-->
+<!--                   v-model:value="processingMethod"-->
+<!--                   style="width: 160px"-->
+<!--                   @change="handleProcessingMethodChange"-->
+<!--                 >-->
+<!--                   <a-select-option value="keyword">-->
+<!--                     <div class="processing-option">-->
+<!--                       <span class="option-icon">🔍</span>-->
+<!--                       <span>关键词匹配</span>-->
+<!--                     </div>-->
+<!--                   </a-select-option>-->
+<!--                   <a-select-option value="ai">-->
+<!--                     <div class="processing-option">-->
+<!--                       <span class="option-icon">🤖</span>-->
+<!--                       <span>AI处理</span>-->
+<!--                     </div>-->
+<!--                   </a-select-option>-->
+<!--                 </a-select>-->
+<!--               </a-form-item>-->
                <a-button @click="setAllToMediumRisk" :loading="batchUpdating" type="primary" >
                  <template #icon>
                    <ReloadOutlined />

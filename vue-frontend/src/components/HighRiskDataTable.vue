@@ -135,32 +135,7 @@
               </a-select-option>
             </a-select>
           </template>
-          
-          <template v-else-if="column.key === 'matchedKeywords'">
-            <div v-if="record.matchedKeywords && Array.isArray(record.matchedKeywords)">
-              <a-tag 
-                v-for="keyword in record.matchedKeywords" 
-                :key="keyword" 
-                color="blue" 
-                style="margin: 2px; cursor: pointer;"
-                @click="handleKeywordClick(record, keyword)"
-                class="clickable-keyword-tag"
-              >
-                {{ keyword }}
-              </a-tag>
-            </div>
-            <span v-else>-</span>
-          </template>
-          
-          <template v-else-if="column.key === 'matchedFields'">
-            <div v-if="record.matchedFields && Array.isArray(record.matchedFields)">
-              <a-tag v-for="field in record.matchedFields" :key="field" color="green" style="margin: 2px;">
-                {{ field }}
-              </a-tag>
-            </div>
-            <span v-else>-</span>
-          </template>
-          
+
           <template v-else-if="column.key === 'action'">
             <a-space>
               <a-button type="link" size="small" @click="handleViewDetail(record)">
@@ -435,12 +410,10 @@ const columns = computed(() => {
         { title: '设备名称', dataIndex: 'deviceName', key: 'deviceName' },
         { title: '申请人', dataIndex: 'applicant', key: 'applicant' },
         { title: '接收日期', dataIndex: 'dateReceived', key: 'dateReceived' },
-        { title: '匹配关键词', key: 'matchedKeywords', width: 200 },
-        { title: '匹配字段', key: 'matchedFields', width: 150 },
-        { 
-          title: '备注', 
-          dataIndex: 'remarks', 
-          key: 'remarks', 
+        {
+          title: '备注',
+          dataIndex: 'remarks',
+          key: 'remarks',
           width: 150,
           ellipsis: true,
           customRender: ({text}: { text: any }) => {
@@ -455,12 +428,10 @@ const columns = computed(() => {
         { title: '产品描述', dataIndex: 'productDescription', key: 'productDescription' },
         { title: '召回公司', dataIndex: 'recallingFirm', key: 'recallingFirm' },
         { title: '事件日期', dataIndex: 'eventDatePosted', key: 'eventDatePosted' },
-        { title: '匹配关键词', key: 'matchedKeywords', width: 200 },
-        { title: '匹配字段', key: 'matchedFields', width: 150 },
-        { 
-          title: '备注', 
-          dataIndex: 'remarks', 
-          key: 'remarks', 
+        {
+          title: '备注',
+          dataIndex: 'remarks',
+          key: 'remarks',
           width: 150,
           ellipsis: true,
           customRender: ({text}: { text: any }) => {
@@ -475,12 +446,10 @@ const columns = computed(() => {
         { title: '品牌名称', dataIndex: 'brandName', key: 'brandName' },
         { title: '制造商', dataIndex: 'manufacturerName', key: 'manufacturerName' },
         { title: '接收日期', dataIndex: 'dateReceived', key: 'dateReceived' },
-        { title: '匹配关键词', key: 'matchedKeywords', width: 200 },
-        { title: '匹配字段', key: 'matchedFields', width: 150 },
-        { 
-          title: '备注', 
-          dataIndex: 'remarks', 
-          key: 'remarks', 
+        {
+          title: '备注',
+          dataIndex: 'remarks',
+          key: 'remarks',
           width: 150,
           ellipsis: true,
           customRender: ({text}: { text: any }) => {
@@ -519,12 +488,10 @@ const columns = computed(() => {
             return text || '-'
           }
         },
-        { title: '匹配关键词', key: 'matchedKeywords', width: 200 },
-        { title: '匹配字段', key: 'matchedFields', width: 150 },
-        { 
-          title: '备注', 
-          dataIndex: 'remarks', 
-          key: 'remarks', 
+        {
+          title: '备注',
+          dataIndex: 'remarks',
+          key: 'remarks',
           width: 150,
           ellipsis: true,
           customRender: ({text}: { text: any }) => {
@@ -539,12 +506,10 @@ const columns = computed(() => {
         { title: '文档标题', dataIndex: 'title', key: 'title' },
         { title: '文档类型', dataIndex: 'topic', key: 'topic' },
         { title: '发布日期', dataIndex: 'publicationDate', key: 'publicationDate' },
-        { title: '匹配关键词', key: 'matchedKeywords', width: 200 },
-        { title: '匹配字段', key: 'matchedFields', width: 150 },
-        { 
-          title: '备注', 
-          dataIndex: 'remarks', 
-          key: 'remarks', 
+        {
+          title: '备注',
+          dataIndex: 'remarks',
+          key: 'remarks',
           width: 150,
           ellipsis: true,
           customRender: ({text}: { text: any }) => {
@@ -560,12 +525,10 @@ const columns = computed(() => {
         { title: '案例标题', dataIndex: 'rulingResult', key: 'rulingResult' },
         { title: 'HS编码', dataIndex: 'hsCodeUsed', key: 'hsCodeUsed' },
         { title: '处理日期', dataIndex: 'caseDate', key: 'caseDate' },
-        { title: '匹配关键词', key: 'matchedKeywords', width: 200 },
-        { title: '匹配字段', key: 'matchedFields', width: 150 },
-        { 
-          title: '备注', 
-          dataIndex: 'remarks', 
-          key: 'remarks', 
+        {
+          title: '备注',
+          dataIndex: 'remarks',
+          key: 'remarks',
           width: 150,
           ellipsis: true,
           customRender: ({text}: { text: any }) => {
@@ -616,11 +579,6 @@ const filteredRecord = computed(() => {
   
   return filtered
 })
-
-// 处理关键词点击
-const handleKeywordClick = (record: any, keyword: string) => {
-  emit('keyword-click', record, keyword)
-}
 
 // 获取数据类型对应的时间字段
 const getTimeFieldForDataType = (dataType: string): string => {

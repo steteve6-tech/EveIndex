@@ -2,9 +2,76 @@
   <div class="device-data">
     <!-- 页面头部 -->
     <div class="page-header">
-      <h1>设备数据管理</h1>
-      <p>按国家管理和展示医疗器械相关数据</p>
+      <div class="header-left">
+        <h1>设备数据管理</h1>
+        <p>按国家管理和展示医疗器械相关数据</p>
+      </div>
+      <div class="header-right">
+        <a-button type="primary" danger @click="handleBatchSetAllNormal" :loading="settingAllNormal">
+          初始化：将所有数据设置为普通数据
+        </a-button>
+      </div>
     </div>
+
+    <!-- AI判断待审核通知 -->
+    <a-alert
+      v-if="pendingJudgmentCount > 0"
+      type="warning"
+      closable
+      show-icon
+      style="margin-bottom: 16px"
+    >
+      <template #message>
+        <span>
+          您有 <strong>{{ pendingJudgmentCount }}</strong> 条AI判断待审核
+        </span>
+      </template>
+      <template #description>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span>包括: 黑名单过滤 {{ deviceStatistics.filteredByBlacklistCount }} 条, 高风险 {{ deviceStatistics.highRiskCount }} 条</span>
+          <a-button type="primary" size="small" @click="showAIJudgmentReview">
+            立即审核
+          </a-button>
+        </div>
+      </template>
+    </a-alert>
+
+    <!-- 新增数据通知 -->
+    <a-alert
+      v-if="newDataTotalCount > 0"
+      type="info"
+      closable
+      show-icon
+      style="margin-bottom: 16px"
+    >
+      <template #message>
+        <span>
+          发现 <strong>{{ newDataTotalCount }}</strong> 条新增数据
+        </span>
+      </template>
+      <template #description>
+        <div>
+          <a-tag v-if="newDataCount.Application > 0" color="blue" style="margin-right: 8px;">
+            510K申请: {{ newDataCount.Application }}
+          </a-tag>
+          <a-tag v-if="newDataCount.Recall > 0" color="red" style="margin-right: 8px;">
+            召回: {{ newDataCount.Recall }}
+          </a-tag>
+          <a-tag v-if="newDataCount.Event > 0" color="orange" style="margin-right: 8px;">
+            事件: {{ newDataCount.Event }}
+          </a-tag>
+          <a-tag v-if="newDataCount.Registration > 0" color="green" style="margin-right: 8px;">
+            注册: {{ newDataCount.Registration }}
+          </a-tag>
+          <a-tag v-if="newDataCount.Document > 0" color="purple" style="margin-right: 8px;">
+            文档: {{ newDataCount.Document }}
+          </a-tag>
+          <a-tag v-if="newDataCount.Customs > 0" color="cyan">
+            海关: {{ newDataCount.Customs }}
+          </a-tag>
+        </div>
+      </template>
+    </a-alert>
 
     <!-- 国家标签页 -->
     <a-tabs v-model:activeKey="activeCountry" class="country-tabs" @change="handleCountryChange">
@@ -572,20 +639,6 @@
                                     查看详情
                                   </a-button>
                                 </template>
-                                <template v-else-if="column.key === 'matchedKeywords'">
-                                  <div v-if="record.matchedKeywords && record.matchedKeywords.length > 0">
-                                    <a-tag
-                                        v-for="keyword in record.matchedKeywords"
-                                        :key="keyword"
-                                        :color="getKeywordColor(keyword)"
-                                        size="small"
-                                        style="margin: 2px;"
-                                    >
-                                      {{ keyword }}
-                                    </a-tag>
-                                  </div>
-                                  <span v-else style="color: #999;">-</span>
-                                </template>
                               </template>
                             </a-table>
                           </a-tab-pane>
@@ -646,7 +699,26 @@
                       row-key="id"
                   >
                     <template #bodyCell="{ column, record }">
-                      <template v-if="column.key === 'action'">
+                      <template v-if="column.key === 'isNew'">
+                        <a-badge v-if="record.isNew" status="processing" text="新" />
+                        <span v-else style="color: #999;">-</span>
+                      </template>
+                      <template v-else-if="column.key === 'riskLevel'">
+                        <a-tag v-if="record.riskLevel === 'HIGH'" color="red">高风险</a-tag>
+                        <a-tag v-else-if="record.riskLevel === 'MEDIUM'" color="orange">中风险</a-tag>
+                        <a-tag v-else-if="record.riskLevel === 'LOW'" color="green">低风险</a-tag>
+                        <span v-else style="color: #999;">-</span>
+                      </template>
+                      <template v-else-if="column.key === 'keywords'">
+                        <div v-if="record.keywords">
+                          <a-tag v-for="(keyword, index) in parseKeywords(record.keywords)" :key="index"
+                                 :color="getKeywordColor(keyword)" style="margin: 2px;">
+                            {{ keyword }}
+                          </a-tag>
+                        </div>
+                        <span v-else style="color: #999;">-</span>
+                      </template>
+                      <template v-else-if="column.key === 'action'">
                         <a-button type="link" @click="viewRecallDetail(record)">查看详情</a-button>
                       </template>
                     </template>
@@ -701,7 +773,26 @@
                       row-key="id"
                   >
                     <template #bodyCell="{ column, record }">
-                      <template v-if="column.key === 'action'">
+                      <template v-if="column.key === 'isNew'">
+                        <a-badge v-if="record.isNew" status="processing" text="新" />
+                        <span v-else style="color: #999;">-</span>
+                      </template>
+                      <template v-else-if="column.key === 'riskLevel'">
+                        <a-tag v-if="record.riskLevel === 'HIGH'" color="red">高风险</a-tag>
+                        <a-tag v-else-if="record.riskLevel === 'MEDIUM'" color="orange">中风险</a-tag>
+                        <a-tag v-else-if="record.riskLevel === 'LOW'" color="green">低风险</a-tag>
+                        <span v-else style="color: #999;">-</span>
+                      </template>
+                      <template v-else-if="column.key === 'keywords'">
+                        <div v-if="record.keywords">
+                          <a-tag v-for="(keyword, index) in parseKeywords(record.keywords)" :key="index"
+                                 :color="getKeywordColor(keyword)" style="margin: 2px;">
+                            {{ keyword }}
+                          </a-tag>
+                        </div>
+                        <span v-else style="color: #999;">-</span>
+                      </template>
+                      <template v-else-if="column.key === 'action'">
                         <a-button type="link" @click="viewDevice510KDetail(record)">查看详情</a-button>
                       </template>
                     </template>
@@ -755,7 +846,26 @@
                       row-key="id"
                   >
                     <template #bodyCell="{ column, record }">
-                      <template v-if="column.key === 'action'">
+                      <template v-if="column.key === 'isNew'">
+                        <a-badge v-if="record.isNew" status="processing" text="新" />
+                        <span v-else style="color: #999;">-</span>
+                      </template>
+                      <template v-else-if="column.key === 'riskLevel'">
+                        <a-tag v-if="record.riskLevel === 'HIGH'" color="red">高风险</a-tag>
+                        <a-tag v-else-if="record.riskLevel === 'MEDIUM'" color="orange">中风险</a-tag>
+                        <a-tag v-else-if="record.riskLevel === 'LOW'" color="green">低风险</a-tag>
+                        <span v-else style="color: #999;">-</span>
+                      </template>
+                      <template v-else-if="column.key === 'keywords'">
+                        <div v-if="record.keywords">
+                          <a-tag v-for="(keyword, index) in parseKeywords(record.keywords)" :key="index"
+                                 :color="getKeywordColor(keyword)" style="margin: 2px;">
+                            {{ keyword }}
+                          </a-tag>
+                        </div>
+                        <span v-else style="color: #999;">-</span>
+                      </template>
+                      <template v-else-if="column.key === 'action'">
                         <a-button type="link" @click="viewEventDetail(record)">查看详情</a-button>
                       </template>
                     </template>
@@ -809,7 +919,26 @@
                       row-key="id"
                   >
                     <template #bodyCell="{ column, record }">
-                      <template v-if="column.key === 'action'">
+                      <template v-if="column.key === 'isNew'">
+                        <a-badge v-if="record.isNew" status="processing" text="新" />
+                        <span v-else style="color: #999;">-</span>
+                      </template>
+                      <template v-else-if="column.key === 'riskLevel'">
+                        <a-tag v-if="record.riskLevel === 'HIGH'" color="red">高风险</a-tag>
+                        <a-tag v-else-if="record.riskLevel === 'MEDIUM'" color="orange">中风险</a-tag>
+                        <a-tag v-else-if="record.riskLevel === 'LOW'" color="green">低风险</a-tag>
+                        <span v-else style="color: #999;">-</span>
+                      </template>
+                      <template v-else-if="column.key === 'keywords'">
+                        <div v-if="record.keywords">
+                          <a-tag v-for="(keyword, index) in parseKeywords(record.keywords)" :key="index"
+                                 :color="getKeywordColor(keyword)" style="margin: 2px;">
+                            {{ keyword }}
+                          </a-tag>
+                        </div>
+                        <span v-else style="color: #999;">-</span>
+                      </template>
+                      <template v-else-if="column.key === 'action'">
                         <a-button type="link" @click="viewRegistrationDetail(record)">查看详情</a-button>
                       </template>
                     </template>
@@ -863,7 +992,26 @@
                       row-key="id"
                   >
                     <template #bodyCell="{ column, record }">
-                      <template v-if="column.key === 'action'">
+                      <template v-if="column.key === 'isNew'">
+                        <a-badge v-if="record.isNew" status="processing" text="新" />
+                        <span v-else style="color: #999;">-</span>
+                      </template>
+                      <template v-else-if="column.key === 'riskLevel'">
+                        <a-tag v-if="record.riskLevel === 'HIGH'" color="red">高风险</a-tag>
+                        <a-tag v-else-if="record.riskLevel === 'MEDIUM'" color="orange">中风险</a-tag>
+                        <a-tag v-else-if="record.riskLevel === 'LOW'" color="green">低风险</a-tag>
+                        <span v-else style="color: #999;">-</span>
+                      </template>
+                      <template v-else-if="column.key === 'keywords'">
+                        <div v-if="record.keywords">
+                          <a-tag v-for="(keyword, index) in parseKeywords(record.keywords)" :key="index"
+                                 :color="getKeywordColor(keyword)" style="margin: 2px;">
+                            {{ keyword }}
+                          </a-tag>
+                        </div>
+                        <span v-else style="color: #999;">-</span>
+                      </template>
+                      <template v-else-if="column.key === 'action'">
                         <a-button type="link" @click="viewGuidanceDetail(record)">查看详情</a-button>
                       </template>
                     </template>
@@ -917,8 +1065,24 @@
                       row-key="id"
                   >
                     <template #bodyCell="{ column, record }">
-                      <template v-if="column.key === 'action'">
-                        <a-button type="link" @click="viewCustomsDetail(record)">查看详情</a-button>
+                      <template v-if="column.key === 'isNew'">
+                        <a-badge v-if="record.isNew" status="processing" text="新" />
+                        <span v-else style="color: #999;">-</span>
+                      </template>
+                      <template v-else-if="column.key === 'riskLevel'">
+                        <a-tag v-if="record.riskLevel === 'HIGH'" color="red">高风险</a-tag>
+                        <a-tag v-else-if="record.riskLevel === 'MEDIUM'" color="orange">中风险</a-tag>
+                        <a-tag v-else-if="record.riskLevel === 'LOW'" color="green">低风险</a-tag>
+                        <span v-else style="color: #999;">-</span>
+                      </template>
+                      <template v-else-if="column.key === 'keywords'">
+                        <div v-if="record.keywords">
+                          <a-tag v-for="(keyword, index) in parseKeywords(record.keywords)" :key="index"
+                                 :color="getKeywordColor(keyword)" style="margin: 2px;">
+                            {{ keyword }}
+                          </a-tag>
+                        </div>
+                        <span v-else style="color: #999;">-</span>
                       </template>
                       <template v-else-if="column.key === 'hsCodeUsed'">
                         <div v-if="record.hsCodeUsed">
@@ -927,6 +1091,9 @@
                           </div>
                         </div>
                         <span v-else>-</span>
+                      </template>
+                      <template v-else-if="column.key === 'action'">
+                        <a-button type="link" @click="viewCustomsDetail(record)">查看详情</a-button>
                       </template>
                     </template>
                   </a-table>
@@ -1442,20 +1609,20 @@
         <a-descriptions :column="2" bordered size="small">
           <template v-for="(value, key) in selectedRecord" :key="key">
             <!-- 长字段单独占一行 -->
-            <a-descriptions-item 
+            <a-descriptions-item
               v-if="isLongField(key)"
-              :label="formatFieldLabel(key)" 
+              :label="formatFieldLabel(key)"
               :span="2"
             >
               <div class="long-field-content">
                 {{ formatFieldValue(key, value) }}
               </div>
             </a-descriptions-item>
-            
+
             <!-- 普通字段占一列 -->
-            <a-descriptions-item 
+            <a-descriptions-item
               v-else
-              :label="formatFieldLabel(key)" 
+              :label="formatFieldLabel(key)"
               :span="1"
             >
               <div>
@@ -1466,6 +1633,14 @@
         </a-descriptions>
       </div>
     </a-modal>
+
+    <!-- AI判断审核弹窗 -->
+    <AIJudgmentReviewPopup
+      v-model:visible="aiJudgmentReviewVisible"
+      module-type="DEVICE_DATA"
+      @confirmed="handleAIJudgmentConfirmed"
+      @rejected="handleAIJudgmentRejected"
+    />
   </div>
 </template>
 <script setup lang="ts">
@@ -1496,6 +1671,14 @@ import {
   getGuidanceDocuments,
   getCustomsCases
 } from '@/api/deviceData'
+import {
+  getPendingCount,
+  getDeviceDataStatistics,
+  getNewDataCount,
+  autoMarkViewed,
+  batchSetAllAsNormal
+} from '@/api/aiJudgment'
+import AIJudgmentReviewPopup from '@/components/AIJudgmentReviewPopup.vue'
 import {
   saveUnifiedKeywordConfig,
   getUnifiedKeywordConfig
@@ -1546,6 +1729,31 @@ const riskLevelStats = ref<Record<string, Record<string, number>>>({
   '指导文档': { '高风险': 0, '中风险': 0, '低风险': 0 },
   '海关案例': { '高风险': 0, '中风险': 0, '低风险': 0 }
 })
+
+// AI判断待审核相关
+const aiJudgmentReviewVisible = ref(false)
+const pendingJudgmentCount = ref(0)
+const deviceStatistics = ref({
+  filteredByBlacklistCount: 0,
+  highRiskCount: 0,
+  newBlacklistKeywords: []
+})
+
+// 新增数据相关
+const newDataCount = ref({
+  Application: 0,
+  Recall: 0,
+  Event: 0,
+  Registration: 0,
+  Document: 0,
+  Customs: 0
+})
+const newDataTotalCount = computed(() => {
+  return Object.values(newDataCount.value).reduce((sum, count) => sum + count, 0)
+})
+
+// 批量设置所有数据为普通数据的loading状态
+const settingAllNormal = ref(false)
 
 // 加载统计数据
 const loadStatistics = async () => {
@@ -1778,37 +1986,48 @@ const handleBlacklistPaginationChange = (page: number, pageSize: number) => {
 
 // 表格列定义
 const recallColumns = [
-  {title: '产品描述', dataIndex: 'productDescription', key: 'productDescription'},
-  {title: '召回公司', dataIndex: 'recallingFirm', key: 'recallingFirm'},
-  {title: '事件日期', dataIndex: 'eventDatePosted', key: 'eventDatePosted'},
-  {title: '匹配关键词', key: 'matchedKeywords', width: 200},
+  {title: '新数据', key: 'isNew', width: 80, align: 'center'},
+  {title: '产品描述', dataIndex: 'productDescription', key: 'productDescription', width: 200, ellipsis: true},
+  {title: '召回公司', dataIndex: 'recallingFirm', key: 'recallingFirm', width: 150, ellipsis: true},
+  {title: '国家', dataIndex: 'jdCountry', key: 'jdCountry', width: 80},
+  {title: '风险等级', key: 'riskLevel', width: 100},
+  {title: '事件日期', dataIndex: 'eventDatePosted', key: 'eventDatePosted', width: 120},
+  {title: '关键词', key: 'keywords', width: 150},
   {title: '备注', dataIndex: 'remarks', key: 'remarks', width: 200, ellipsis: true},
-  {title: '操作', key: 'action', width: 100}
+  {title: '操作', key: 'action', width: 150, fixed: 'right'}
 ]
 
 const device510KColumns = [
-  {title: '设备名称', dataIndex: 'deviceName', key: 'deviceName'},
-  {title: '申请人', dataIndex: 'applicant', key: 'applicant'},
-  {title: '接收日期', dataIndex: 'dateReceived', key: 'dateReceived'},
-  {title: '匹配关键词', key: 'matchedKeywords', width: 200},
+  {title: '新数据', key: 'isNew', width: 80, align: 'center'},
+  {title: '设备名称', dataIndex: 'deviceName', key: 'deviceName', width: 200, ellipsis: true},
+  {title: '申请人', dataIndex: 'applicant', key: 'applicant', width: 150, ellipsis: true},
+  {title: '国家', dataIndex: 'jdCountry', key: 'jdCountry', width: 80},
+  {title: '风险等级', key: 'riskLevel', width: 100},
+  {title: '接收日期', dataIndex: 'dateReceived', key: 'dateReceived', width: 120},
+  {title: '关键词', key: 'keywords', width: 150},
   {title: '备注', dataIndex: 'remarks', key: 'remarks', width: 200, ellipsis: true},
-  {title: '操作', key: 'action', width: 100}
+  {title: '操作', key: 'action', width: 150, fixed: 'right'}
 ]
 
 const eventColumns = [
-  {title: '品牌名称', dataIndex: 'brandName', key: 'brandName'},
-  {title: '制造商', dataIndex: 'manufacturerName', key: 'manufacturerName'},
-  {title: '接收日期', dataIndex: 'dateReceived', key: 'dateReceived'},
-  {title: '匹配关键词', key: 'matchedKeywords', width: 200},
+  {title: '新数据', key: 'isNew', width: 80, align: 'center'},
+  {title: '品牌名称', dataIndex: 'brandName', key: 'brandName', width: 150, ellipsis: true},
+  {title: '制造商', dataIndex: 'manufacturerName', key: 'manufacturerName', width: 150, ellipsis: true},
+  {title: '国家', dataIndex: 'jdCountry', key: 'jdCountry', width: 80},
+  {title: '风险等级', key: 'riskLevel', width: 100},
+  {title: '接收日期', dataIndex: 'dateReceived', key: 'dateReceived', width: 120},
+  {title: '关键词', key: 'keywords', width: 150},
   {title: '备注', dataIndex: 'remarks', key: 'remarks', width: 200, ellipsis: true},
-  {title: '操作', key: 'action', width: 100}
+  {title: '操作', key: 'action', width: 150, fixed: 'right'}
 ]
 
 const registrationColumns = [
+  {title: '新数据', key: 'isNew', width: 80, align: 'center'},
   {
     title: '设备名称',
     dataIndex: 'deviceName',
     key: 'deviceName',
+    width: 150,
     ellipsis: true,
     customRender: ({text}: { text: any }) => {
       return text || '-'
@@ -1818,6 +2037,7 @@ const registrationColumns = [
     title: '商品名称',
     dataIndex: 'proprietaryName',
     key: 'proprietaryName',
+    width: 150,
     ellipsis: true,
     customRender: ({text}: { text: any }) => {
       return text || '-'
@@ -1827,11 +2047,14 @@ const registrationColumns = [
     title: '制造商',
     dataIndex: 'manufacturerName',
     key: 'manufacturerName',
+    width: 150,
     ellipsis: true,
     customRender: ({text}: { text: any }) => {
       return text || '-'
     }
   },
+  {title: '国家', dataIndex: 'jdCountry', key: 'jdCountry', width: 80},
+  {title: '风险等级', key: 'riskLevel', width: 100},
   {
     title: '创建日期',
     dataIndex: 'createdDate',
@@ -1841,30 +2064,34 @@ const registrationColumns = [
       return text || '-'
     }
   },
-  {title: '匹配关键词', key: 'matchedKeywords', width: 200},
-  // {title: '匹配字段', key: 'matchedFields', width: 150},
+  {title: '关键词', key: 'keywords', width: 150},
   {title: '备注', dataIndex: 'remarks', key: 'remarks', width: 200, ellipsis: true},
-  {title: '操作', key: 'action', width: 100}
+  {title: '操作', key: 'action', width: 150, fixed: 'right'}
 ]
 
 const guidanceColumns = [
-  {title: '文档标题', dataIndex: 'title', key: 'title'},
-  {title: '文档类型', dataIndex: 'topic', key: 'topic'},
-  {title: '发布日期', dataIndex: 'publicationDate', key: 'publicationDate'},
-  {title: '匹配关键词', key: 'matchedKeywords', width: 200},
+  {title: '新数据', key: 'isNew', width: 80, align: 'center'},
+  {title: '文档标题', dataIndex: 'title', key: 'title', width: 200, ellipsis: true},
+  {title: '文档类型', dataIndex: 'topic', key: 'topic', width: 120, ellipsis: true},
+  {title: '国家', dataIndex: 'jdCountry', key: 'jdCountry', width: 80},
+  {title: '风险等级', key: 'riskLevel', width: 100},
+  {title: '发布日期', dataIndex: 'publicationDate', key: 'publicationDate', width: 120},
+  {title: '关键词', key: 'keywords', width: 150},
   {title: '备注', dataIndex: 'remarks', key: 'remarks', width: 200, ellipsis: true},
-  {title: '操作', key: 'action', width: 100}
+  {title: '操作', key: 'action', width: 150, fixed: 'right'}
 ]
 
 const customsColumns = [
-  {title: '案例编号', dataIndex: 'caseNumber', key: 'caseNumber'},
-  {title: '案例标题', dataIndex: 'rulingResult', key: 'rulingResult'},
-  {title: 'HS编码', dataIndex: 'hsCodeUsed', key: 'hsCodeUsed'},
-  {title: '处理日期', dataIndex: 'caseDate', key: 'caseDate'},
-  {title: '匹配关键词', key: 'matchedKeywords', width: 200},
-  // {title: '匹配字段', key: 'matchedFields', width: 150},
+  {title: '新数据', key: 'isNew', width: 80, align: 'center'},
+  {title: '案例编号', dataIndex: 'caseNumber', key: 'caseNumber', width: 120},
+  {title: '案例标题', dataIndex: 'rulingResult', key: 'rulingResult', width: 200, ellipsis: true},
+  {title: 'HS编码', dataIndex: 'hsCodeUsed', key: 'hsCodeUsed', width: 120},
+  {title: '国家', dataIndex: 'jdCountry', key: 'jdCountry', width: 80},
+  {title: '风险等级', key: 'riskLevel', width: 100},
+  {title: '处理日期', dataIndex: 'caseDate', key: 'caseDate', width: 120},
+  {title: '关键词', key: 'keywords', width: 150},
   {title: '备注', dataIndex: 'remarks', key: 'remarks', width: 200, ellipsis: true},
-  {title: '操作', key: 'action', width: 100}
+  {title: '操作', key: 'action', width: 150, fixed: 'right'}
 ]
 
 // 分析结果专用列定义
@@ -1872,22 +2099,6 @@ const analysisRecallColumns = [
   {title: '产品描述', dataIndex: 'productDescription', key: 'productDescription'},
   {title: '召回公司', dataIndex: 'recallingFirm', key: 'recallingFirm'},
   {title: '事件日期', dataIndex: 'eventDatePosted', key: 'eventDatePosted'},
-  {title: '匹配关键词', key: 'matchedKeywords', width: 200, customRender: ({ record }: any) => {
-    if (record.matchedKeywords && Array.isArray(record.matchedKeywords)) {
-      return record.matchedKeywords.map((keyword: string) => 
-        h('a-tag', { color: 'blue', style: 'margin: 2px;' }, keyword)
-      )
-    }
-    return '-'
-  }},
-  {title: '匹配字段', key: 'matchedFields', width: 150, customRender: ({ record }: any) => {
-    if (record.matchedFields && Array.isArray(record.matchedFields)) {
-      return record.matchedFields.map((field: string) => 
-        h('a-tag', { color: 'green', style: 'margin: 2px;' }, field)
-      )
-    }
-    return '-'
-  }},
   {title: '风险等级', key: 'riskLevel', width: 100, customRender: ({ record }: any) => {
     const riskLevel = record.riskLevel
     let color = 'default'
@@ -1911,22 +2122,6 @@ const analysisDevice510KColumns = [
   {title: '设备名称', dataIndex: 'deviceName', key: 'deviceName'},
   {title: '申请人', dataIndex: 'applicant', key: 'applicant'},
   {title: '接收日期', dataIndex: 'dateReceived', key: 'dateReceived'},
-  {title: '匹配关键词', key: 'matchedKeywords', width: 200, customRender: ({ record }: any) => {
-    if (record.matchedKeywords && Array.isArray(record.matchedKeywords)) {
-      return record.matchedKeywords.map((keyword: string) => 
-        h('a-tag', { color: 'blue', style: 'margin: 2px;' }, keyword)
-      )
-    }
-    return '-'
-  }},
-  // {title: '匹配字段', key: 'matchedFields', width: 150, customRender: ({ record }: any) => {
-  //   if (record.matchedFields && Array.isArray(record.matchedFields)) {
-  //     return record.matchedFields.map((field: string) =>
-  //       h('a-tag', { color: 'green', style: 'margin: 2px;' }, field)
-  //     )
-  //   }
-  //   return '-'
-  // }},
   {title: '风险等级', key: 'riskLevel', width: 100, customRender: ({ record }: any) => {
     const riskLevel = record.riskLevel
     let color = 'default'
@@ -1950,22 +2145,6 @@ const analysisEventColumns = [
   {title: '品牌名称', dataIndex: 'brandName', key: 'brandName'},
   {title: '制造商', dataIndex: 'manufacturerName', key: 'manufacturerName'},
   {title: '接收日期', dataIndex: 'dateReceived', key: 'dateReceived'},
-  {title: '匹配关键词', key: 'matchedKeywords', width: 200, customRender: ({ record }: any) => {
-    if (record.matchedKeywords && Array.isArray(record.matchedKeywords)) {
-      return record.matchedKeywords.map((keyword: string) => 
-        h('a-tag', { color: 'blue', style: 'margin: 2px;' }, keyword)
-      )
-    }
-    return '-'
-  }},
-  // {title: '匹配字段', key: 'matchedFields', width: 150, customRender: ({ record }: any) => {
-  //   if (record.matchedFields && Array.isArray(record.matchedFields)) {
-  //     return record.matchedFields.map((field: string) =>
-  //       h('a-tag', { color: 'green', style: 'margin: 2px;' }, field)
-  //     )
-  //   }
-  //   return '-'
-  // }},
   {title: '风险等级', key: 'riskLevel', width: 100, customRender: ({ record }: any) => {
     const riskLevel = record.riskLevel
     let color = 'default'
@@ -2022,22 +2201,6 @@ const analysisRegistrationColumns = [
       return text || '-'
     }
   },
-  {title: '匹配关键词', key: 'matchedKeywords', width: 200, customRender: ({ record }: any) => {
-    if (record.matchedKeywords && Array.isArray(record.matchedKeywords)) {
-      return record.matchedKeywords.map((keyword: string) => 
-        h('a-tag', { color: 'blue', style: 'margin: 2px;' }, keyword)
-      )
-    }
-    return '-'
-  }},
-  // {title: '匹配字段', key: 'matchedFields', width: 150, customRender: ({ record }: any) => {
-  //   if (record.matchedFields && Array.isArray(record.matchedFields)) {
-  //     return record.matchedFields.map((field: string) =>
-  //       h('a-tag', { color: 'green', style: 'margin: 2px;' }, field)
-  //     )
-  //   }
-  //   return '-'
-  // }},
   {title: '风险等级', key: 'riskLevel', width: 100, customRender: ({ record }: any) => {
     const riskLevel = record.riskLevel
     let color = 'default'
@@ -2061,22 +2224,6 @@ const analysisGuidanceColumns = [
   {title: '文档标题', dataIndex: 'title', key: 'title'},
   {title: '文档类型', dataIndex: 'topic', key: 'topic'},
   {title: '发布日期', dataIndex: 'publicationDate', key: 'publicationDate'},
-  {title: '匹配关键词', key: 'matchedKeywords', width: 200, customRender: ({ record }: any) => {
-    if (record.matchedKeywords && Array.isArray(record.matchedKeywords)) {
-      return record.matchedKeywords.map((keyword: string) => 
-        h('a-tag', { color: 'blue', style: 'margin: 2px;' }, keyword)
-      )
-    }
-    return '-'
-  }},
-  // {title: '匹配字段', key: 'matchedFields', width: 150, customRender: ({ record }: any) => {
-  //   if (record.matchedFields && Array.isArray(record.matchedFields)) {
-  //     return record.matchedFields.map((field: string) =>
-  //       h('a-tag', { color: 'green', style: 'margin: 2px;' }, field)
-  //     )
-  //   }
-  //   return '-'
-  // }},
   {title: '风险等级', key: 'riskLevel', width: 100, customRender: ({ record }: any) => {
     const riskLevel = record.riskLevel
     let color = 'default'
@@ -2101,22 +2248,6 @@ const analysisCustomsColumns = [
   {title: '案例标题', dataIndex: 'rulingResult', key: 'rulingResult'},
   {title: 'HS编码', dataIndex: 'hsCodeUsed', key: 'hsCodeUsed'},
   {title: '处理日期', dataIndex: 'caseDate', key: 'caseDate'},
-  {title: '匹配关键词', key: 'matchedKeywords', width: 200, customRender: ({ record }: any) => {
-    if (record.matchedKeywords && Array.isArray(record.matchedKeywords)) {
-      return record.matchedKeywords.map((keyword: string) => 
-        h('a-tag', { color: 'blue', style: 'margin: 2px;' }, keyword)
-      )
-    }
-    return '-'
-  }},
-  // {title: '匹配字段', key: 'matchedFields', width: 150, customRender: ({ record }: any) => {
-  //   if (record.matchedFields && Array.isArray(record.matchedFields)) {
-  //     return record.matchedFields.map((field: string) =>
-  //       h('a-tag', { color: 'green', style: 'margin: 2px;' }, field)
-  //     )
-  //   }
-  //   return '-'
-  // }},
   {title: '风险等级', key: 'riskLevel', width: 100, customRender: ({ record }: any) => {
     const riskLevel = record.riskLevel
     let color = 'default'
@@ -2686,6 +2817,36 @@ const getKeywordColor = (keyword: string) => {
   const colors = ['blue', 'green', 'orange', 'purple', 'cyan', 'magenta']
   const index = keyword.length % colors.length
   return colors[index]
+}
+
+// 解析关键词（可能是JSON字符串或数组）
+const parseKeywords = (keywords: any): string[] => {
+  if (!keywords) {
+    return []
+  }
+
+  // 如果已经是数组，直接返回
+  if (Array.isArray(keywords)) {
+    return keywords
+  }
+
+  // 如果是字符串，尝试解析JSON
+  if (typeof keywords === 'string') {
+    try {
+      const parsed = JSON.parse(keywords)
+      if (Array.isArray(parsed)) {
+        return parsed
+      }
+      // 如果解析结果不是数组，返回单个元素的数组
+      return [parsed]
+    } catch (e) {
+      // JSON解析失败，按逗号分割
+      return keywords.split(',').map(k => k.trim()).filter(k => k.length > 0)
+    }
+  }
+
+  // 其他情况，转为字符串数组
+  return [String(keywords)]
 }
 
 // 检查记录匹配了哪些关键词
@@ -3642,13 +3803,24 @@ const handleCountryChange = (country: string) => {
 }
 
 // AI判断完成后的回调
-const handleJudgeCompleted = () => {
-  console.log('AI判断完成，刷新数据')
+const handleJudgeCompleted = async () => {
+  console.log('🎯 AI判断完成，开始刷新数据...')
+
+  // 重新加载AI判断待审核数据
+  await loadAIJudgmentData()
+  console.log('📊 待审核数量:', pendingJudgmentCount.value)
+
   // 重新加载统计数据
   loadOverviewStatistics()
   loadStatistics()
   loadCountryDataStats()
-  message.success('数据已更新，黑名单已自动学习')
+
+  // 延迟500ms后自动打开审核弹窗（无论是否有待审核数据都打开，让用户知道结果）
+  setTimeout(() => {
+    console.log('⏰ 准备打开审核弹窗, 待审核数量:', pendingJudgmentCount.value)
+    console.log('✅ 打开审核弹窗!')
+    aiJudgmentReviewVisible.value = true
+  }, 500)
 }
 
 // 处理添加欧盟设备数据 - 暂时未使用
@@ -4040,6 +4212,177 @@ const getCountryTotal = (countryData: Record<string, number>): number => {
   return Object.values(countryData).reduce((sum, count) => sum + count, 0)
 }
 
+// ==================== AI判断相关函数 ====================
+
+/**
+ * 加载AI判断待审核数据
+ */
+const loadAIJudgmentData = async () => {
+  try {
+    console.log('🔄 开始加载AI判断待审核数据...')
+
+    // 加载待审核数量
+    const countResponse = await getPendingCount('DEVICE_DATA')
+    console.log('📡 待审核数量API响应:', countResponse.data)
+
+    if (countResponse.data.success) {
+      const counts = countResponse.data.data
+      console.log('📊 待审核数量明细:', counts)
+
+      // 安全地处理 counts，防止 undefined/null
+      if (counts && typeof counts === 'object') {
+        // 使用 total 字段，如果不存在则计算 byEntityType 的总和
+        if (counts.total !== undefined) {
+          pendingJudgmentCount.value = counts.total
+        } else if (counts.byEntityType && typeof counts.byEntityType === 'object') {
+          pendingJudgmentCount.value = Object.values(counts.byEntityType).reduce((sum: number, count) => sum + (count as number), 0)
+        } else {
+          pendingJudgmentCount.value = 0
+        }
+        console.log('✅ 待审核总数:', pendingJudgmentCount.value)
+      } else {
+        console.warn('⚠️ counts 数据格式不正确:', counts)
+        pendingJudgmentCount.value = 0
+      }
+    }
+
+    // 加载设备数据统计信息
+    const statsResponse = await getDeviceDataStatistics()
+    console.log('📡 设备数据统计API响应:', statsResponse.data)
+
+    if (statsResponse.data.success) {
+      deviceStatistics.value = statsResponse.data.data
+      console.log('✅ 设备数据统计加载成功')
+    }
+  } catch (error) {
+    console.error('❌ 加载AI判断数据失败:', error)
+  }
+}
+
+/**
+ * 加载新增数据统计
+ */
+const loadNewDataCount = async () => {
+  try {
+    const response = await getNewDataCount('DEVICE_DATA')
+    if (response.data.success) {
+      const counts = response.data.data
+      newDataCount.value = {
+        Application: counts['Application'] || 0,
+        Recall: counts['Recall'] || 0,
+        Event: counts['Event'] || 0,
+        Registration: counts['Registration'] || 0,
+        Document: counts['Document'] || 0,
+        Customs: counts['Customs'] || 0
+      }
+    }
+  } catch (error) {
+    console.error('加载新增数据统计失败:', error)
+  }
+}
+
+/**
+ * 显示AI判断审核弹窗
+ */
+const showAIJudgmentReview = () => {
+  aiJudgmentReviewVisible.value = true
+}
+
+/**
+ * AI判断确认后的回调
+ */
+const handleAIJudgmentConfirmed = async (count: number) => {
+  message.success(`已确认 ${count} 条AI判断`)
+
+  // 重新加载AI判断数据
+  await loadAIJudgmentData()
+
+  // 重新加载统计数据
+  await loadStatistics()
+  await loadOverviewStatistics()
+}
+
+/**
+ * AI判断拒绝后的回调
+ */
+const handleAIJudgmentRejected = async (id: number) => {
+  message.info('已拒绝该AI判断')
+
+  // 重新加载AI判断数据
+  await loadAIJudgmentData()
+}
+
+// ==================== 结束 AI判断相关函数 ====================
+
+/**
+ * 批量将所有数据设置为普通数据（初始化操作）
+ */
+const handleBatchSetAllNormal = async () => {
+  try {
+    // 确认对话框
+    const confirmed = await new Promise((resolve) => {
+      Modal.confirm({
+        title: '确认初始化操作',
+        content: '此操作将把所有现有数据的isNew标记设置为false（普通数据），之后只有新爬取的数据才会被标记为新增。此操作不可撤销，确定继续吗？',
+        okText: '确定',
+        cancelText: '取消',
+        okType: 'danger',
+        onOk: () => resolve(true),
+        onCancel: () => resolve(false),
+      })
+    })
+
+    if (!confirmed) {
+      return
+    }
+
+    settingAllNormal.value = true
+    console.log('🔄 开始批量设置所有数据为普通数据...')
+
+    const response = await batchSetAllAsNormal()
+
+    if (response.data.success) {
+      const totalCount = response.data.totalCount || 0
+      const details = response.data.details || {}
+
+      console.log('✅ 批量设置成功:', details)
+
+      message.success({
+        content: `成功将 ${totalCount} 条数据设置为普通数据！`,
+        duration: 3
+      })
+
+      // 显示详细信息
+      const detailMsg = Object.entries(details)
+        .filter(([_, count]) => count > 0)
+        .map(([type, count]) => `${type}: ${count}条`)
+        .join(', ')
+
+      if (detailMsg) {
+        message.info({
+          content: `详细信息: ${detailMsg}`,
+          duration: 5
+        })
+      }
+
+      // 重新加载统计数据
+      await loadNewDataCount()
+      await loadStatistics()
+
+    } else {
+      message.error('批量设置失败: ' + response.data.message)
+    }
+
+  } catch (error) {
+    console.error('❌ 批量设置所有数据为普通数据失败:', error)
+    message.error('操作失败: ' + (error.message || '未知错误'))
+  } finally {
+    settingAllNormal.value = false
+  }
+}
+
+// ==================== 结束 批量设置相关函数 ====================
+
 // 组件挂载时初始化
 onMounted(async () => {
   await loadOverviewStatistics()
@@ -4047,6 +4390,29 @@ onMounted(async () => {
   await loadSavedUnifiedConfig() // 异步加载关键词配置
   loadStatistics()
   await loadCountryDataStats()
+
+  // 加载AI判断和新增数据统计
+  await loadAIJudgmentData()
+  await loadNewDataCount()
+
+  // 【新增】自动标记新增数据为已查看
+  // 只有当有新增数据时才调用
+  if (newDataTotalCount.value > 0) {
+    try {
+      console.log('🔄 检测到新增数据，自动标记为已查看...')
+      const response = await autoMarkViewed('DEVICE_DATA')
+      if (response.data.success) {
+        const totalMarked = response.data.totalCount || 0
+        console.log(`✅ 已自动标记 ${totalMarked} 条数据为已查看`)
+
+        // 重新加载新增数据计数（应该会变少或清零）
+        await loadNewDataCount()
+      }
+    } catch (error) {
+      console.error('❌ 自动标记已查看失败:', error)
+      // 静默失败，不影响页面正常使用
+    }
+  }
 })
 </script>
 <style scoped>
@@ -4056,6 +4422,19 @@ onMounted(async () => {
 
 .page-header {
   margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-header .header-left {
+  flex: 1;
+}
+
+.page-header .header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 /* 国家标签页样式 */

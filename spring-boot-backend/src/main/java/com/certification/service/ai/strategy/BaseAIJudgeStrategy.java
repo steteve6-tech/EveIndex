@@ -206,5 +206,19 @@ public abstract class BaseAIJudgeStrategy implements AIJudgeStrategy {
             return "";
         }
     }
+
+    /**
+     * 根据ID查找实体
+     * @param entityId 实体ID
+     * @return 实体对象，如果不存在则返回null
+     */
+    public abstract Object findEntityById(Long entityId);
+
+    /**
+     * 保存实体
+     * @param entity 实体对象
+     */
+    public abstract void saveEntity(Object entity);
+
 }
 

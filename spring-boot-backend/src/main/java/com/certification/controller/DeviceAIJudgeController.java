@@ -2,7 +2,10 @@ package com.certification.controller;
 
 import com.certification.dto.ai.SmartAuditResult;
 import com.certification.dto.ai.AuditItem;
+import com.certification.entity.ai.AIPendingJudgment;
+import com.certification.repository.ai.AIPendingJudgmentRepository;
 import com.certification.service.ai.AISmartAuditService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,9 +28,15 @@ public class DeviceAIJudgeController {
     
     @Autowired
     private AISmartAuditService aiSmartAuditService;
-    
+
     @Autowired
     private com.certification.service.DeviceMatchKeywordsService deviceMatchKeywordsService;
+
+    @Autowired
+    private AIPendingJudgmentRepository pendingJudgmentRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
     
     /**
      * 预览AI判断结果
@@ -326,39 +335,40 @@ public class DeviceAIJudgeController {
     
     /**
      * 直接执行AI判断（不带预览）
+     * 【重要】现在改为延迟执行模式：将AI判断结果保存到待审核表，等待用户确认后再执行
      */
     @PostMapping("/execute-direct")
-    @Operation(summary = "直接执行AI判断", description = "直接执行AI判断并保存结果，不显示预览")
+    @Operation(summary = "执行AI判断", description = "执行AI判断并保存到待审核表，等待用户确认后再执行")
     public ResponseEntity<Map<String, Object>> executeDirectAIJudge(@RequestBody Map<String, Object> params) {
-        log.info("收到直接执行AI判断请求: {}", params);
-        
+        log.info("收到AI判断请求（延迟执行模式）: {}", params);
+
         Map<String, Object> response = new HashMap<>();
-        
+
         try {
             // 提取参数
             String country = (String) params.get("country");
-            
+
             @SuppressWarnings("unchecked")
             List<String> entityTypes = (List<String>) params.get("entityTypes");
-            
+
             String riskLevel = (String) params.get("riskLevel");
             Integer limit = params.get("limit") != null ? ((Number) params.get("limit")).intValue() : 50;
             Boolean judgeAll = params.get("judgeAll") != null ? (Boolean) params.get("judgeAll") : false;
-            
-            log.info("直接执行AI判断参数: country={}, entityTypes={}, riskLevel={}, limit={}, judgeAll={}", 
+
+            log.info("AI判断参数: country={}, entityTypes={}, riskLevel={}, limit={}, judgeAll={}",
                     country, entityTypes, riskLevel, limit, judgeAll);
-            
-            // 1. 先进行预览（获取AI判断结果和建议的黑名单关键词）
+
+            // 1. 获取AI判断结果和建议的黑名单关键词
             SmartAuditResult previewResult = aiSmartAuditService.previewWithBlacklistCheck(
                 country, entityTypes, riskLevel, limit, judgeAll
             );
-            
+
             if (!previewResult.isSuccess()) {
                 response.put("success", false);
                 response.put("message", previewResult.getMessage());
                 return ResponseEntity.ok(response);
             }
-            
+
             // 2. 收集建议的黑名单关键词
             List<String> suggestedBlacklist = new ArrayList<>();
             if (previewResult.getAuditItems() != null) {
@@ -368,49 +378,110 @@ public class DeviceAIJudgeController {
                     }
                 }
             }
-            
+
             // 去重
             suggestedBlacklist = suggestedBlacklist.stream()
                 .distinct()
                 .filter(keyword -> keyword != null && !keyword.trim().isEmpty())
                 .collect(java.util.stream.Collectors.toList());
-            
+
             log.info("收集到建议的黑名单关键词: {}", suggestedBlacklist);
-            
-            // 3. 直接执行更新操作
-            SmartAuditResult executeResult = aiSmartAuditService.executeWithBlacklistUpdate(
-                previewResult.getAuditItems(), suggestedBlacklist
-            );
-            
-            if (executeResult.isSuccess()) {
-                response.put("success", true);
-                response.put("message", executeResult.getMessage());
-                
-                // 返回执行结果数据
-                Map<String, Object> resultData = new HashMap<>();
-                resultData.put("totalCount", previewResult.getTotal());
-                resultData.put("blacklistFiltered", previewResult.getBlacklistFiltered());
-                resultData.put("aiKept", previewResult.getAiKept());
-                resultData.put("aiDowngraded", previewResult.getAiDowngraded());
-                resultData.put("estimatedCost", "$0.00"); // 暂时硬编码，后续可以从previewResult中获取
-                resultData.put("newBlacklistCount", suggestedBlacklist.size());
-                resultData.put("newBlacklistKeywords", suggestedBlacklist); // 添加新增的黑名单关键词列表
-                resultData.put("auditItems", previewResult.getAuditItems());
-                
-                response.put("data", resultData);
-                
-                log.info("直接执行AI判断完成: {}", executeResult.getMessage());
-            } else {
-                response.put("success", false);
-                response.put("message", executeResult.getMessage());
+
+            // 3. 将AI判断结果保存到待审核表（不直接执行）
+            int savedCount = 0;
+            int failedCount = 0;
+            List<AIPendingJudgment> pendingJudgments = new ArrayList<>();
+
+            if (previewResult.getAuditItems() != null) {
+                for (AuditItem item : previewResult.getAuditItems()) {
+                    try {
+                        AIPendingJudgment pending = new AIPendingJudgment();
+                        pending.setModuleType("DEVICE_DATA");
+                        pending.setEntityType(item.getEntityType());
+                        pending.setEntityId(item.getId());
+
+                        // 序列化AI判断结果
+                        Map<String, Object> resultMap = new HashMap<>();
+                        resultMap.put("isRelated", item.isRelatedToSkinDevice());
+                        resultMap.put("confidence", item.getConfidence());
+                        resultMap.put("reason", item.getReason());
+                        resultMap.put("category", item.getCategory());
+                        pending.setJudgeResult(objectMapper.writeValueAsString(resultMap));
+
+                        // 设置建议的风险等级和备注
+                        String suggestedRiskLevel;
+                        if (item.getBlacklistKeywords() != null && !item.getBlacklistKeywords().isEmpty()) {
+                            // 黑名单过滤 -> LOW
+                            suggestedRiskLevel = "LOW";
+                        } else if (item.isRelatedToSkinDevice()) {
+                            // AI判断相关 -> HIGH
+                            suggestedRiskLevel = "HIGH";
+                        } else {
+                            // AI判断不相关 -> LOW
+                            suggestedRiskLevel = "LOW";
+                        }
+                        pending.setSuggestedRiskLevel(suggestedRiskLevel);
+
+                        // 设置备注
+                        String remark = item.getRemark() != null ? item.getRemark() :
+                            (item.isRelatedToSkinDevice() ?
+                                String.format("AI判断为测肤仪相关设备 (置信度: %.0f%%, 类别: %s)",
+                                    item.getConfidence() * 100, item.getCategory()) :
+                                String.format("AI判断为非测肤仪设备 (置信度: %.0f%%)",
+                                    item.getConfidence() * 100));
+                        pending.setSuggestedRemark(remark);
+
+                        // 设置黑名单关键词
+                        if (item.getBlacklistKeywords() != null && !item.getBlacklistKeywords().isEmpty()) {
+                            pending.setBlacklistKeywords(objectMapper.writeValueAsString(item.getBlacklistKeywords()));
+                            pending.setFilteredByBlacklist(true);
+                        } else {
+                            pending.setFilteredByBlacklist(false);
+                        }
+
+                        pendingJudgments.add(pending);
+                        savedCount++;
+
+                    } catch (Exception e) {
+                        log.error("保存待审核记录失败: entityId={}, error={}", item.getId(), e.getMessage());
+                        failedCount++;
+                    }
+                }
             }
-            
+
+            // 批量保存到数据库
+            if (!pendingJudgments.isEmpty()) {
+                pendingJudgmentRepository.saveAll(pendingJudgments);
+                log.info("已保存 {} 条AI判断结果到待审核表", savedCount);
+            }
+
+            // 返回结果
+            response.put("success", true);
+            response.put("message", String.format("AI判断完成，已保存 %d 条结果到待审核列表，等待您确认后执行", savedCount));
+
+            // 返回统计数据
+            Map<String, Object> resultData = new HashMap<>();
+            resultData.put("totalCount", previewResult.getTotal());
+            resultData.put("savedCount", savedCount);
+            resultData.put("failedCount", failedCount);
+            resultData.put("blacklistFiltered", previewResult.getBlacklistFiltered());
+            resultData.put("aiKept", previewResult.getAiKept());
+            resultData.put("aiDowngraded", previewResult.getAiDowngraded());
+            resultData.put("estimatedCost", "$0.00");
+            resultData.put("newBlacklistCount", suggestedBlacklist.size());
+            resultData.put("newBlacklistKeywords", suggestedBlacklist);
+            resultData.put("pendingReviewUrl", "/ai-judgment/pending?moduleType=DEVICE_DATA");
+
+            response.put("data", resultData);
+
+            log.info("AI判断完成（延迟执行模式）: 保存了 {} 条待审核记录", savedCount);
+
         } catch (Exception e) {
-            log.error("直接执行AI判断失败", e);
+            log.error("AI判断失败", e);
             response.put("success", false);
-            response.put("message", "执行失败: " + e.getMessage());
+            response.put("message", "AI判断失败: " + e.getMessage());
         }
-        
+
         return ResponseEntity.ok(response);
     }
     

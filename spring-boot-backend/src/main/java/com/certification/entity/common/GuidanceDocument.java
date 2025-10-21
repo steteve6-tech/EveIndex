@@ -383,5 +383,20 @@ public class GuidanceDocument extends BaseDeviceEntity {
         }
     }
 
+
+    /**
+     * 是否新增数据
+     */
+    @Schema(description = "是否新增数据")
+    @Column(name = "is_new")
+    private Boolean isNew = true;
+
+    /**
+     * 新增数据是否已查看
+     */
+    @Schema(description = "新增数据是否已查看")
+    @Column(name = "new_data_viewed")
+    private Boolean newDataViewed = false;
+
     // 备注信息已继承自BaseDeviceEntity (remark)
 }

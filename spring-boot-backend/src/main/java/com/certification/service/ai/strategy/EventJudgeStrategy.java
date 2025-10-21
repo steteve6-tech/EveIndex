@@ -3,10 +3,12 @@ package com.certification.service.ai.strategy;
 import com.certification.dto.ai.AIJudgeResult;
 import com.certification.entity.common.DeviceEventReport;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import com.certification.repository.common.DeviceEventReportRepository;
 
 /**
  * 设备不良事件AI判断策略
@@ -86,5 +88,17 @@ public class EventJudgeStrategy extends BaseAIJudgeStrategy {
 
         return remark.toString();
     }
-}
 
+    @Autowired
+    private DeviceEventReportRepository eventRepository;
+
+    @Override
+    public Object findEntityById(Long entityId) {
+        return eventRepository.findById(entityId).orElse(null);
+    }
+
+    @Override
+    public void saveEntity(Object entity) {
+        eventRepository.save((DeviceEventReport) entity);
+    }
+}

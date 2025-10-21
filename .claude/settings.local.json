@@ -14,7 +14,17 @@
       "Bash(jps:*)",
       "Bash(taskkill:*)",
       "Bash(mvn clean:*)",
-      "Bash(mvn compile:*)"
+      "Bash(mvn compile:*)",
+      "Bash(mysql:*)",
+      "Bash(python add_entity_fields.py:*)",
+      "Bash(python add_repository_methods.py:*)",
+      "Bash(python fix_guidance_document.py:*)",
+      "Bash(python fix_ai_judge_strategy.py:*)",
+      "Bash(python fix_base_strategy.py:*)",
+      "Bash(python fix_all_strategies.py:*)",
+      "Bash(python add_imports_to_strategies.py:*)",
+      "Bash(awk:*)",
+      "Bash(xargs:*)"
     ],
     "deny": [],
     "ask": []

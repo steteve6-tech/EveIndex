@@ -3,10 +3,12 @@ package com.certification.service.ai.strategy;
 import com.certification.dto.ai.AIJudgeResult;
 import com.certification.entity.common.GuidanceDocument;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import com.certification.repository.common.GuidanceDocumentRepository;
 
 /**
  * 指导文档AI判断策略
@@ -84,5 +86,17 @@ public class DocumentJudgeStrategy extends BaseAIJudgeStrategy {
 
         return remark.toString();
     }
-}
 
+    @Autowired
+    private GuidanceDocumentRepository documentRepository;
+
+    @Override
+    public Object findEntityById(Long entityId) {
+        return documentRepository.findById(entityId).orElse(null);
+    }
+
+    @Override
+    public void saveEntity(Object entity) {
+        documentRepository.save((GuidanceDocument) entity);
+    }
+}

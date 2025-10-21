@@ -95,4 +95,18 @@ public interface Device510KRepository extends JpaRepository<Device510K, Long> {
            "AND (:countryCode IS NULL OR d.jdCountry = :countryCode)")
     org.springframework.data.domain.Page<Device510K> findByKeywordAndCountry(@Param("keyword") String keyword, @Param("countryCode") String countryCode, org.springframework.data.domain.Pageable pageable);
 
+    /**
+     * 统计新增数据数量
+     */
+    long countByIsNew(Boolean isNew);
+
+    /**
+     * 查找新增数据（分页）
+     */
+    org.springframework.data.domain.Page<Device510K> findByIsNew(Boolean isNew, org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * 查找已查看的新增数据
+     */
+    List<Device510K> findByIsNewAndNewDataViewed(Boolean isNew, Boolean newDataViewed);
 }

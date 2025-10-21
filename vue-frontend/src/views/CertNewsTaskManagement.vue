@@ -1,5 +1,28 @@
 <template>
   <div class="cert-news-task-management">
+    <!-- AI判断待审核通知 -->
+    <a-alert
+      v-if="pendingJudgmentCount > 0"
+      type="warning"
+      closable
+      show-icon
+      style="margin-bottom: 16px"
+    >
+      <template #message>
+        <span>
+          您有 <strong>{{ pendingJudgmentCount }}</strong> 条AI判断待审核
+        </span>
+      </template>
+      <template #description>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span>需要确认的认证新闻AI判断结果</span>
+          <a-button type="primary" size="small" @click="showAIJudgmentReview">
+            立即审核
+          </a-button>
+        </div>
+      </template>
+    </a-alert>
+
     <a-card title="认证新闻爬虫定时任务管理" :bordered="false">
       <!-- 操作按钮 -->
       <template #extra>
@@ -470,6 +493,14 @@
         </a-tab-pane>
       </a-tabs>
     </a-modal>
+
+    <!-- AI判断审核弹窗 -->
+    <AIJudgmentReviewPopup
+      v-model:visible="aiJudgmentReviewVisible"
+      module-type="CERT_NEWS"
+      @confirmed="handleAIJudgmentConfirmed"
+      @rejected="handleAIJudgmentRejected"
+    />
   </div>
 </template>
 
@@ -503,6 +534,14 @@ import {
   type CertNewsTaskConfig,
   type CertNewsTaskLog
 } from '../api/certNewsTask'
+import {
+  getPendingCount
+} from '@/api/aiJudgment'
+import AIJudgmentReviewPopup from '@/components/AIJudgmentReviewPopup.vue'
+
+// AI判断待审核相关
+const aiJudgmentReviewVisible = ref(false)
+const pendingJudgmentCount = ref(0)
 
 // 任务列表
 const tasks = ref<CertNewsTaskConfig[]>([])
@@ -1094,8 +1133,53 @@ const calculateDuration = (startTime: string, endTime: string): string => {
   }
 }
 
+// ==================== AI判断相关函数 ====================
+
+/**
+ * 加载AI判断待审核数据
+ */
+const loadAIJudgmentData = async () => {
+  try {
+    const countResponse = await getPendingCount('CERT_NEWS')
+    if (countResponse.data.success) {
+      const counts = countResponse.data.data
+      pendingJudgmentCount.value = Object.values(counts).reduce((sum: number, count) => sum + (count as number), 0)
+    }
+  } catch (error) {
+    console.error('加载AI判断数据失败:', error)
+  }
+}
+
+/**
+ * 显示AI判断审核弹窗
+ */
+const showAIJudgmentReview = () => {
+  aiJudgmentReviewVisible.value = true
+}
+
+/**
+ * AI判断确认后的回调
+ */
+const handleAIJudgmentConfirmed = async (count: number) => {
+  message.success(`已确认 ${count} 条AI判断`)
+  // 重新加载AI判断数据
+  await loadAIJudgmentData()
+}
+
+/**
+ * AI判断拒绝后的回调
+ */
+const handleAIJudgmentRejected = async (id: number) => {
+  message.info('已拒绝该AI判断')
+  // 重新加载AI判断数据
+  await loadAIJudgmentData()
+}
+
+// ==================== 结束 AI判断相关函数 ====================
+
 onMounted(() => {
   loadTasks()
+  loadAIJudgmentData()
 })
 </script>
 

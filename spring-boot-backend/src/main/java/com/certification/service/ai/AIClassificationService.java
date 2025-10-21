@@ -49,8 +49,8 @@ public class AIClassificationService {
      */
     public ClassificationResult classifySkinDevice(Map<String, Object> deviceData) {
         if (apiKey == null || apiKey.isEmpty()) {
-            log.warn("OpenAI API Key未配置，返回模拟结果");
-            return createMockResult(deviceData);
+            log.error("OpenAI API Key未配置，无法执行AI判断");
+            throw new IllegalStateException("OpenAI API Key未配置，请先配置API Key后再使用AI判断功能");
         }
         
         try {

@@ -15,7 +15,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${DATABASE_URL:jdbc:mysql://localhost:3306/common_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&failOverReadOnly=false&maxReconnects=3&initialTimeout=2&connectTimeout=30000&socketTimeout=60000&useServerPrepStmts=true&cachePrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048}
     username: ${DATABASE_USERNAME:root}
-    password: ${DATABASE_PASSWORD:dev123}
+    password: ${DATABASE_PASSWORD:2020}
     
     # Druid连接池配置
     druid:
@@ -261,11 +261,8 @@ volcengine:
 
 # OpenAI API配置（用于AI智能审核功能）
 openai:
-  api:
-    key: ${OPENAI_API_KEY:}  # 从环境变量获取，不设置默认值
-    model: ${OPENAI_MODEL:gpt-4o}
-    base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}  # OpenAI API基础URL
-    timeout: ${OPENAI_TIMEOUT:60}
+  api-key: ${OPENAI_API_KEY:}       # 从环境变量获取，不设置默认值
+  api-url: ${OPENAI_API_URL:https://api.openai.com/v1}
     
 # AI智能审核配置
 ai:

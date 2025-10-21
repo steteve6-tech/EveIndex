@@ -570,14 +570,20 @@ const startJudge = async () => {
     if (response && response.success) {
       progress.value = 100
       progressText.value = '处理完成！'
-      
-      // 显示处理结果
-      showExecutionResult(response.data)
-      message.success(response.message || 'AI判断执行成功！')
-      
-      // 触发父组件刷新数据
+
+      // 【已禁用】不再显示执行结果弹窗，改为直接打开审核弹窗
+      // showExecutionResult(response.data)
+
+      // 显示成功消息，提醒用户去待审核列表确认
+      const savedCount = response.data?.savedCount || 0
+      message.success({
+        content: `${response.message || 'AI判断执行成功！'} 审核弹窗即将自动打开...`,
+        duration: 2
+      })
+
+      // 触发父组件刷新数据并打开审核弹窗
       emit('judgeCompleted')
-      
+
       // 延迟重置进度
       setTimeout(() => {
         progress.value = 0

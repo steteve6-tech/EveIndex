@@ -96,4 +96,19 @@ public interface DeviceRecallRecordRepository extends JpaRepository<DeviceRecall
      * 根据国家代码和风险等级查找记录（分页）
      */
     org.springframework.data.domain.Page<DeviceRecallRecord> findByCountryCodeAndRiskLevel(String countryCode, CertNewsData.RiskLevel riskLevel, org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * 统计新增数据数量
+     */
+    long countByIsNew(Boolean isNew);
+
+    /**
+     * 查找新增数据（分页）
+     */
+    org.springframework.data.domain.Page<DeviceRecallRecord> findByIsNew(Boolean isNew, org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * 查找已查看的新增数据
+     */
+    List<DeviceRecallRecord> findByIsNewAndNewDataViewed(Boolean isNew, Boolean newDataViewed);
 }

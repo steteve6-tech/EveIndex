@@ -3,12 +3,14 @@ package com.certification.service.ai.strategy;
 import com.certification.dto.ai.AIJudgeResult;
 import com.certification.entity.common.CustomsCase;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import com.certification.repository.common.CustomsCaseRepository;
 
 /**
  * 海关判例AI判断策略
@@ -123,5 +125,17 @@ public class CustomsJudgeStrategy extends BaseAIJudgeStrategy {
 
         return remark.toString();
     }
-}
 
+    @Autowired
+    private CustomsCaseRepository customsRepository;
+
+    @Override
+    public Object findEntityById(Long entityId) {
+        return customsRepository.findById(entityId).orElse(null);
+    }
+
+    @Override
+    public void saveEntity(Object entity) {
+        customsRepository.save((CustomsCase) entity);
+    }
+}

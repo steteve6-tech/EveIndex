@@ -27,5 +27,18 @@ public interface AIJudgeStrategy {
      * @param judgeResult AI判断结果
      */
     void updateEntityWithJudgeResult(Object entity, AIJudgeResult judgeResult);
+
+    /**
+     * 根据ID查找实体
+     * @param entityId 实体ID
+     * @return 实体对象，如果不存在则返回null
+     */
+    Object findEntityById(Long entityId);
+
+    /**
+     * 保存实体
+     * @param entity 实体对象
+     */
+    void saveEntity(Object entity);
 }
 

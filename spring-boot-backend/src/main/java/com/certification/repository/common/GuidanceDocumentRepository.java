@@ -100,4 +100,20 @@ public interface GuidanceDocumentRepository extends JpaRepository<GuidanceDocume
      * 根据国家和风险等级查找（分页）
      */
     org.springframework.data.domain.Page<GuidanceDocument> findByJdCountryAndRiskLevel(String jdCountry, CertNewsData.RiskLevel riskLevel, org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * 统计新增数据数量
+     */
+    long countByIsNew(Boolean isNew);
+
+    /**
+     * 查找新增数据（分页）
+     */
+    org.springframework.data.domain.Page<GuidanceDocument> findByIsNew(Boolean isNew, org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * 查找已查看的新增数据
+     */
+    List<GuidanceDocument> findByIsNewAndNewDataViewed(Boolean isNew, Boolean newDataViewed);
+
 }

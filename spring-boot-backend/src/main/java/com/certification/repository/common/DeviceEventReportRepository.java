@@ -101,4 +101,19 @@ public interface DeviceEventReportRepository extends JpaRepository<DeviceEventRe
            "d.genericName LIKE %:keyword%) " +
            "AND (:countryCode IS NULL OR d.jdCountry = :countryCode)")
     org.springframework.data.domain.Page<DeviceEventReport> findByKeywordAndCountry(@Param("keyword") String keyword, @Param("countryCode") String countryCode, org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * 统计新增数据数量
+     */
+    long countByIsNew(Boolean isNew);
+
+    /**
+     * 查找新增数据（分页）
+     */
+    org.springframework.data.domain.Page<DeviceEventReport> findByIsNew(Boolean isNew, org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * 查找已查看的新增数据
+     */
+    List<DeviceEventReport> findByIsNewAndNewDataViewed(Boolean isNew, Boolean newDataViewed);
 }

@@ -82,6 +82,21 @@ public class DeviceRecallRecord extends BaseDeviceEntity {
     @Schema(description = "国家代码", example = "US")
     private String countryCode;
 
+
+    /**
+     * 是否新增数据
+     */
+    @Schema(description = "是否新增数据")
+    @Column(name = "is_new")
+    private Boolean isNew = true;
+
+    /**
+     * 新增数据是否已查看
+     */
+    @Schema(description = "新增数据是否已查看")
+    @Column(name = "new_data_viewed")
+    private Boolean newDataViewed = false;
+
     @Override
     public String getEntityType() {
         return "DeviceRecall";

@@ -3,10 +3,12 @@ package com.certification.service.ai.strategy;
 import com.certification.dto.ai.AIJudgeResult;
 import com.certification.entity.common.Device510K;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import com.certification.repository.common.Device510KRepository;
 
 /**
  * 设备申请记录(510K)AI判断策略
@@ -86,5 +88,17 @@ public class ApplicationJudgeStrategy extends BaseAIJudgeStrategy {
 
         return remark.toString();
     }
-}
 
+    @Autowired
+    private Device510KRepository device510KRepository;
+
+    @Override
+    public Object findEntityById(Long entityId) {
+        return device510KRepository.findById(entityId).orElse(null);
+    }
+
+    @Override
+    public void saveEntity(Object entity) {
+        device510KRepository.save((Device510K) entity);
+    }
+}
