@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import com.certification.utils.CrawlerDuplicateDetector;
 
 /**
  * FDA指导文档爬虫 - 爬取FDA医疗设备指导文档并保存到数据库
@@ -457,8 +458,7 @@ public class US_Guidance {
         record.setJdCountry("US");
         record.setCrawlTime(LocalDateTime.now());
         record.setDataStatus("ACTIVE");
-        record.setCreatedTime(LocalDateTime.now());
-        record.setUpdatedTime(LocalDateTime.now());
+        // createTime 和 updateTime 由 JPA 审计自动设置，无需手动设置
     }
 
     /**
@@ -470,10 +470,13 @@ public class US_Guidance {
             log.warn("Repository未初始化，跳过数据库保存");
             return new int[]{0, batch.size()};
         }
-        
+
         int savedCount = 0;
         int skippedCount = 0;
-        
+
+        // 初始化批次检测器（如果是首次调用）
+        CrawlerDuplicateDetector detector = new CrawlerDuplicateDetector(3);
+
         for (GuidanceDocument record : batch) {
             try {
                 // 使用更健壮的重复检查方法
@@ -515,7 +518,16 @@ public class US_Guidance {
                 }
             }
         }
-        
+
+        // 批次检测（检查本批次是否全部重复）
+        boolean shouldStop = detector.recordBatch(batch.size(), savedCount);
+        if (shouldStop) {
+            log.warn("⚠️ 检测到连续重复批次，建议停止爬取");
+        }
+
+        // 打印统计
+        detector.printFinalStats("US_Guidance");
+
         return new int[]{savedCount, skippedCount};
     }
 

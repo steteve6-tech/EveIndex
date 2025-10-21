@@ -27,7 +27,7 @@ export async function addKeywordToFile(
   keyword: string,
   options?: { [key: string]: any }
 ) {
-  return request<Record<string, any>>("/api/cert-keywords/file/add", {
+  return request<Record<string, any>>("/cert-keywords/file/add", {
     method: "POST",
     params: { keyword },
     ...(options || {}),
@@ -39,7 +39,7 @@ export async function deleteKeywordFromFile(
   keyword: string,
   options?: { [key: string]: any }
 ) {
-  return request<Record<string, any>>("/api/cert-keywords/file/delete", {
+  return request<Record<string, any>>("/cert-keywords/file/delete", {
     method: "DELETE",
     params: { keyword },
     ...(options || {}),
@@ -51,7 +51,7 @@ export async function syncKeywords(
   keywords: string[],
   options?: { [key: string]: any }
 ) {
-  return request<Record<string, any>>("/api/cert-keywords/sync", {
+  return request<Record<string, any>>("/cert-keywords/sync", {
     method: "POST",
     data: keywords,
     ...(options || {}),
@@ -60,7 +60,7 @@ export async function syncKeywords(
 
 /** 从文件初始化关键词 POST /api/cert-keywords/initialize-from-file */
 export async function initializeKeywordsFromFile(options?: { [key: string]: any }) {
-  return request<Record<string, any>>("/api/cert-keywords/initialize-from-file", {
+  return request<Record<string, any>>("/cert-keywords/initialize-from-file", {
     method: "POST",
     ...(options || {}),
   });
@@ -73,7 +73,7 @@ export async function getKeywordMatchDetails(
   keyword: string,
   options?: { [key: string]: any }
 ) {
-  return request<Record<string, any>>(`/api/cert-keywords/match/${encodeURIComponent(keyword)}`, {
+  return request<Record<string, any>>(`/cert-keywords/match/${encodeURIComponent(keyword)}`, {
     method: "GET",
     ...(options || {}),
   });
@@ -84,7 +84,7 @@ export async function getKeywordsMatchDetails(
   keywords: string[],
   options?: { [key: string]: any }
 ) {
-  return request<Record<string, any>>("/api/cert-keywords/match/batch", {
+  return request<Record<string, any>>("/cert-keywords/match/batch", {
     method: "POST",
     data: keywords,
     ...(options || {}),
@@ -96,7 +96,7 @@ export async function getAllKeywordsMatchStats(
   keywords: string[],
   options?: { [key: string]: any }
 ) {
-  return request<Record<string, any>>("/api/cert-keywords/match/stats", {
+  return request<Record<string, any>>("/cert-keywords/match/stats", {
     method: "POST",
     data: keywords,
     ...(options || {}),
@@ -107,7 +107,7 @@ export async function getAllKeywordsMatchStats(
 
 /** 初始化默认关键词 初始化系统默认的关键词列表 POST /api/cert-keywords/initialize */
 export async function initializeKeywords(options?: { [key: string]: any }) {
-  return request<Record<string, any>>("/api/cert-keywords/initialize", {
+  return request<Record<string, any>>("/cert-keywords/initialize", {
     method: "POST",
     ...(options || {}),
   });
@@ -115,7 +115,7 @@ export async function initializeKeywords(options?: { [key: string]: any }) {
 
 /** 获取所有关键词 获取所有启用的关键词列表 GET /api/cert-keywords/list */
 export async function getAllKeywords(options?: { [key: string]: any }) {
-  return request<Record<string, any>>("/api/cert-keywords/list", {
+  return request<Record<string, any>>("/cert-keywords/list", {
     method: "GET",
     ...(options || {}),
   });
@@ -123,7 +123,7 @@ export async function getAllKeywords(options?: { [key: string]: any }) {
 
 /** 获取启用的关键词 获取所有启用的关键词字符串列表 GET /api/cert-keywords/enabled */
 export async function getEnabledKeywords(options?: { [key: string]: any }) {
-  return request<Record<string, any>>("/api/cert-keywords/enabled", {
+  return request<Record<string, any>>("/cert-keywords/enabled", {
     method: "GET",
     ...(options || {}),
   });
@@ -137,7 +137,7 @@ export async function addKeyword(
   },
   options?: { [key: string]: any }
 ) {
-  return request<Record<string, any>>("/api/cert-keywords/add", {
+  return request<Record<string, any>>("/cert-keywords/add", {
     method: "POST",
     params,
     ...(options || {}),
@@ -151,7 +151,7 @@ export async function deleteKeyword(
   },
   options?: { [key: string]: any }
 ) {
-  return request<Record<string, any>>("/api/cert-keywords/delete", {
+  return request<Record<string, any>>("/cert-keywords/delete", {
     method: "DELETE",
     params,
     ...(options || {}),
@@ -168,7 +168,7 @@ export async function updateKeyword(
   },
   options?: { [key: string]: any }
 ) {
-  return request<Record<string, any>>("/api/cert-keywords/update", {
+  return request<Record<string, any>>("/cert-keywords/update", {
     method: "PUT",
     params,
     ...(options || {}),
@@ -182,7 +182,7 @@ export async function checkKeywords(
   },
   options?: { [key: string]: any }
 ) {
-  return request<Record<string, any>>("/api/cert-keywords/check", {
+  return request<Record<string, any>>("/cert-keywords/check", {
     method: "POST",
     params,
     ...(options || {}),
@@ -191,7 +191,7 @@ export async function checkKeywords(
 
 /** 获取关键词匹配数量 获取关键词及其匹配数量 GET /api/cert-keywords/with-match-counts */
 export async function getKeywordsWithMatchCounts(options?: { [key: string]: any }) {
-  return request<Record<string, any>>("/api/cert-keywords/with-match-counts", {
+  return request<Record<string, any>>("/cert-keywords/with-match-counts", {
     method: "GET",
     ...(options || {}),
   });
@@ -199,7 +199,7 @@ export async function getKeywordsWithMatchCounts(options?: { [key: string]: any 
 
 /** 删除0匹配关键词 删除所有匹配数量为0的关键词 DELETE /api/cert-keywords/delete-zero-match */
 export async function deleteZeroMatchKeywords(options?: { [key: string]: any }) {
-  return request<Record<string, any>>("/api/cert-keywords/delete-zero-match", {
+  return request<Record<string, any>>("/cert-keywords/delete-zero-match", {
     method: "DELETE",
     ...(options || {}),
   });
@@ -228,7 +228,7 @@ export async function autoProcessRelatedBySource(
   },
   options?: { [key: string]: any }
 ) {
-  return aiRequest<Record<string, any>>("/api/crawler-data/auto-process-related-by-source", {
+  return aiRequest<Record<string, any>>("/crawler-data/auto-process-related-by-source", {
     method: "POST",
     params,
     ...(options || {}),
@@ -244,7 +244,7 @@ export async function saveKeywordList(
   },
   options?: { [key: string]: any }
 ) {
-  return request<Record<string, any>>("/api/keywords/save-list", {
+  return request<Record<string, any>>("/keywords/save-list", {
     method: "POST",
     data: params,
     ...(options || {}),
@@ -253,7 +253,7 @@ export async function saveKeywordList(
 
 /** 获取文件关键词 从CertNewsKeywords.txt文件获取关键词列表 GET /api/crawler-data/keywords/file */
 export async function getFileKeywordsOld(options?: { [key: string]: any }) {
-  return request<Record<string, any>>("/api/crawler-data/keywords/file", {
+  return request<Record<string, any>>("/crawler-data/keywords/file", {
     method: "GET",
     ...(options || {}),
   });
@@ -264,7 +264,7 @@ export async function saveKeywordsToFileOld(
   keywords: string[],
   options?: { [key: string]: any }
 ) {
-  return request<Record<string, any>>("/api/crawler-data/keywords/file", {
+  return request<Record<string, any>>("/crawler-data/keywords/file", {
     method: "POST",
     data: keywords,
     ...(options || {}),
@@ -276,7 +276,7 @@ export async function migrateKeywordsFromLocalStorage(
   localKeywords: string[],
   options?: { [key: string]: any }
 ) {
-  return request<Record<string, any>>("/api/crawler-data/keywords/migrate-from-local", {
+  return request<Record<string, any>>("/crawler-data/keywords/migrate-from-local", {
     method: "POST",
     data: localKeywords,
     ...(options || {}),
@@ -287,7 +287,7 @@ export async function migrateKeywordsFromLocalStorage(
 
 /** 获取统一关键词配置 */
 export async function getUnifiedKeywordConfig(options?: { [key: string]: any }) {
-  return request<Record<string, any>>("/api/device-match-keywords/unified-config", {
+  return request<Record<string, any>>("/device-match-keywords/unified-config", {
     method: "GET",
     ...(options || {}),
   });
@@ -301,7 +301,7 @@ export async function saveUnifiedKeywordConfig(
   },
   options?: { [key: string]: any }
 ) {
-  return request<Record<string, any>>("/api/device-match-keywords/unified-config", {
+  return request<Record<string, any>>("/device-match-keywords/unified-config", {
     method: "POST",
     data: params,
     ...(options || {}),

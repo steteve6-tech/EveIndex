@@ -4,7 +4,6 @@
     <div class="page-header">
       <div class="header-content">
         <h1>🕷️ 统一爬虫管理系统</h1>
-        <p>整合V1和V2所有功能的统一爬虫任务管理系统</p>
       </div>
       <div class="header-actions">
         <a-space>
@@ -19,12 +18,6 @@
               <PlayCircleOutlined />
             </template>
             批量执行 ({{ selectedCrawlers.length }})
-          </a-button>
-          <a-button @click="showCreateTaskDialog" type="primary">
-            <template #icon>
-              <PlusOutlined />
-            </template>
-            创建任务
           </a-button>
         </a-space>
       </div>
@@ -75,7 +68,8 @@
               <a-select-option value="US">美国 (US)</a-select-option>
               <a-select-option value="EU">欧盟 (EU)</a-select-option>
               <a-select-option value="KR">韩国 (KR)</a-select-option>
-              <a-select-option value="CN">中国 (CN)</a-select-option>
+              <a-select-option value="JP">日本 (JP)</a-select-option>
+              <a-select-option value="TW">台湾 (TW)</a-select-option>
             </a-select>
             
             <a-select v-model:value="crawlerFilters.crawlerType" placeholder="选择类型" style="width: 150px" @change="loadCrawlers">
@@ -156,12 +150,6 @@
         <!-- 任务操作栏 -->
         <div class="task-actions">
           <a-space>
-            <a-button @click="showCreateTaskDialog" type="primary">
-              <template #icon>
-                <PlusOutlined />
-              </template>
-              创建任务
-            </a-button>
             <a-button @click="batchExecuteSelectedTasks" :disabled="selectedTasks.length === 0">
               <template #icon>
                 <PlayCircleOutlined />
@@ -185,13 +173,18 @@
               <a-select-option value="US">美国 (US)</a-select-option>
               <a-select-option value="EU">欧盟 (EU)</a-select-option>
               <a-select-option value="KR">韩国 (KR)</a-select-option>
+              <a-select-option value="JP">日本 (JP)</a-select-option>
+              <a-select-option value="TW">台湾 (TW)</a-select-option>
             </a-select>
             
-            <a-select v-model:value="taskFilters.taskType" placeholder="选择类型" style="width: 150px" @change="loadTasks">
+            <a-select v-model:value="taskFilters.crawlerType" placeholder="选择数据类型" style="width: 150px" @change="loadTasks">
               <a-select-option value="">全部类型</a-select-option>
-              <a-select-option value="KEYWORD_BATCH">关键词批量</a-select-option>
-              <a-select-option value="DATE_RANGE">日期范围</a-select-option>
-              <a-select-option value="FULL">全量爬取</a-select-option>
+              <a-select-option value="510K">510K申请</a-select-option>
+              <a-select-option value="REGISTRATION">注册数据</a-select-option>
+              <a-select-option value="RECALL">召回数据</a-select-option>
+              <a-select-option value="EVENT">不良事件</a-select-option>
+              <a-select-option value="GUIDANCE">指导文档</a-select-option>
+              <a-select-option value="CUSTOMS">海关案例</a-select-option>
             </a-select>
             
             <a-select v-model:value="taskFilters.enabled" placeholder="选择状态" style="width: 120px" @change="loadTasks">
@@ -205,9 +198,15 @@
         <!-- 任务列表 -->
         <a-table 
           :columns="taskColumns" 
-          :data-source="tasks" 
+          :data-source="filteredTasks" 
           :loading="taskLoading"
-          :pagination="{ pageSize: 20, showSizeChanger: true, showQuickJumper: true }"
+          :pagination="{ 
+            total: filteredTasks.length,
+            pageSize: 20, 
+            showSizeChanger: true, 
+            showQuickJumper: true,
+            showTotal: (total) => `共 ${total} 条任务`
+          }"
           row-key="id"
         >
           <template #bodyCell="{ column, record }">
@@ -217,8 +216,8 @@
             
             <template v-else-if="column.key === 'taskName'">
               <div>
-                <strong>{{ record.taskName }}</strong>
-                <div class="task-desc">{{ record.description }}</div>
+                <strong>{{ formatTaskName(record) }}</strong>
+                <div class="task-desc">{{ formatTaskSchedule(record) }}</div>
               </div>
             </template>
             
@@ -233,7 +232,11 @@
             </template>
             
             <template v-else-if="column.key === 'successRate'">
-              <a-progress :percent="record.successRate" size="small" />
+              <a-progress
+                :percent="record.successRate || 0"
+                size="small"
+                :status="(record.successRate || 0) >= 80 ? 'success' : (record.successRate || 0) >= 50 ? 'normal' : 'exception'"
+              />
             </template>
             
             <template v-else-if="column.key === 'actions'">
@@ -287,21 +290,19 @@
       </a-tab-pane>
     </a-tabs>
 
-    <!-- 创建任务对话框 -->
-    <a-modal v-model:open="createTaskDialogVisible" title="创建任务" width="800px" @ok="handleCreateTask">
-      <UnifiedTaskForm 
-        ref="taskFormRef"
-        :crawlers="crawlers"
-        @submit="handleTaskSubmit"
-      />
-    </a-modal>
-
     <!-- 执行爬虫对话框 -->
-    <a-modal v-model:open="executeDialogVisible" title="执行爬虫" width="600px" @ok="handleExecuteCrawler">
+    <a-modal 
+      v-model:open="executeDialogVisible" 
+      title="执行爬虫" 
+      width="600px" 
+      :footer="null"
+      :destroyOnClose="true"
+    >
       <UnifiedCrawlerExecuteForm 
         ref="executeFormRef"
         :crawler="selectedCrawler"
         @submit="handleExecuteSubmit"
+        @cancel="executeDialogVisible = false"
       />
     </a-modal>
 
@@ -329,6 +330,13 @@
         @cancel="presetEditorVisible = false"
       />
     </a-modal>
+
+    <!-- 任务编辑对话框 -->
+    <UnifiedTaskEditDialog 
+      v-model="taskEditDialogVisible"
+      :task="selectedTask"
+      @saved="handleTaskEditSaved"
+    />
   </div>
 </template>
 
@@ -346,45 +354,49 @@ import {
 } from '@ant-design/icons-vue';
 
 // 组件导入
-import UnifiedTaskForm from '../components/UnifiedTaskForm.vue';
 import UnifiedCrawlerExecuteForm from '../components/UnifiedCrawlerExecuteForm.vue';
 import UnifiedBatchExecuteForm from '../components/UnifiedBatchExecuteForm.vue';
 import CrawlerPresetEditor from '../components/CrawlerPresetEditor.vue';
+import UnifiedTaskEditDialog from '../components/UnifiedTaskEditDialog.vue';
 
 // API导入
 import {
   getCrawlers,
   getPresets,
   getSystemOverview,
-  triggerTask
+  triggerTask,
+  testCrawler as testCrawlerApi,
+  executeCrawler as executeCrawlerApi,
+  batchTestCrawlers as batchTestCrawlersApi,
+  batchExecuteCrawlers as batchExecuteCrawlersApi,
+  deletePreset as deletePresetApi,
+  getPreset as getPresetApi,
+  updatePreset as updatePresetApi
 } from '@/api/crawler';
 
 // 适配旧接口名称
 const getAllCrawlers = async () => {
+  // getCrawlers() 已经通过axios拦截器返回了后端的数据
+  // 后端返回: {success: true, data: [...], count: 11}
   const res = await getCrawlers();
-  // res.data 是后端返回的 {success: true, data: [...], count: 11}
-  return res.data; // 直接返回整个对象
+  return res; // res就是完整对象
 };
 
 const getTasks = async (params: any) => {
+  // 后端返回: {success: true, data: [...], total: 14}
   const res = await getPresets(params);
-  // res.data 是后端返回的 {success: true, data: [...], total: 14}
-  return res.data; // 直接返回整个对象
+  return res; // res就是完整对象
 };
 
 const getSystemStatistics = async () => {
+  // 后端返回: {success: true, data: {...}}
   const res = await getSystemOverview();
-  // res.data 是后端返回的 {success: true, data: {...}}
-  return res.data; // 直接返回整个对象
+  return res; // res就是完整对象
 };
 
 const executeTaskApi = async (id: number) => {
   const res = await triggerTask(id, 'MANUAL');
-  return res.data;
-};
-
-const batchTestCrawlers = async (crawlerNames: string[]) => {
-  return { success: true, data: [] }; // 暂时返回空数据
+  return res;
 };
 
 // 类型定义
@@ -416,12 +428,20 @@ interface TaskInfo {
   taskName: string;
   crawlerName: string;
   countryCode: string;
+  crawlerType: string;
   taskType: string;
   description: string;
   enabled: boolean;
-  successRate: number;
-  lastExecutionTime: string;
-  nextExecutionTime: string;
+  cronExpression?: string;
+  executionCount?: number;
+  successCount?: number;
+  failureCount?: number;
+  successRate?: number;
+  lastExecutionTime?: string;
+  lastExecutionStatus?: string;
+  nextExecutionTime?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface SystemStatistics {
@@ -447,11 +467,12 @@ const crawlerFilters = reactive({
 
 // 任务相关
 const tasks = ref<TaskInfo[]>([]);
+const allTasksCount = ref(0); // 记录所有任务的总数（不受筛选影响）
 const taskLoading = ref(false);
 const selectedTasks = ref<number[]>([]);
 const taskFilters = reactive({
   countryCode: '',
-  taskType: '',
+  crawlerType: '',
   enabled: null as boolean | null
 });
 
@@ -464,11 +485,12 @@ const statistics = ref<SystemStatistics>({
 });
 
 // 对话框状态
-const createTaskDialogVisible = ref(false);
 const executeDialogVisible = ref(false);
 const batchExecuteDialogVisible = ref(false);
 const presetEditorVisible = ref(false);
+const taskEditDialogVisible = ref(false);
 const selectedCrawler = ref<CrawlerInfo | null>(null);
+const selectedTask = ref<TaskInfo | null>(null);
 
 // 表格列定义
 const taskColumns = [
@@ -505,6 +527,11 @@ const recentLogs = computed(() => {
   return [];
 });
 
+// 任务列表（用于表格显示，实际上就是tasks本身）
+const filteredTasks = computed(() => {
+  return tasks.value;
+});
+
 // 方法
 const loadCrawlers = async () => {
   crawlerLoading.value = true;
@@ -514,8 +541,22 @@ const loadCrawlers = async () => {
     console.log('爬虫信息响应:', response);
     
     if (response.success) {
-      crawlers.value = response.data;
+      // 适配数据结构，为每个爬虫添加status对象
+      crawlers.value = response.data.map((crawler: any) => ({
+        ...crawler,
+        displayName: formatCrawlerDescription(crawler.countryCode, crawler.crawlerType, crawler.description),
+        description: formatCrawlerDescription(crawler.countryCode, crawler.crawlerType, crawler.description),
+        status: {
+          status: crawler.enabled ? 'READY' : 'DISABLED',
+          successRate: 0,
+          totalExecutions: 0,
+          lastExecutionTime: 0,
+          lastExecutionResult: ''
+        }
+      }));
       console.log('加载到爬虫数量:', crawlers.value.length);
+      // 重新计算统计信息
+      calculateStatistics();
     } else {
       console.error('加载爬虫信息失败:', response.message);
       message.error('加载爬虫信息失败: ' + response.message);
@@ -534,15 +575,25 @@ const loadTasks = async () => {
     console.log('开始加载任务列表...');
     const params: any = {};
     if (taskFilters.countryCode) params.countryCode = taskFilters.countryCode;
-    if (taskFilters.taskType) params.taskType = taskFilters.taskType;
+    if (taskFilters.crawlerType) params.crawlerType = taskFilters.crawlerType;
     if (taskFilters.enabled !== null) params.enabled = taskFilters.enabled;
     
+    console.log('任务筛选参数:', params);
     const response = await getTasks(params);
     console.log('任务列表响应:', response);
     
     if (response.success) {
       tasks.value = response.data;
       console.log('加载到任务数量:', tasks.value.length);
+      
+      // 如果没有筛选条件，更新总任务数
+      if (!taskFilters.countryCode && !taskFilters.crawlerType && taskFilters.enabled === null) {
+        allTasksCount.value = response.total || tasks.value.length;
+        console.log('更新总任务数:', allTasksCount.value);
+      }
+      
+      // 重新计算统计信息
+      calculateStatistics();
     } else {
       console.error('加载任务列表失败:', response.message);
       message.error('加载任务列表失败: ' + response.message);
@@ -570,14 +621,36 @@ const loadStatistics = async () => {
   }
 };
 
+// 计算统计信息（基于本地数据）
+const calculateStatistics = () => {
+  statistics.value = {
+    totalCrawlers: crawlers.value.length,
+    runningCrawlers: crawlers.value.filter(c => c.status?.status === 'RUNNING').length,
+    totalTasks: allTasksCount.value || tasks.value.length, // 优先使用总数，不受筛选影响
+    overallSuccessRate: calculateOverallSuccessRate()
+  };
+  console.log('计算后的统计信息:', statistics.value);
+};
+
+// 计算总体成功率
+const calculateOverallSuccessRate = (): number => {
+  if (tasks.value.length === 0) return 0;
+  
+  const tasksWithRate = tasks.value.filter(t => typeof t.successRate === 'number');
+  if (tasksWithRate.length === 0) return 0;
+  
+  const totalRate = tasksWithRate.reduce((sum, t) => sum + (t.successRate || 0), 0);
+  return Math.round(totalRate / tasksWithRate.length * 10) / 10;
+};
+
 const refreshAllData = async () => {
   loading.value = true;
   try {
     await Promise.all([
       loadCrawlers(),
-      loadTasks(),
-      loadStatistics()
+      loadTasks()
     ]);
+    // 统计信息在loadCrawlers和loadTasks中已经计算
     message.success('数据刷新成功');
   } catch (error) {
     message.error('数据刷新失败');
@@ -605,14 +678,23 @@ const toggleCrawlerSelection = (crawlerName: string, checked: boolean) => {
 const testCrawler = async (crawler: CrawlerInfo) => {
   crawler.testing = true;
   try {
-    const response = await batchTestCrawlers([crawler.crawlerName]);
-    
+    console.log('测试爬虫:', crawler.crawlerName);
+    const response = await testCrawlerApi(crawler.crawlerName, {
+      maxRecords: 10,
+      mode: 'test'
+    });
+
+    console.log('测试响应:', response);
+
     if (response.success) {
       message.success(`爬虫 ${crawler.displayName} 测试成功`);
+      // 刷新爬虫列表以更新状态
+      await loadCrawlers();
     } else {
       message.error(`爬虫 ${crawler.displayName} 测试失败: ${response.message}`);
     }
   } catch (error) {
+    console.error('测试爬虫失败:', error);
     message.error(`爬虫 ${crawler.displayName} 测试失败: ${(error as any)?.message || '未知错误'}`);
   } finally {
     crawler.testing = false;
@@ -652,78 +734,183 @@ const toggleTaskSelection = (taskId: number, checked: boolean) => {
   }
 };
 
-const showCreateTaskDialog = () => {
-  createTaskDialogVisible.value = true;
-};
-
 const showBatchExecuteDialog = () => {
   batchExecuteDialogVisible.value = true;
 };
 
 const executeTask = async (task: TaskInfo) => {
   try {
+    console.log('执行任务:', task);
     const response = await executeTaskApi(task.id);
-    
+
+    console.log('任务执行响应:', response);
+
     if (response.success) {
-      message.success(`任务 ${task.taskName} 执行成功`);
-      loadTasks();
+      message.success(`任务 ${task.taskName} 已提交执行`);
+      await loadTasks();
     } else {
       message.error(`任务 ${task.taskName} 执行失败: ${response.message}`);
     }
   } catch (error) {
+    console.error('执行任务失败:', error);
     message.error(`任务 ${task.taskName} 执行失败: ${(error as any)?.message || '未知错误'}`);
   }
 };
 
-const editTask = (task: TaskInfo) => {
-  message.info(`编辑任务: ${task.taskName}`);
+const editTask = async (task: TaskInfo) => {
+  try {
+    console.log('编辑任务:', task);
+    selectedTask.value = task;
+    taskEditDialogVisible.value = true;
+  } catch (error) {
+    console.error('编辑任务失败:', error);
+    message.error('编辑任务失败: ' + (error as any)?.message || '未知错误');
+  }
+};
+
+const handleTaskEditSaved = async () => {
+  message.success('任务更新成功');
+  await loadTasks();
+  taskEditDialogVisible.value = false;
+  selectedTask.value = null;
 };
 
 const viewTaskHistory = (task: TaskInfo) => {
+  // TODO: 实现查看任务历史功能
   message.info(`查看任务历史: ${task.taskName}`);
 };
 
 const deleteTask = async (task: TaskInfo) => {
   try {
-    // 这里调用删除任务API
-    message.success(`任务 ${task.taskName} 删除成功`);
-    loadTasks();
+    console.log('删除任务:', task);
+    const response = await deletePresetApi(task.id);
+
+    if (response.success) {
+      message.success(`任务 ${task.taskName} 删除成功`);
+      await loadTasks();
+    } else {
+      message.error(`任务删除失败: ${response.message}`);
+    }
   } catch (error) {
-    message.error(`任务 ${task.taskName} 删除失败`);
+    console.error('删除任务失败:', error);
+    message.error(`任务 ${task.taskName} 删除失败: ${(error as any)?.message || '未知错误'}`);
   }
 };
 
-const batchExecuteSelectedTasks = () => {
-  message.info(`批量执行 ${selectedTasks.value.length} 个任务`);
+const batchExecuteSelectedTasks = async () => {
+  try {
+    if (selectedTasks.value.length === 0) {
+      message.warning('请先选择要执行的任务');
+      return;
+    }
+
+    console.log('批量执行任务:', selectedTasks.value);
+
+    // 依次执行所有选中的任务
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const taskId of selectedTasks.value) {
+      try {
+        const response = await executeTaskApi(taskId);
+        if (response.success) {
+          successCount++;
+        } else {
+          failCount++;
+        }
+      } catch (error) {
+        failCount++;
+        console.error('执行任务失败:', taskId, error);
+      }
+    }
+
+    message.success(`批量执行完成: 成功 ${successCount} 个, 失败 ${failCount} 个`);
+
+    // 清空选中
+    selectedTasks.value = [];
+    await loadTasks();
+  } catch (error) {
+    console.error('批量执行失败:', error);
+    message.error('批量执行失败: ' + (error as any)?.message || '未知错误');
+  }
 };
 
 // 对话框处理
-const handleCreateTask = () => {
-  // 处理创建任务
-};
-
-const handleExecuteCrawler = () => {
-  // 处理执行爬虫
-};
-
 const handleBatchExecute = () => {
-  // 处理批量执行
+  // 由handleBatchExecuteSubmit处理
 };
 
-const handleTaskSubmit = (data: any) => {
-  console.log('任务提交:', data);
-  createTaskDialogVisible.value = false;
-  loadTasks();
+const handleExecuteSubmit = async (data: any) => {
+  try {
+    console.log('执行爬虫:', data);
+
+    if (!data.crawlerName) {
+      message.error('爬虫名称不能为空');
+      return;
+    }
+
+    // 构建执行参数
+    const params: any = {
+      mode: data.mode || 'full'
+    };
+
+    // 完整模式：maxRecords = -1 表示爬取所有数据
+    // 测试模式：使用用户指定的数量
+    if (data.mode === 'full') {
+      params.maxRecords = -1;  // 爬取所有数据
+    } else if (data.maxRecords) {
+      params.maxRecords = data.maxRecords;
+    }
+
+    if (data.keywords && data.keywords.length > 0) {
+      params.keywords = data.keywords;
+    }
+
+    console.log('执行参数:', params);
+
+    const response = await executeCrawlerApi(data.crawlerName, params);
+
+    console.log('执行响应:', response);
+
+    if (response.success) {
+      message.success(`爬虫 ${data.crawlerName} 执行成功`);
+      executeDialogVisible.value = false;
+      await loadCrawlers();
+    } else {
+      message.error(`爬虫执行失败: ${response.message}`);
+    }
+  } catch (error) {
+    console.error('执行爬虫失败:', error);
+    message.error('执行爬虫失败: ' + (error as any)?.message || '未知错误');
+  }
 };
 
-const handleExecuteSubmit = (data: any) => {
-  console.log('执行提交:', data);
-  executeDialogVisible.value = false;
-};
+const handleBatchExecuteSubmit = async (data: any) => {
+  try {
+    console.log('批量执行提交:', data);
 
-const handleBatchExecuteSubmit = (data: any) => {
-  console.log('批量执行提交:', data);
-  batchExecuteDialogVisible.value = false;
+    if (!data.crawlers || data.crawlers.length === 0) {
+      message.error('没有选择爬虫');
+      return;
+    }
+
+    const response = await batchExecuteCrawlersApi(data);
+
+    console.log('批量执行响应:', response);
+
+    if (response.success) {
+      message.success(`成功提交 ${data.crawlers.length} 个爬虫的执行任务`);
+      batchExecuteDialogVisible.value = false;
+      // 清空选中的爬虫
+      selectedCrawlers.value = [];
+      await loadCrawlers();
+    } else {
+      message.error(`批量执行失败: ${response.message}`);
+    }
+  } catch (error) {
+    console.error('批量执行失败:', error);
+    message.error('批量执行失败: ' + (error as any)?.message || '未知错误');
+  }
 };
 
 // 工具方法
@@ -766,9 +953,28 @@ const getExecutionStatusColor = (status: string) => {
   return getStatusColor(status);
 };
 
-const formatTime = (timestamp: number) => {
+const formatTime = (timestamp: number | string) => {
   if (!timestamp) return '-';
-  return new Date(timestamp).toLocaleString();
+  
+  let date: Date;
+  if (typeof timestamp === 'string') {
+    date = new Date(timestamp);
+  } else {
+    date = new Date(timestamp);
+  }
+  
+  if (isNaN(date.getTime())) {
+    return '-';
+  }
+  
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
 };
 
 // 生命周期
@@ -784,6 +990,140 @@ onMounted(() => {
     clearInterval(interval);
   });
 });
+
+// ==================== 工具函数 ====================
+
+/**
+ * 格式化爬虫描述
+ * 将 "国家+类型" 格式转换为友好的中文描述
+ */
+const formatCrawlerDescription = (countryCode: string, crawlerType: string, originalDescription?: string): string => {
+  // 国家名称映射
+  const countryNames: Record<string, string> = {
+    'US': '美国',
+    'EU': '欧盟',
+    'KR': '韩国',
+    'CN': '中国',
+    'JP': '日本',
+    'TW': '台湾'
+  };
+  
+  // 爬虫类型映射
+  const typeNames: Record<string, string> = {
+    'EVENT': '不良事件爬虫',
+    '510K': '申请记录爬虫',
+    'RECALL': '召回数据爬虫',
+    'REGISTRATION': '注册数据爬虫',
+    'GUIDANCE': '指导文档爬虫',
+    'CUSTOMS': '海关案例爬虫',
+    'CUSTOMS_CASE': '海关案例爬虫'
+  };
+  
+  const countryName = countryNames[countryCode] || countryCode;
+  const typeName = typeNames[crawlerType] || crawlerType;
+  
+  // 如果有原始描述且不是默认格式，则使用原始描述
+  if (originalDescription && !originalDescription.includes('国家') && !originalDescription.includes('类型')) {
+    return originalDescription;
+  }
+  
+  return `${countryName}${typeName}`;
+};
+
+/**
+ * 格式化任务名称
+ * 将任务名称改为"国家+爬虫"格式
+ */
+const formatTaskName = (task: TaskInfo): string => {
+  // 国家名称映射
+  const countryNames: Record<string, string> = {
+    'US': '美国',
+    'EU': '欧盟',
+    'KR': '韩国',
+    'CN': '中国',
+    'JP': '日本',
+    'TW': '台湾'
+  };
+  
+  // 爬虫类型映射
+  const typeNames: Record<string, string> = {
+    'EVENT': '不良事件爬虫',
+    '510K': '申请记录爬虫',
+    'RECALL': '召回数据爬虫',
+    'REGISTRATION': '注册数据爬虫',
+    'GUIDANCE': '指导文档爬虫',
+    'CUSTOMS': '海关案例爬虫',
+    'CUSTOMS_CASE': '海关案例爬虫'
+  };
+  
+  const countryName = countryNames[task.countryCode] || task.countryCode;
+  const typeName = typeNames[task.crawlerType] || task.crawlerType;
+  
+  return `${countryName}${typeName}`;
+};
+
+/**
+ * 格式化任务调度时间
+ * 将任务描述改为定时任务的时间
+ */
+const formatTaskSchedule = (task: TaskInfo): string => {
+  // 如果有cron表达式，解析并显示为友好的时间描述
+  if (task.cronExpression) {
+    return formatCronExpression(task.cronExpression);
+  }
+  
+  // 如果有下次执行时间，显示下次执行时间
+  if (task.nextExecutionTime) {
+    return `下次执行: ${formatTime(task.nextExecutionTime)}`;
+  }
+  
+  // 如果有最后执行时间，显示最后执行时间
+  if (task.lastExecutionTime) {
+    return `最后执行: ${formatTime(task.lastExecutionTime)}`;
+  }
+  
+  // 默认显示为手动执行
+  return '手动执行';
+};
+
+/**
+ * 格式化Cron表达式为友好的时间描述
+ */
+const formatCronExpression = (cronExpression: string): string => {
+  try {
+    const parts = cronExpression.split(' ');
+    if (parts.length !== 5) {
+      return cronExpression;
+    }
+    
+    const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
+    
+    // 解析分钟和小时
+    if (minute === '0' && hour !== '*') {
+      // 整点执行
+      if (dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
+        return `每天 ${hour}:00 执行`;
+      } else if (dayOfMonth === '*' && month === '*' && dayOfWeek !== '*') {
+        const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+        const days = dayOfWeek.split(',').map(d => {
+          const dayNum = parseInt(d);
+          return weekDays[dayNum] || d;
+        }).join(',');
+        return `每周 ${days} ${hour}:00 执行`;
+      }
+    } else if (minute !== '*' && hour !== '*') {
+      // 指定时间执行
+      if (dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
+        return `每天 ${hour}:${minute.padStart(2, '0')} 执行`;
+      }
+    }
+    
+    // 默认返回原始表达式
+    return `定时: ${cronExpression}`;
+  } catch (error) {
+    return `定时: ${cronExpression}`;
+  }
+};
 </script>
 
 <style scoped>

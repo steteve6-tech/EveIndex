@@ -707,6 +707,70 @@ public class DeviceDataController {
     }
 
     /**
+     * 获取按风险等级统计的设备数据
+     */
+    @GetMapping("/statistics-by-risk-level")
+    @Operation(summary = "获取按风险等级统计的设备数据", description = "统计各类型设备数据的高中低风险数量")
+    public ResponseEntity<Map<String, Object>> getDeviceDataByRiskLevel() {
+        log.info("获取按风险等级统计的设备数据");
+        
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            Map<String, Map<String, Long>> riskStats = new HashMap<>();
+            
+            // 统计召回记录的风险等级
+            riskStats.put("召回记录", new HashMap<>());
+            riskStats.get("召回记录").put("高风险", deviceRecallRecordRepository.countByRiskLevel(CertNewsData.RiskLevel.HIGH));
+            riskStats.get("召回记录").put("中风险", deviceRecallRecordRepository.countByRiskLevel(CertNewsData.RiskLevel.MEDIUM));
+            riskStats.get("召回记录").put("低风险", deviceRecallRecordRepository.countByRiskLevel(CertNewsData.RiskLevel.LOW));
+            
+            // 统计申请记录的风险等级
+            riskStats.put("申请记录", new HashMap<>());
+            riskStats.get("申请记录").put("高风险", device510KRepository.countByRiskLevel(CertNewsData.RiskLevel.HIGH));
+            riskStats.get("申请记录").put("中风险", device510KRepository.countByRiskLevel(CertNewsData.RiskLevel.MEDIUM));
+            riskStats.get("申请记录").put("低风险", device510KRepository.countByRiskLevel(CertNewsData.RiskLevel.LOW));
+            
+            // 统计事件报告的风险等级
+            riskStats.put("事件报告", new HashMap<>());
+            riskStats.get("事件报告").put("高风险", deviceEventReportRepository.countByRiskLevel(CertNewsData.RiskLevel.HIGH));
+            riskStats.get("事件报告").put("中风险", deviceEventReportRepository.countByRiskLevel(CertNewsData.RiskLevel.MEDIUM));
+            riskStats.get("事件报告").put("低风险", deviceEventReportRepository.countByRiskLevel(CertNewsData.RiskLevel.LOW));
+            
+            // 统计注册记录的风险等级
+            riskStats.put("注册记录", new HashMap<>());
+            riskStats.get("注册记录").put("高风险", deviceRegistrationRecordRepository.countByRiskLevel(CertNewsData.RiskLevel.HIGH));
+            riskStats.get("注册记录").put("中风险", deviceRegistrationRecordRepository.countByRiskLevel(CertNewsData.RiskLevel.MEDIUM));
+            riskStats.get("注册记录").put("低风险", deviceRegistrationRecordRepository.countByRiskLevel(CertNewsData.RiskLevel.LOW));
+            
+            // 统计指导文档的风险等级
+            riskStats.put("指导文档", new HashMap<>());
+            riskStats.get("指导文档").put("高风险", guidanceDocumentRepository.countByRiskLevel(CertNewsData.RiskLevel.HIGH));
+            riskStats.get("指导文档").put("中风险", guidanceDocumentRepository.countByRiskLevel(CertNewsData.RiskLevel.MEDIUM));
+            riskStats.get("指导文档").put("低风险", guidanceDocumentRepository.countByRiskLevel(CertNewsData.RiskLevel.LOW));
+            
+            // 统计海关案例的风险等级
+            riskStats.put("海关案例", new HashMap<>());
+            riskStats.get("海关案例").put("高风险", customsCaseRepository.countByRiskLevel(CertNewsData.RiskLevel.HIGH));
+            riskStats.get("海关案例").put("中风险", customsCaseRepository.countByRiskLevel(CertNewsData.RiskLevel.MEDIUM));
+            riskStats.get("海关案例").put("低风险", customsCaseRepository.countByRiskLevel(CertNewsData.RiskLevel.LOW));
+            
+            result.put("success", true);
+            result.put("data", riskStats);
+            result.put("message", "获取风险等级统计成功");
+            
+            log.info("设备数据风险等级统计完成");
+            
+        } catch (Exception e) {
+            log.error("获取设备数据风险等级统计失败: {}", e.getMessage(), e);
+            result.put("success", false);
+            result.put("message", "获取风险等级统计失败: " + e.getMessage());
+        }
+        
+        return ResponseEntity.ok(result);
+    }
+
+    /**
      * 获取510K设备记录
      */
     @GetMapping("/device-510k")

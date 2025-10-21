@@ -13,6 +13,9 @@ import java.util.List;
 public interface DeviceRegistrationRecordRepository extends JpaRepository<DeviceRegistrationRecord, Long> {
 
     List<DeviceRegistrationRecord> findByRegistrationNumber(String registrationNumber);
+    
+    // 检查注册编号是否存在
+    boolean existsByRegistrationNumber(String registrationNumber);
 
     List<DeviceRegistrationRecord> findByFeiNumber(String feiNumber);
 
@@ -24,6 +27,12 @@ public interface DeviceRegistrationRecordRepository extends JpaRepository<Device
     List<DeviceRegistrationRecord> findByManufacturerNameLike(@Param("name") String manufacturerNamePart);
 
     List<DeviceRegistrationRecord> findByDataSource(String dataSource);
+
+    // 新增：按注册编号和数据源查找（用于去重）
+    @Query("SELECT r FROM DeviceRegistrationRecord r WHERE r.registrationNumber = :registrationNumber AND r.dataSource = :dataSource")
+    java.util.Optional<DeviceRegistrationRecord> findByRegistrationNumberAndDataSource(
+            @Param("registrationNumber") String registrationNumber,
+            @Param("dataSource") String dataSource);
 
     // 新增：按国家筛选
     List<DeviceRegistrationRecord> findByJdCountry(String jdCountry);

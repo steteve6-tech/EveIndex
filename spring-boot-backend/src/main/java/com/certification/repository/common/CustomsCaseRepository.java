@@ -24,6 +24,11 @@ public interface CustomsCaseRepository extends JpaRepository<CustomsCase, Long> 
     Optional<CustomsCase> findByCaseNumber(String caseNumber);
     
     /**
+     * 检查判例编号是否存在
+     */
+    boolean existsByCaseNumber(String caseNumber);
+    
+    /**
      * 根据判例日期查询
      */
     List<CustomsCase> findByCaseDate(LocalDate caseDate);

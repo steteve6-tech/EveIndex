@@ -223,44 +223,22 @@ public class TaskExecutionService {
         crawlerParams.setDateTo((String) params.get("dateTo"));
         crawlerParams.setRecentDays((Integer) params.get("recentDays"));
         
-        // 处理关键词参数
-        if (config.getParamsVersion() != null && config.getParamsVersion().equals("v2")) {
-            // V2模式：多字段关键词
+        // 处理fieldKeywords参数
+        Object fieldKeywordsObj = params.get("fieldKeywords");
+        if (fieldKeywordsObj instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> fieldKeywordsMap = (Map<String, Object>) fieldKeywordsObj;
             Map<String, List<String>> fieldKeywords = new HashMap<>();
-            
-            for (Map.Entry<String, Object> entry : params.entrySet()) {
-                String key = entry.getKey();
-                Object value = entry.getValue();
-                
-                // 跳过通用参数
-                if (key.equals("maxRecords") || key.equals("batchSize") || 
-                    key.equals("dateFrom") || key.equals("dateTo") || key.equals("recentDays")) {
-                    continue;
-                }
-                
-                // 转换为List<String>
-                if (value instanceof List) {
+
+            for (Map.Entry<String, Object> entry : fieldKeywordsMap.entrySet()) {
+                if (entry.getValue() instanceof List) {
                     @SuppressWarnings("unchecked")
-                    List<String> stringList = (List<String>) value;
-                    fieldKeywords.put(key, stringList);
+                    List<String> stringList = (List<String>) entry.getValue();
+                    fieldKeywords.put(entry.getKey(), stringList);
                 }
             }
-            
+
             crawlerParams.setFieldKeywords(fieldKeywords);
-            
-        } else {
-            // V1模式：单一关键词列表（向后兼容）
-            if (config.getKeywords() != null && !config.getKeywords().trim().isEmpty()) {
-                try {
-                    List<String> keywords = objectMapper.readValue(
-                        config.getKeywords(), 
-                        new TypeReference<List<String>>() {}
-                    );
-                    crawlerParams.setKeywords(keywords);
-                } catch (Exception e) {
-                    log.warn("解析关键词失败，使用空列表", e);
-                }
-            }
         }
         
         return crawlerParams;

@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import com.certification.util.RiskLevelUtil;
 import com.certification.util.KeywordUtil;
 import com.certification.entity.common.CertNewsData.RiskLevel;
+import com.certification.utils.CrawlerDuplicateDetector;
 
 /**
  * FDA设备召回数据爬取器
@@ -775,6 +776,101 @@ public class US_recall_api {
 
         return 0;
     }
+    
+    /**
+     * 基于多字段参数爬取Recall数据（新的统一方法）⭐
+     * 支持：brandNames, recallingFirms, productDescriptions, dateFrom/dateTo
+     * 
+     * @param brandNames 品牌名称列表
+     * @param recallingFirms 召回公司列表
+     * @param productDescriptions 产品描述列表
+     * @param dateFrom 起始日期（yyyyMMdd格式）
+     * @param dateTo 结束日期（yyyyMMdd格式）
+     * @param maxRecords 最大记录数（-1表示全部）
+     * @param batchSize 批次大小
+     * @return 爬取结果信息
+     */
+    public String crawlAndSaveWithMultipleFields(
+            List<String> brandNames,
+            List<String> recallingFirms,
+            List<String> productDescriptions,
+            String dateFrom,
+            String dateTo,
+            int maxRecords,
+            int batchSize) {
+        
+        System.out.println("开始使用多字段参数爬取FDA Recall数据...");
+        System.out.println("品牌名称数量: " + (brandNames != null ? brandNames.size() : 0));
+        System.out.println("召回公司数量: " + (recallingFirms != null ? recallingFirms.size() : 0));
+        System.out.println("产品描述数量: " + (productDescriptions != null ? productDescriptions.size() : 0));
+        System.out.println("日期范围: " + dateFrom + " - " + dateTo);
+        System.out.println("最大记录数: " + (maxRecords == -1 ? "所有数据" : maxRecords));
+        
+        int totalSaved = 0;
+        
+        // 1. 按品牌名称搜索
+        if (brandNames != null && !brandNames.isEmpty()) {
+            for (String brandName : brandNames) {
+                if (brandName == null || brandName.trim().isEmpty()) continue;
+                
+                System.out.println("按品牌名称搜索: " + brandName);
+                String searchQuery = "openfda.brand_name:" + brandName.trim();
+                
+                try {
+                    String result = crawlAndSaveDeviceRecall(searchQuery, maxRecords, batchSize, dateFrom, dateTo);
+                    totalSaved += extractSavedCount(result);
+                    System.out.println("品牌名称搜索结果: " + result);
+                    Thread.sleep(1000);
+                } catch (Exception e) {
+                    System.err.println("品牌名称 '" + brandName + "' 搜索失败: " + e.getMessage());
+                }
+            }
+        }
+        
+        // 2. 按召回公司搜索
+        if (recallingFirms != null && !recallingFirms.isEmpty()) {
+            for (String firm : recallingFirms) {
+                if (firm == null || firm.trim().isEmpty()) continue;
+                
+                System.out.println("按召回公司搜索: " + firm);
+                String searchQuery = "recalling_firm:" + firm.trim();
+                
+                try {
+                    String result = crawlAndSaveDeviceRecall(searchQuery, maxRecords, batchSize, dateFrom, dateTo);
+                    totalSaved += extractSavedCount(result);
+                    System.out.println("召回公司搜索结果: " + result);
+                    Thread.sleep(1000);
+                } catch (Exception e) {
+                    System.err.println("召回公司 '" + firm + "' 搜索失败: " + e.getMessage());
+                }
+            }
+        }
+        
+        // 3. 按产品描述搜索
+        if (productDescriptions != null && !productDescriptions.isEmpty()) {
+            for (String description : productDescriptions) {
+                if (description == null || description.trim().isEmpty()) continue;
+                
+                System.out.println("按产品描述搜索: " + description);
+                String searchQuery = "product_description:" + description.trim();
+                
+                try {
+                    String result = crawlAndSaveDeviceRecall(searchQuery, maxRecords, batchSize, dateFrom, dateTo);
+                    totalSaved += extractSavedCount(result);
+                    System.out.println("产品描述搜索结果: " + result);
+                    Thread.sleep(1000);
+                } catch (Exception e) {
+                    System.err.println("产品描述 '" + description + "' 搜索失败: " + e.getMessage());
+                }
+            }
+        }
+        
+        String finalResult = String.format(
+            "多字段Recall数据爬取完成，总保存: %d 条记录", totalSaved);
+        System.out.println(finalResult);
+        
+        return finalResult;
+    }
 
     /**
      * 分批爬取并保存设备召回数据
@@ -1033,6 +1129,9 @@ public class US_recall_api {
         int totalSkipped = 0;
         int batchCount = 0;
 
+        // 初始化批次检测器
+        CrawlerDuplicateDetector detector = new CrawlerDuplicateDetector(3);
+
         for (int i = 0; i < records.size(); i += crawlerConfig.getBatch().getSaveSize()) {
             int endIndex = Math.min(i + crawlerConfig.getBatch().getSaveSize(), records.size());
             List<MedicalDeviceRecall> batch = records.subList(i, endIndex);
@@ -1118,7 +1217,17 @@ public class US_recall_api {
                     }
                 }
             }
+
+            // 批次检测：检查是否应该停止爬取
+            boolean shouldStop = detector.recordBatch(batch.size(), newRecords.size());
+            if (shouldStop) {
+                System.out.println("⚠️ 检测到连续重复批次，停止保存剩余数据");
+                break;
+            }
         }
+
+        // 打印最终统计
+        detector.printFinalStats("US_recall_api");
 
         return String.format("保存成功: %d 条新记录, 跳过重复: %d 条", savedCount, totalSkipped);
     }

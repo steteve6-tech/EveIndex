@@ -38,22 +38,62 @@
         </div>
       </a-form-item>
 
-      <a-form-item label="关键词（可选）">
-        <a-textarea
-          v-model:value="formData.keywords"
-          placeholder="输入关键词，每行一个（可选）"
-          :rows="4"
-        />
-        <div class="field-description">
-          可选：输入关键词进行过滤爬取，每行一个关键词
-        </div>
-      </a-form-item>
-
-      <a-form-item label="立即执行">
-        <a-switch v-model:checked="formData.immediate" />
-        <span style="margin-left: 8px;">{{ formData.immediate ? '立即执行' : '仅创建任务' }}</span>
-      </a-form-item>
     </a-form>
+
+    <!-- 实际执行参数显示区域 -->
+    <a-divider>实际执行参数</a-divider>
+    
+    <div class="execution-params">
+      <a-descriptions :column="1" size="small" bordered>
+        <a-descriptions-item label="执行模式">
+          <a-tag :color="formData.mode === 'full' ? 'green' : 'blue'">
+            {{ formData.mode === 'full' ? '完整执行' : '测试执行' }}
+          </a-tag>
+        </a-descriptions-item>
+        
+        <a-descriptions-item label="最大记录数" v-if="formData.mode === 'test'">
+          {{ formData.maxRecords }}
+        </a-descriptions-item>
+        
+        <a-descriptions-item label="最大记录数" v-else>
+          <a-tag color="green">所有数据</a-tag>
+        </a-descriptions-item>
+        
+        <a-descriptions-item label="关键词来源">
+          <div v-if="loadingPreset">
+            <a-spin size="small" />
+            <span style="margin-left: 8px; color: #666; font-size: 12px;">加载中...</span>
+          </div>
+          <div v-else-if="presetData && presetData.parameters">
+            <a-tag color="orange">预设配置</a-tag>
+            <div style="margin-top: 4px;">
+              <a-tag 
+                v-for="(keyword, index) in getPresetKeywords()" 
+                :key="index" 
+                size="small" 
+                color="blue"
+                style="margin: 2px;"
+              >
+                {{ keyword }}
+              </a-tag>
+              <span v-if="getPresetKeywords().length === 0" style="color: #999; font-size: 12px;">
+                无关键词配置
+              </span>
+            </div>
+          </div>
+          <div v-else>
+            <a-tag color="gray">无预设配置</a-tag>
+            <span style="margin-left: 8px; color: #666; font-size: 12px;">
+              将爬取所有数据
+            </span>
+          </div>
+        </a-descriptions-item>
+        
+        <a-descriptions-item label="执行方式">
+          <a-tag color="green">立即执行</a-tag>
+        </a-descriptions-item>
+      </a-descriptions>
+    </div>
 
     <a-divider />
 
@@ -61,7 +101,7 @@
       <a-space>
         <a-button @click="handleCancel">取消</a-button>
         <a-button type="primary" @click="handleSubmit">
-          {{ formData.immediate ? '立即执行' : '创建任务' }}
+          立即执行
         </a-button>
       </a-space>
     </div>
@@ -69,8 +109,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue';
+import { ref, reactive, watch, onMounted } from 'vue';
 import type { FormInstance } from 'ant-design-vue';
+import { getPreset as getPresetApi } from '@/api/crawler';
 
 // Props
 interface Props {
@@ -90,25 +131,21 @@ const formRef = ref<FormInstance>();
 
 // 响应式数据
 const formData = reactive({
-  mode: 'test',
-  maxRecords: 10,
-  keywords: '',
-  immediate: true
+  mode: 'full',  // 默认为完整执行模式，爬取所有数据
+  maxRecords: 10
 });
+
+// 预设配置数据
+const presetData = ref<any>(null);
+const loadingPreset = ref(false);
 
 // 方法
 const handleSubmit = () => {
-  const keywords = formData.keywords
-    .split('\n')
-    .map(line => line.trim())
-    .filter(line => line.length > 0);
-
   const submitData = {
     crawlerName: props.crawler?.crawlerName,
     mode: formData.mode,
-    maxRecords: formData.mode === 'test' ? formData.maxRecords : undefined,
-    keywords: keywords.length > 0 ? keywords : undefined,
-    immediate: formData.immediate
+    maxRecords: formData.mode === 'test' ? formData.maxRecords : -1, // 完整模式使用-1表示爬取所有数据
+    immediate: true  // 总是立即执行
   };
 
   emit('submit', submitData);
@@ -118,12 +155,73 @@ const handleCancel = () => {
   emit('cancel');
 };
 
+// 加载预设配置
+const loadPresetConfig = async () => {
+  if (!props.crawler?.crawlerName) return;
+  
+  loadingPreset.value = true;
+  try {
+    // 获取该爬虫的预设配置
+    const response = await getPresetApi(props.crawler.crawlerName);
+    if (response.success && response.data) {
+      presetData.value = response.data;
+    }
+  } catch (error) {
+    console.warn('加载预设配置失败:', error);
+  } finally {
+    loadingPreset.value = false;
+  }
+};
+
+// 获取预设关键词
+const getPresetKeywords = () => {
+  if (!presetData.value || !presetData.value.parameters) {
+    return [];
+  }
+  
+  try {
+    const params = JSON.parse(presetData.value.parameters);
+    const keywords = [];
+    
+    // 从fieldKeywords中提取关键词
+    if (params.fieldKeywords) {
+      if (Array.isArray(params.fieldKeywords)) {
+        keywords.push(...params.fieldKeywords);
+      } else if (typeof params.fieldKeywords === 'object') {
+        // 如果是对象，提取所有值
+        Object.values(params.fieldKeywords).forEach(value => {
+          if (Array.isArray(value)) {
+            keywords.push(...value);
+          } else if (typeof value === 'string' && value.trim()) {
+            keywords.push(value.trim());
+          }
+        });
+      }
+    }
+    
+    // 从keywords中提取关键词
+    if (params.keywords && Array.isArray(params.keywords)) {
+      keywords.push(...params.keywords);
+    }
+    
+    // 去重并过滤空值
+    return [...new Set(keywords)].filter(keyword => keyword && keyword.trim());
+  } catch (error) {
+    console.warn('解析预设关键词失败:', error);
+    return [];
+  }
+};
+
 // 监听crawler变化，重置表单
 watch(() => props.crawler, () => {
-  formData.mode = 'test';
+  formData.mode = 'full';  // 默认为完整执行模式
   formData.maxRecords = 10;
-  formData.keywords = '';
-  formData.immediate = true;
+  loadPresetConfig(); // 加载预设配置
+});
+
+// 组件挂载时加载预设配置
+onMounted(() => {
+  loadPresetConfig();
 });
 </script>
 
@@ -155,6 +253,19 @@ watch(() => props.crawler, () => {
 .form-actions {
   display: flex;
   justify-content: flex-end;
+}
+
+.execution-params {
+  margin: 16px 0;
+}
+
+.execution-params .ant-descriptions-item-label {
+  font-weight: 500;
+  color: #333;
+}
+
+.execution-params .ant-descriptions-item-content {
+  color: #666;
 }
 </style>
 

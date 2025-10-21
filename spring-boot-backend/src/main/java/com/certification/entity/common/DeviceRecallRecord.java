@@ -13,83 +13,77 @@ import java.time.LocalDateTime;
 import com.certification.entity.common.CertNewsData.RiskLevel;
 
 @Data
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = true)
 @Accessors(chain = true)
 @Entity
 @Table(name = "t_device_recall")
-@EntityListeners(AuditingEntityListener.class)
 @Schema(description = "医疗器械召回记录（适配D_recall爬虫数据结构）")
-public class DeviceRecallRecord {
+public class DeviceRecallRecord extends BaseDeviceEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Schema(description = "主键ID")
     private Long id;
 
-    // 核心标识字段（D_recall爬虫使用）
+    /**
+     * 召回事件ID（核心标识字段）
+     */
     @Column(name = "cfres_id", length = 100)
     @Schema(description = "召回事件ID（从FDA网站URL提取）")
     private String cfresId;
 
-    // 召回基本信息（D_recall爬虫提供）
+    /**
+     * 产品描述
+     */
     @Column(name = "product_description", columnDefinition = "TEXT")
     @Schema(description = "产品描述")
     private String productDescription;
 
+    /**
+     * 召回公司
+     */
     @Column(name = "recalling_firm", length = 255)
     @Schema(description = "召回公司")
     private String recallingFirm;
 
+    /**
+     * 召回等级
+     */
     @Column(name = "recall_status", length = 100)
     @Schema(description = "召回等级（CLASS I/II/III）")
     private String recallStatus;
 
+    /**
+     * 召回发布日期
+     */
     @Column(name = "event_date_posted")
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Schema(description = "召回发布日期")
     private LocalDate eventDatePosted;
 
-    // 设备信息（D_recall爬虫设置）
+    /**
+     * 设备名称
+     */
     @Column(name = "device_name", length = 255)
     @Schema(description = "设备名称（复用产品描述）")
     private String deviceName;
 
+    /**
+     * 产品代码
+     */
     @Column(name = "product_code", length = 50)
-    @Schema(description = "产品代码（D_recall设置为空）")
+    @Schema(description = "产品代码")
     private String productCode;
 
-    // 风险等级和关键词（系统计算）
-    @Enumerated(EnumType.STRING)
-    @Column(name = "risk_level", length = 10)
-    @Schema(description = "风险等级（根据召回等级计算）")
-    private RiskLevel riskLevel = RiskLevel.MEDIUM;
-
-    @Column(name = "keywords", columnDefinition = "TEXT")
-    @Schema(description = "关键词（JSON格式）")
-    private String keywords;
-
-    // 数据源信息（D_recall爬虫设置）
-    @Column(name = "data_source", length = 50)
-    @Schema(description = "数据源")
-    private String dataSource;
-
+    /**
+     * 国家代码
+     */
     @Column(name = "country_code", nullable = false, length = 20)
-    @Schema(description = "国家代码")
+    @Schema(description = "国家代码", example = "US")
     private String countryCode;
 
-    @Column(name = "jd_country", length = 20)
-    @Schema(description = "数据适用国家")
-    private String jdCountry;
-
-    // 爬取时间
-    @Column(name = "crawl_time")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Schema(description = "爬取时间（数据抓取时的时间戳）")
-    private LocalDateTime crawlTime;
-
-    // 备注信息（AI判断原因、人工审核意见等）
-    @Lob
-    @Column(name = "remark", columnDefinition = "TEXT")
-    @Schema(description = "备注信息（AI判断原因、人工审核意见等）")
-    private String remark;
+    @Override
+    public String getEntityType() {
+        return "DeviceRecall";
+    }
 }

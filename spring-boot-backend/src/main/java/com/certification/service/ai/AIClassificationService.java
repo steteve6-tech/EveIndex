@@ -90,12 +90,105 @@ public class AIClassificationService {
      * 构建分类提示词
      */
     private String buildClassificationPrompt(Map<String, Object> deviceData) {
+        String entityType = String.valueOf(deviceData.getOrDefault("entityType", ""));
+
+        // 根据不同的实体类型构建不同的提示词
+        switch (entityType) {
+            case "GuidanceDocument":
+                return buildGuidanceDocumentPrompt(deviceData);
+            case "CustomsCase":
+                return buildCustomsCasePrompt(deviceData);
+            default:
+                return buildDevicePrompt(deviceData);
+        }
+    }
+
+    /**
+     * 构建指导文档的判断提示词
+     */
+    private String buildGuidanceDocumentPrompt(Map<String, Object> deviceData) {
+        String title = String.valueOf(deviceData.getOrDefault("deviceName", ""));
+        String description = String.valueOf(deviceData.getOrDefault("description", ""));
+
+        return String.format(
+            "你是一位医疗设备监管领域的专家，专门负责识别与测肤仪相关的法规文档。\n\n" +
+            "**任务：判断以下指导文档/新闻是否与测肤仪产品或相关法规有关**\n\n" +
+            "**测肤仪相关法规包括：**\n" +
+            "- 专门针对皮肤检测、分析、成像设备的法规\n" +
+            "- 涉及皮肤科医疗设备的监管指南\n" +
+            "- 面部成像、皮肤镜、色素检测等设备的标准\n" +
+            "- 皮肤健康评估设备的技术要求\n" +
+            "- 医疗美容设备中的皮肤分析类设备规定\n\n" +
+            "**文档信息：**\n" +
+            "%s\n\n" +
+            "**请按以下JSON格式返回判断结果（只返回JSON，不要其他内容）：**\n" +
+            "```json\n" +
+            "{\n" +
+            "  \"isRelated\": true/false,\n" +
+            "  \"confidence\": 0.0-1.0,\n" +
+            "  \"category\": \"测肤仪法规/皮肤设备标准/医美设备指南/其他\",\n" +
+            "  \"reason\": \"简要说明文档内容是否涉及测肤仪相关法规或产品\"\n" +
+            "}\n" +
+            "```\n\n" +
+            "**判断标准：**\n" +
+            "1. 文档标题或主题明确提到皮肤检测、皮肤分析、面部成像等\n" +
+            "2. 内容涉及皮肤科诊断设备、医美分析设备的监管\n" +
+            "3. 包含测肤仪相关设备的技术要求或审批指南\n" +
+            "4. 排除：纯治疗类设备（激光、射频等）的法规\n" +
+            "5. 排除：与皮肤无关的通用医疗设备法规\n" +
+            "6. 排除：药品、化妆品相关的法规文档\n",
+            description
+        );
+    }
+
+    /**
+     * 构建海关案例的判断提示词
+     */
+    private String buildCustomsCasePrompt(Map<String, Object> deviceData) {
+        String caseInfo = String.valueOf(deviceData.getOrDefault("deviceName", ""));
+        String description = String.valueOf(deviceData.getOrDefault("description", ""));
+
+        return String.format(
+            "你是一位海关归类专家，专门负责识别与测肤仪相关的海关案例。\n\n" +
+            "**任务：判断以下海关案例是否与测肤仪产品相关**\n\n" +
+            "**测肤仪相关HS编码：**\n" +
+            "- 9018（医疗仪器及器具）：包含皮肤检测诊断设备\n" +
+            "- 8543（具有独立功能的电气设备）：可能包含电子皮肤分析仪\n" +
+            "- 9031.49（光学测量或检验仪器）：可能包含光学皮肤检测设备\n" +
+            "- 9027（分析检验仪器）：可能包含皮肤成分分析设备\n" +
+            "- 8525（图像采集设备）：可能包含皮肤成像系统\n\n" +
+            "**案例信息：**\n" +
+            "%s\n\n" +
+            "**请按以下JSON格式返回判断结果（只返回JSON，不要其他内容）：**\n" +
+            "```json\n" +
+            "{\n" +
+            "  \"isRelated\": true/false,\n" +
+            "  \"confidence\": 0.0-1.0,\n" +
+            "  \"category\": \"测肤仪归类案例/皮肤设备裁定/其他\",\n" +
+            "  \"reason\": \"说明HS编码或裁定结果中是否涉及测肤仪相关产品\"\n" +
+            "}\n" +
+            "```\n\n" +
+            "**判断标准：**\n" +
+            "1. HS编码为上述测肤仪相关编码（9018/8543/9031.49/9027/8525）\n" +
+            "2. 裁定结果中明确提到皮肤检测、面部分析、皮肤成像等设备\n" +
+            "3. 案例涉及皮肤科医疗器械或医美分析设备的归类\n" +
+            "4. 排除：纯治疗设备（激光治疗仪、射频设备）的案例\n" +
+            "5. 排除：与皮肤无关的医疗设备案例\n" +
+            "6. 排除：化妆品、护肤品等非设备类产品的案例\n",
+            description
+        );
+    }
+
+    /**
+     * 构建设备数据的判断提示词（默认）
+     */
+    private String buildDevicePrompt(Map<String, Object> deviceData) {
         String deviceName = String.valueOf(deviceData.getOrDefault("deviceName", ""));
         String description = String.valueOf(deviceData.getOrDefault("description", ""));
         String manufacturer = String.valueOf(deviceData.getOrDefault("manufacturer", ""));
         String intendedUse = String.valueOf(deviceData.getOrDefault("intendedUse", ""));
         String entityType = String.valueOf(deviceData.getOrDefault("entityType", ""));
-        
+
         return String.format(
             "你是一位医疗设备监管领域的专家，专门负责识别皮肤检测相关的医疗设备。\n\n" +
             "**任务：判断以下设备是否为测肤仪/皮肤分析仪相关设备**\n\n" +

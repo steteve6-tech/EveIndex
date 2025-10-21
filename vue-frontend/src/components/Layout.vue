@@ -52,6 +52,13 @@
             <span>数据处理</span>
           </a-menu-item>
 
+          <a-menu-item key="/cert-news-task">
+            <template #icon>
+              <ScheduleOutlined />
+            </template>
+            <span>认证新闻定时任务</span>
+          </a-menu-item>
+
 <!--          <a-menu-item key="/standards">-->
 <!--            <template #icon>-->
 <!--              <FileTextOutlined />-->
@@ -118,12 +125,12 @@
 <!--            <span>竞品信息</span>-->
 <!--          </a-menu-item>-->
 
-          <a-menu-item key="/crawler-management">
-            <template #icon>
-              <BugOutlined />
-            </template>
-            <span>爬虫管理</span>
-          </a-menu-item>
+<!--          <a-menu-item key="/crawler-management">-->
+<!--            <template #icon>-->
+<!--              <BugOutlined />-->
+<!--            </template>-->
+<!--            <span>爬虫管理</span>-->
+<!--          </a-menu-item>-->
 
           <a-menu-item key="/unified-crawler-management">
             <template #icon>
@@ -131,6 +138,15 @@
             </template>
             <span>爬虫调度平台</span>
           </a-menu-item>
+
+
+
+<!--          <a-menu-item key="/unified-crawler-new">-->
+<!--            <template #icon>-->
+<!--              <RobotOutlined />-->
+<!--            </template>-->
+<!--            <span>统一爬虫管理（新）</span>-->
+<!--          </a-menu-item>-->
 
 <!--          <a-menu-item key="/keyword-management">-->
 <!--            <template #icon>-->
@@ -150,12 +166,14 @@
         
 
         
-        <a-menu-item key="/settings">
-          <template #icon>
-            <SettingOutlined />
-          </template>
-          <span>系统设置</span>
-        </a-menu-item>
+<!--        <a-menu-item key="/settings">-->
+<!--          <template #icon>-->
+<!--            <SettingOutlined />-->
+<!--          </template>-->
+<!--          <span>系统设置</span>-->
+<!--        </a-menu-item>-->
+        
+
       </a-menu>
     </a-layout-sider>
     
@@ -254,7 +272,8 @@ import {
   TrophyOutlined,
   WarningOutlined,
   ScheduleOutlined,
-  ClockCircleOutlined
+  ClockCircleOutlined,
+  RobotOutlined
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 
@@ -277,7 +296,7 @@ const isCertificationManagementPage = computed(() => {
 })
 
 const isMedicalRiskManagementPage = computed(() => {
-  return ['/crawler-management', '/unified-crawler-management', '/device-data', '/competitor-info', '/high-risk-data-management', '/api-test'].includes(route.path)
+  return ['/crawler-management', '/unified-crawler-management', '/unified-crawler-new', '/device-data', '/competitor-info', '/high-risk-data-management', '/api-test', '/cert-news-task'].includes(route.path)
 })
 
 // 监听路由变化

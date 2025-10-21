@@ -90,16 +90,38 @@ public class CrawlerRegistryService {
     }
     
     /**
-     * 根据唯一标识获取爬虫
+     * 根据唯一标识或爬虫名称获取爬虫
      * 
-     * @param uniqueKey 唯一标识（国家_类型）
+     * @param nameOrKey 爬虫名称或唯一标识（如：EU_Registration 或 EU_REGISTRATION）
      * @return 爬虫执行器
      */
-    public ICrawlerExecutor getCrawler(String uniqueKey) {
-        ICrawlerExecutor executor = crawlerMap.get(uniqueKey);
-        if (executor == null) {
-            log.warn("未找到爬虫: {}", uniqueKey);
+    public ICrawlerExecutor getCrawler(String nameOrKey) {
+        if (nameOrKey == null || nameOrKey.isEmpty()) {
+            return null;
         }
+        
+        // 首先尝试直接查找
+        ICrawlerExecutor executor = crawlerMap.get(nameOrKey);
+        
+        // 如果找不到，尝试将输入转换为大写后查找（uniqueKey格式）
+        if (executor == null) {
+            executor = crawlerMap.get(nameOrKey.toUpperCase());
+        }
+        
+        // 如果还是找不到，尝试通过crawlerName匹配
+        if (executor == null) {
+            for (ICrawlerExecutor e : crawlerMap.values()) {
+                if (e.getCrawlerName().equals(nameOrKey)) {
+                    executor = e;
+                    break;
+                }
+            }
+        }
+        
+        if (executor == null) {
+            log.warn("未找到爬虫: {}", nameOrKey);
+        }
+        
         return executor;
     }
     

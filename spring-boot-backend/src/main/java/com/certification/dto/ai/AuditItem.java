@@ -25,7 +25,11 @@ public class AuditItem {
     private Boolean blacklistMatched = false;  // 是否匹配黑名单
     private String matchedBlacklistKeyword;    // 匹配的黑名单关键词
     private List<String> suggestedBlacklist = new ArrayList<>();  // 建议添加的黑名单关键词
-    
+
+    // 新增字段：白名单相关
+    private Boolean whitelistMatched = false;  // 是否匹配白名单
+    private String matchedWhitelistKeyword;    // 匹配的白名单关键词
+
     @JsonProperty("remark")
     private String remark;                     // 备注信息
     

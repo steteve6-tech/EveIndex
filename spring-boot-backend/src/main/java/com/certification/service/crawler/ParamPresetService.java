@@ -8,12 +8,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 参数预设管理服务
@@ -55,14 +57,13 @@ public class ParamPresetService {
         config.setCrawlerName(request.getCrawlerName());
         config.setCountryCode(request.getCountryCode());
         config.setTaskType("PRESET");
-        config.setParamsVersion("v2");
         config.setParameters(request.getParameters());
         config.setCronExpression(request.getCronExpression());
         config.setDescription(request.getDescription());
         config.setEnabled(request.getEnabled() != null ? request.getEnabled() : true);
         config.setPriority(request.getPriority() != null ? request.getPriority() : 5);
         config.setTimeoutMinutes(request.getTimeoutMinutes() != null ? request.getTimeoutMinutes() : 30);
-        config.setRetryCount(request.getRetryCount() != null ? request.getRetryCount() : 3);
+        config.setRetryCount(request.getRetryCount() != null ? request.getRetryCount() : 0);
         config.setCreatedBy(request.getCreatedBy());
         
         config = taskConfigRepository.save(config);
@@ -154,7 +155,6 @@ public class ParamPresetService {
         copy.setCrawlerName(source.getCrawlerName());
         copy.setCountryCode(source.getCountryCode());
         copy.setTaskType(source.getTaskType());
-        copy.setParamsVersion(source.getParamsVersion());
         copy.setParameters(source.getParameters());
         copy.setKeywords(source.getKeywords());
         copy.setCronExpression(source.getCronExpression());
@@ -193,15 +193,103 @@ public class ParamPresetService {
     }
     
     /**
+     * 删除所有参数预设
+     * ⚠️ 警告：此操作会清空所有任务配置！
+     */
+    @Transactional
+    public void deleteAllPresets() {
+        log.warn("⚠️ 开始清空所有参数预设...");
+        
+        // 获取所有预设
+        List<UnifiedTaskConfig> allPresets = taskConfigRepository.findAll();
+        
+        log.info("找到 {} 个预设，开始删除...", allPresets.size());
+        
+        // 取消所有定时任务
+        for (UnifiedTaskConfig config : allPresets) {
+            try {
+                schedulerService.cancelTask(config.getId());
+            } catch (Exception e) {
+                log.warn("取消定时任务失败: ID={}", config.getId(), e);
+            }
+        }
+        
+        // 删除所有配置
+        taskConfigRepository.deleteAll();
+        
+        log.info("✅ 所有参数预设已清空");
+    }
+    
+    /**
      * 条件查询预设
      * 
      * @param crawlerName 爬虫名称（可选）
+     * @param countryCode 国家代码（可选）
+     * @param crawlerType 爬虫类型（可选）
      * @param enabled 启用状态（可选）
      * @param pageable 分页参数
      * @return 预设列表
      */
-    public Page<UnifiedTaskConfig> getPresetsByCondition(String crawlerName, Boolean enabled, Pageable pageable) {
-        return taskConfigRepository.findByConditions(null, crawlerName, "PRESET", enabled, pageable);
+    public Page<UnifiedTaskConfig> getPresetsByCondition(
+            String crawlerName, 
+            String countryCode, 
+            String crawlerType, 
+            Boolean enabled, 
+            Pageable pageable) {
+        
+        log.debug("查询预设: crawlerName={}, countryCode={}, crawlerType={}, enabled={}", 
+                  crawlerName, countryCode, crawlerType, enabled);
+        
+        // 先按countryCode查询基础数据
+        Page<UnifiedTaskConfig> presets = taskConfigRepository.findByConditions(
+            countryCode, 
+            crawlerName, 
+            "PRESET", 
+            enabled, 
+            pageable
+        );
+        
+        // 如果指定了crawlerType，进行二次筛选
+        if (crawlerType != null && !crawlerType.isEmpty()) {
+            List<UnifiedTaskConfig> filteredList = presets.getContent().stream()
+                .filter(preset -> {
+                    String type = extractCrawlerType(preset.getCrawlerName());
+                    return crawlerType.equalsIgnoreCase(type);
+                })
+                .collect(Collectors.toList());
+            
+            log.debug("根据crawlerType={} 筛选后剩余 {} 条记录", crawlerType, filteredList.size());
+            
+            // 返回筛选后的分页结果
+            return new PageImpl<>(filteredList, pageable, filteredList.size());
+        }
+        
+        return presets;
+    }
+    
+    /**
+     * 从爬虫名称中提取类型
+     * 例如: US_510K -> 510K, TW_Registration -> REGISTRATION
+     */
+    private String extractCrawlerType(String crawlerName) {
+        if (crawlerName == null || crawlerName.isEmpty()) {
+            return "";
+        }
+        
+        // 爬虫名称格式：US_510K, KR_Event, TW_Registration等
+        String[] parts = crawlerName.split("_");
+        if (parts.length >= 2) {
+            String type = parts[1].toUpperCase();
+            
+            // 特殊处理：CustomsCase → Customs（与前端保持一致）
+            if (type.equals("CUSTOMSCASE")) {
+                return "CUSTOMS";
+            }
+            
+            return type;
+        }
+        
+        return "";
     }
     
     /**

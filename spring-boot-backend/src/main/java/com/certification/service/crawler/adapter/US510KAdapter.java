@@ -49,36 +49,22 @@ public class US510KAdapter implements ICrawlerExecutor {
         CrawlerResult result = new CrawlerResult().markStart();
         
         try {
-            // 从fieldKeywords中提取参数（V2模式）
+            // 从fieldKeywords中提取参数（V2模式-多字段模式）
             Map<String, List<String>> fieldKeywords = params.getFieldKeywords();
             
             List<String> deviceNames = fieldKeywords.getOrDefault("deviceNames", new ArrayList<>());
-            List<String> applicants = fieldKeywords.getOrDefault("applicants", new ArrayList<>());
+            List<String> applicantNames = fieldKeywords.getOrDefault("applicantNames", new ArrayList<>());
             List<String> tradeNames = fieldKeywords.getOrDefault("tradeNames", new ArrayList<>());
             
-            // 合并所有关键词
-            List<String> allKeywords = new ArrayList<>();
-            allKeywords.addAll(deviceNames);
-            allKeywords.addAll(applicants);
-            allKeywords.addAll(tradeNames);
-            
-            // 如果使用V1模式（单一关键词列表）
-            if (allKeywords.isEmpty() && params.getKeywords() != null) {
-                allKeywords = params.getKeywords();
-            }
-            
-            // 如果仍然为空，使用默认搜索
-            if (allKeywords.isEmpty()) {
-                allKeywords = List.of("medical");
-            }
-            
-            // 调用爬虫方法
-            String resultMsg = crawler.crawlAndSaveWithKeywords(
-                allKeywords,
-                params.getMaxRecords() != null ? params.getMaxRecords() : -1,
-                params.getBatchSize() != null ? params.getBatchSize() : 100,
+            // 调用新的多字段爬虫方法
+            String resultMsg = crawler.crawlAndSaveWithMultipleFields(
+                deviceNames,
+                applicantNames,
+                tradeNames,
                 params.getDateFrom(),
-                params.getDateTo()
+                params.getDateTo(),
+                params.getMaxRecords() != null ? params.getMaxRecords() : 100,
+                params.getBatchSize() != null ? params.getBatchSize() : 20
             );
             
             result.markEnd();

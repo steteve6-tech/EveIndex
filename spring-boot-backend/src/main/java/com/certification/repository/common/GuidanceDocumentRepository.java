@@ -34,6 +34,11 @@ public interface GuidanceDocumentRepository extends JpaRepository<GuidanceDocume
      * 根据标题查找
      */
     List<GuidanceDocument> findByTitleContaining(String title);
+    
+    /**
+     * 根据标题和数据源查找（用于去重）
+     */
+    List<GuidanceDocument> findByTitleAndDataSource(String title, String dataSource);
 
     /**
      * 根据指导状态查找

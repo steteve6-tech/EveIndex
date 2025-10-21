@@ -17,76 +17,73 @@ import com.certification.entity.common.CertNewsData.RiskLevel;
  * 支持多种数据源：FDA设备不良事件、EU Safety Gate预警等
  */
 @Data
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = true)
 @Accessors(chain = true)
 @Entity
 @Table(name = "t_device_event")
-@EntityListeners(AuditingEntityListener.class)
 @Schema(description = "设备事件报告实体")
-public class DeviceEventReport {
+public class DeviceEventReport extends BaseDeviceEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Schema(description = "主键ID")
     private Long id;
 
-    // 核心业务标识 - 支持多种编号格式
+    /**
+     * 报告编号（核心业务标识）
+     * FDA: report_number, EU: alert_number
+     */
     @Column(name = "report_number", length = 64, nullable = false, unique = true)
-    private String reportNumber; // FDA: report_number, EU: alert_number
+    @Schema(description = "报告编号（FDA/EU等不同来源）", example = "1234567")
+    private String reportNumber;
 
-
+    /**
+     * 事件发生日期
+     */
     @Column(name = "date_of_event")
+    @Schema(description = "事件发生日期")
     private LocalDate dateOfEvent;
 
-
+    /**
+     * 接收日期
+     * FDA: date_received, EU: publication_date
+     */
     @Column(name = "date_received")
-    private LocalDate dateReceived; // FDA: date_received, EU: publication_date
+    @Schema(description = "接收/发布日期")
+    private LocalDate dateReceived;
 
-
+    /**
+     * 品牌名称
+     * FDA: device.manufacturer_name, EU: brand
+     */
     @Column(name = "brand_name", length = 255)
-    private String brandName; // FDA: device.manufacturer_name, EU: brand
+    @Schema(description = "品牌名称")
+    private String brandName;
 
-
+    /**
+     * 通用名称
+     * FDA: device.generic_name, EU: product
+     */
     @Column(name = "generic_name", length = 255)
-    private String genericName; // FDA: device.generic_name, EU: product
+    @Schema(description = "通用设备名称")
+    private String genericName;
 
+    /**
+     * 制造商名称
+     */
     @Column(name = "manufacturer_name", length = 255)
+    @Schema(description = "制造商名称")
     private String manufacturerName;
 
-
+    /**
+     * 设备类别
+     */
     @Column(name = "device_class", length = 10)
+    @Schema(description = "设备类别", example = "Class II")
     private String deviceClass;
 
-
-    // 新增：风险等级
-    @Enumerated(EnumType.STRING)
-    @Column(name = "risk_level", length = 10)
-    private RiskLevel riskLevel = RiskLevel.MEDIUM;
-
-    // 新增：关键词数组
-    @Column(name = "keywords", columnDefinition = "TEXT")
-    private String keywords; // TEXT格式存储关键词（JSON字符串或分号分隔）
-
-
-
-
-    @Column(name = "data_source", length = 50)
-    private String dataSource;
-
-    // 新增：用于判定数据所属国家（如 US/CN/EU 等）
-    @Column(name = "jd_country", length = 20)
-    private String jdCountry;
-
-    // 爬取时间
-    @Column(name = "crawl_time")
-    @Schema(description = "爬取时间（数据抓取时的时间戳）")
-    private LocalDateTime crawlTime;
-
-    @Column(name = "create_time", insertable = false, updatable = false)
-    private LocalDateTime createTime;
-
-    // 备注信息（AI判断原因、人工审核意见等）
-    @Lob
-    @Column(name = "remark", columnDefinition = "TEXT")
-    @Schema(description = "备注信息（AI判断原因、人工审核意见等）")
-    private String remark;
+    @Override
+    public String getEntityType() {
+        return "DeviceEvent";
+    }
 }

@@ -50,23 +50,58 @@ public class KRRecallAdapter implements ICrawlerExecutor {
         try {
             Map<String, List<String>> fieldKeywords = params.getFieldKeywords();
             
+            // 提取公司名称列表
+            List<String> companyNames = fieldKeywords.getOrDefault("companyNames", new ArrayList<>());
+            // 提取产品名称列表
+            List<String> itemNames = fieldKeywords.getOrDefault("itemNames", new ArrayList<>());
+            // 兼容旧的searchKeywords参数
             List<String> searchKeywords = fieldKeywords.getOrDefault("searchKeywords", new ArrayList<>());
             
-            if (searchKeywords.isEmpty() && params.getKeywords() != null) {
-                searchKeywords = params.getKeywords();
-            }
+            String resultMsg;
             
-            if (searchKeywords.isEmpty()) {
-                searchKeywords = List.of("의료기기");
+            // 优先使用新的多字段方式
+            if (!companyNames.isEmpty() || !itemNames.isEmpty()) {
+                resultMsg = crawler.crawlWithMultipleFields(
+                    companyNames,
+                    itemNames,
+                    params.getMaxRecords() != null ? params.getMaxRecords() : -1,
+                    params.getBatchSize() != null ? params.getBatchSize() : 100,
+                    params.getDateFrom(),
+                    params.getDateTo()
+                );
             }
-            
-            String resultMsg = crawler.crawlAndSaveWithKeywords(
-                searchKeywords,
-                params.getMaxRecords() != null ? params.getMaxRecords() : -1,
-                params.getBatchSize() != null ? params.getBatchSize() : 100,
-                params.getDateFrom(),
-                params.getDateTo()
-            );
+            // 兼容旧的searchKeywords方式
+            else if (!searchKeywords.isEmpty()) {
+                resultMsg = crawler.crawlAndSaveWithKeywords(
+                    searchKeywords,
+                    params.getMaxRecords() != null ? params.getMaxRecords() : -1,
+                    params.getBatchSize() != null ? params.getBatchSize() : 100,
+                    params.getDateFrom(),
+                    params.getDateTo()
+                );
+            }
+            // 兼容V1的keywords参数
+            else if (params.getKeywords() != null && !params.getKeywords().isEmpty()) {
+                resultMsg = crawler.crawlAndSaveWithKeywords(
+                    params.getKeywords(),
+                    params.getMaxRecords() != null ? params.getMaxRecords() : -1,
+                    params.getBatchSize() != null ? params.getBatchSize() : 100,
+                    params.getDateFrom(),
+                    params.getDateTo()
+                );
+            }
+            // 默认搜索
+            else {
+                log.info("未提供任何搜索参数，使用默认搜索");
+                resultMsg = crawler.crawlAndSaveToDatabase(
+                    null,
+                    null,
+                    params.getMaxRecords() != null ? params.getMaxRecords() : -1,
+                    params.getBatchSize() != null ? params.getBatchSize() : 100,
+                    params.getDateFrom(),
+                    params.getDateTo()
+                );
+            }
             
             result.markEnd();
             result.setSuccess(true);

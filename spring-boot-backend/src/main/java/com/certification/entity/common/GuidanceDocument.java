@@ -24,16 +24,16 @@ import com.certification.util.KeywordUtil;
  * 支持多种数据源：FDA指导文档、EU医疗设备新闻等
  */
 @Data
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = true)
 @Accessors(chain = true)
 @Entity
 @Table(name = "t_guidance_document")
-@EntityListeners(AuditingEntityListener.class)
 @Schema(description = "医疗文档实体")
-public class GuidanceDocument {
+public class GuidanceDocument extends BaseDeviceEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Schema(description = "主键ID")
     private Long id;
 
     // 文档类型（GUIDANCE-指导文档, NEWS-新闻, NOTICE-通知等）
@@ -56,46 +56,22 @@ public class GuidanceDocument {
     @Column(name = "guidance_status", length = 50)
     private String guidanceStatus;
 
-    // 新增：风险等级
-    @Enumerated(EnumType.STRING)
-    @Column(name = "risk_level", length = 10)
-    private RiskLevel riskLevel = RiskLevel.MEDIUM;
+    // 风险等级、关键词、数据源等字段已继承自BaseDeviceEntity
+    // (riskLevel, keywords, dataSource, jdCountry, crawlTime, dataStatus)
 
-    // 新增：关键词数组
-    @Column(name = "keywords", columnDefinition = "TEXT")
-    private String keywords; // JSON格式存储关键词数组
-
-    // 指导文档URL
+    /**
+     * 指导文档URL
+     */
     @Column(name = "document_url", length = 1000)
+    @Schema(description = "指导文档下载URL")
     private String documentUrl;
 
-    // 数据来源URL
+    /**
+     * 数据来源URL
+     */
     @Column(name = "source_url", length = 1000)
+    @Schema(description = "原始数据来源页面URL")
     private String sourceUrl;
-
-    // 新增：数据来源（如 FDA、CBP 等）
-    @Column(name = "data_source", length = 50)
-    private String dataSource;
-
-    // 新增：来源国家（如 US、EU 等）
-    @Column(name = "jd_country", length = 10)
-    private String jdCountry;
-
-    // 爬取时间
-    @Column(name = "crawl_time")
-    private LocalDateTime crawlTime;
-
-    // 数据状态（ACTIVE, INACTIVE等）
-    @Column(name = "data_status", length = 20)
-    private String dataStatus = "ACTIVE";
-
-    // 创建时间
-    @Column(name = "created_time")
-    private LocalDateTime createdTime;
-
-    // 更新时间
-    @Column(name = "updated_time")
-    private LocalDateTime updatedTime;
 
     // ========== EU 新闻特有字段 ==========
     
@@ -138,27 +114,29 @@ public class GuidanceDocument {
 
     @PrePersist
     protected void onCreate() {
-        createdTime = LocalDateTime.now();
-        updatedTime = LocalDateTime.now();
-        if (crawlTime == null) {
-            crawlTime = LocalDateTime.now();
-        }
-        // 默认来源与国家
-        if (dataSource == null || dataSource.isBlank()) {
-            dataSource = "FDA";
-        }
-        if (jdCountry == null || jdCountry.isBlank()) {
-            jdCountry = "US";
-        }
+        super.onCreate(); // 调用父类的onCreate方法
         // 默认文档类型
         if (documentType == null || documentType.isBlank()) {
             documentType = "GUIDANCE";
+        }
+        // 如果dataSource为空，设置默认值
+        if (getDataSource() == null || getDataSource().isBlank()) {
+            setDataSource("FDA");
+        }
+        // 如果jdCountry为空，设置默认值
+        if (getJdCountry() == null || getJdCountry().isBlank()) {
+            setJdCountry("US");
         }
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updatedTime = LocalDateTime.now();
+        super.onUpdate(); // 调用父类的onUpdate方法
+    }
+
+    @Override
+    public String getEntityType() {
+        return "GuidanceDocument";
     }
 
     // ========== 数据映射方法 ==========
@@ -405,9 +383,5 @@ public class GuidanceDocument {
         }
     }
 
-    // 备注信息（AI判断原因、人工审核意见等）
-    @Lob
-    @Column(name = "remark", columnDefinition = "TEXT")
-    @Schema(description = "备注信息（AI判断原因、人工审核意见等）")
-    private String remark;
+    // 备注信息已继承自BaseDeviceEntity (remark)
 }

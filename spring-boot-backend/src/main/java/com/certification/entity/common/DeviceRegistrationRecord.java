@@ -16,26 +16,18 @@ import com.certification.entity.common.CertNewsData.RiskLevel;
  * 对应数据库表：t_device_registration
  */
 @Data
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = true)
 @Accessors(chain = true)
 @Entity
 @Table(name = "t_device_registration")
-@EntityListeners(AuditingEntityListener.class)
 @Schema(description = "设备注册记录共有数据实体")
-public class    DeviceRegistrationRecord {
+public class DeviceRegistrationRecord extends BaseDeviceEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ========== 数据源标识 ==========
-    @Column(name = "data_source", length = 50, nullable = false)
-    @Schema(description = "数据源", example = "US_FDA, EU_EUDAMED")
-    private String dataSource;
-
-    @Column(name = "jd_country", length = 20, nullable = false)
-    @Schema(description = "数据源国家", example = "US, EU")
-    private String jdCountry;
+    // 数据源标识已继承自BaseDeviceEntity (dataSource, jdCountry)
 
     // ========== 核心标识字段（两个数据源都有） ==========
     @Lob
@@ -79,33 +71,11 @@ public class    DeviceRegistrationRecord {
     @Schema(description = "创建日期")
     private String createdDate;
 
-    // ========== 分析字段（通用） ==========
-    @Enumerated(EnumType.STRING)
-    @Column(name = "risk_level", length = 10)
-    @Schema(description = "风险等级评估")
-    private RiskLevel riskLevel = RiskLevel.MEDIUM;
+    // 分析字段和元数据已继承自BaseDeviceEntity
+    // (riskLevel, keywords, crawlTime, createTime, updateTime, remark)
 
-    @Lob
-    @Column(name = "keywords", columnDefinition = "LONGTEXT")
-    @Schema(description = "关键词（JSON数组）")
-    private String keywords;
-
-    // ========== 元数据（两个数据源都有） ==========
-    @Column(name = "crawl_time")
-    @Schema(description = "爬取时间")
-    private LocalDateTime crawlTime;
-
-    @Column(name = "create_time", insertable = false, updatable = false)
-    @Schema(description = "创建时间")
-    private LocalDateTime createTime;
-
-    @Column(name = "update_time", insertable = false, updatable = false)
-    @Schema(description = "更新时间")
-    private LocalDateTime updateTime;
-
-    // 备注信息（AI判断原因、人工审核意见等）
-    @Lob
-    @Column(name = "remark", columnDefinition = "TEXT")
-    @Schema(description = "备注信息（AI判断原因、人工审核意见等）")
-    private String remark;
+    @Override
+    public String getEntityType() {
+        return "DeviceRegistration";
+    }
 }

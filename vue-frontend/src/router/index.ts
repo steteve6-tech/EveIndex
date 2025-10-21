@@ -10,9 +10,11 @@ import CrawlerManagement from '@/views/CrawlerManagement.vue'
 import CrawlerDataManagement from '@/views/CrawlerDataManagement.vue'
 import DeviceData from '@/views/DeviceData.vue'
 import UnifiedCrawlerManagement from '@/views/UnifiedCrawlerManagement.vue'
+import UnifiedCrawlerManagementNew from '@/views/UnifiedCrawlerManagementNew.vue'
 // import CrawlerTest from '@/views/CrawlerTest.vue' // 文件不存在
 // import UnifiedCrawlerTest from '@/views/UnifiedCrawlerTest.vue' // 文件不存在
 import HighRiskDataManagement from '@/views/HighRiskDataManagement.vue'
+import CertNewsTaskManagement from '@/views/CertNewsTaskManagement.vue'
 // import KeywordManagement from '@/views/KeywordManagement.vue' // 文件不存在
 // import CompetitorInfo from '@/views/CompetitorInfo.vue' // 文件不存在
 
@@ -98,6 +100,18 @@ const routes = [
         name: 'UnifiedCrawlerManagement',
         component: UnifiedCrawlerManagement,
         meta: { title: '爬虫调度管理平台' }
+      },
+      {
+        path: '/unified-crawler-new',
+        name: 'UnifiedCrawlerManagementNew',
+        component: UnifiedCrawlerManagementNew,
+        meta: { title: '统一爬虫管理平台（新版）' }
+      },
+      {
+        path: '/cert-news-task',
+        name: 'CertNewsTaskManagement',
+        component: CertNewsTaskManagement,
+        meta: { title: '认证新闻定时任务管理' }
       },
       // {
       //   path: '/keyword-management',

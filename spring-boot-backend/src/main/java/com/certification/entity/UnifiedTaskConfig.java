@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 
 /**
  * 统一任务配置实体
- * 整合V1和V2的所有任务配置功能
+ * 管理爬虫任务的调度和参数配置
  */
 @Entity
 @Table(name = "t_unified_task_config")
@@ -45,21 +45,15 @@ public class UnifiedTaskConfig {
      */
     @Column(name = "task_type", length = 50)
     private String taskType;
-    
-    /**
-     * 参数版本 (v1, v2)
-     */
-    @Column(name = "params_version", length = 10)
-    private String paramsVersion = "v2";
-    
+
     /**
      * 参数配置 (JSON格式)
      */
     @Column(name = "parameters", columnDefinition = "TEXT")
     private String parameters;
-    
+
     /**
-     * 关键词列表 (V1兼容)
+     * 关键词列表（保留用于向后兼容）
      */
     @Column(name = "keywords", columnDefinition = "TEXT")
     private String keywords;

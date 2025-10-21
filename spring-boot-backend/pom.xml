@@ -202,10 +202,22 @@
 
         <dependency>
             <groupId>com.volcengine</groupId>
-            <artifactId>volc-sdk-java</artifactId>
-            <version>1.0.89</version>
+            <artifactId>volcengine-java-sdk-translate20250301</artifactId>
+            <version>0.2.10</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>1.2.83</version> <!-- 使用最新稳定版本 -->
+        </dependency>
+
+        <!-- Tesseract OCR for captcha recognition -->
+        <dependency>
+            <groupId>net.sourceforge.tess4j</groupId>
+            <artifactId>tess4j</artifactId>
+            <version>5.7.0</version>
+        </dependency>
 
     </dependencies>
 

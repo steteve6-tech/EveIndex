@@ -169,16 +169,26 @@ public class AutoAIJudgeService {
         }
     }
     
+    @Autowired
+    private com.certification.service.DeviceMatchKeywordsService deviceMatchKeywordsService;
+
     /**
-     * 添加黑名单关键词
+     * 添加黑名单关键词（带白名单保护）
      */
     private void addBlacklistKeywords(List<String> keywords) {
         if (keywords == null || keywords.isEmpty()) {
             return;
         }
-        
+
         for (String keyword : keywords) {
             try {
+                // 白名单保护：如果关键词在白名单中，跳过添加到黑名单
+                String whitelistMatch = deviceMatchKeywordsService.checkWhitelistMatch(keyword);
+                if (whitelistMatch != null) {
+                    log.info("制造商在白名单中，跳过添加黑名单: {} (白名单关键词: {})", keyword, whitelistMatch);
+                    continue;
+                }
+
                 if (!isKeywordExists(keyword)) {
                     DeviceMatchKeywords blacklistKeyword = new DeviceMatchKeywords();
                     blacklistKeyword.setKeyword(keyword);

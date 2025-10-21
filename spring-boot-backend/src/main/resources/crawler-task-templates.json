@@ -192,6 +192,63 @@
       "timeoutMinutes": 60,
       "retryCount": 3,
       "description": "每天凌晨4点爬取韩国召回数据"
+    },
+    {
+      "name": "日本召回每日爬取",
+      "crawlerName": "JP_Recall",
+      "countryCode": "JP",
+      "moduleName": "devicerecall",
+      "taskType": "FULL",
+      "cronExpression": "0 0 5 * * ?",
+      "keywords": [],
+      "crawlParams": {
+        "maxRecords": 100,
+        "batchSize": 50
+      },
+      "priority": 6,
+      "timeoutMinutes": 60,
+      "retryCount": 3,
+      "description": "每天凌晨5点爬取日本PMDA召回数据"
+    },
+    {
+      "name": "日本法规指导文档每周爬取",
+      "crawlerName": "JP_Guidance",
+      "countryCode": "JP",
+      "moduleName": "guidance",
+      "taskType": "KEYWORD_BATCH",
+      "cronExpression": "0 30 5 ? * MON",
+      "fieldKeywords": {
+        "criteriaName": ["skin", "dental", "cardiovascular", "orthopedic"],
+        "effectName": []
+      },
+      "crawlParams": {
+        "maxRecords": 50,
+        "batchSize": 20
+      },
+      "priority": 4,
+      "timeoutMinutes": 90,
+      "retryCount": 2,
+      "description": "每周一凌晨5:30爬取日本PMDA法规指导文档，支持基准名称(Q_kjn_kname)和功效(Q_kjn_effect_name)两个搜索参数"
+    },
+    {
+      "name": "日本设备注册每周爬取",
+      "crawlerName": "JP_Registration",
+      "countryCode": "JP",
+      "moduleName": "deviceregistration",
+      "taskType": "KEYWORD_BATCH",
+      "cronExpression": "0 0 6 ? * MON",
+      "fieldKeywords": {
+        "keywords": ["skin", "皮膚", "heart", "心臓", "スキンアナライザー", "超音波診断装置"],
+        "companyNames": ["株式会社Xenoma", "フィリップス・ジャパン"]
+      },
+      "crawlParams": {
+        "maxRecords": 100,
+        "batchSize": 50
+      },
+      "priority": 5,
+      "timeoutMinutes": 120,
+      "retryCount": 3,
+      "description": "每周一凌晨6点爬取日本PMDA设备注册数据，支持关键词和公司名称搜索"
     }
   ],
   "cronExpressions": {

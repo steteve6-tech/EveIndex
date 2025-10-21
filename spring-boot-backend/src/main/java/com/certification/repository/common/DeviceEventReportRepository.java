@@ -15,7 +15,9 @@ import java.util.Optional;
 public interface DeviceEventReportRepository extends JpaRepository<DeviceEventReport, Long> {
 
     Optional<DeviceEventReport> findByReportNumber(String reportNumber);
-
+    
+    // 检查报告编号是否存在
+    boolean existsByReportNumber(String reportNumber);
 
     List<DeviceEventReport> findByDateReceived(LocalDate dateReceived);
 
@@ -75,8 +77,10 @@ public interface DeviceEventReportRepository extends JpaRepository<DeviceEventRe
 
     /**
      * 根据关键词搜索（忽略大小写）
+     * 注意：keywords字段是TEXT类型，需要使用CAST转换
      */
-    List<DeviceEventReport> findByKeywordsContainingIgnoreCase(String keywords);
+    @Query("SELECT d FROM DeviceEventReport d WHERE LOWER(CAST(d.keywords AS string)) LIKE LOWER(CONCAT('%', :keywords, '%'))")
+    List<DeviceEventReport> findByKeywordsContainingIgnoreCase(@Param("keywords") String keywords);
 
     /**
      * 根据关键词搜索（支持多个字段）

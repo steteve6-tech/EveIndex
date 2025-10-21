@@ -879,4 +879,115 @@ public class US_510K {
         return null;
     }
 
+    /**
+     * 基于多字段参数爬取510K数据（新的统一方法）⭐
+     * 支持：deviceNames, applicantNames, tradeNames, dateFrom/dateTo
+     * 
+     * @param deviceNames 设备名称列表
+     * @param applicantNames 申请人名称列表  
+     * @param tradeNames 商品名称列表
+     * @param dateFrom 起始日期（yyyyMMdd格式）
+     * @param dateTo 结束日期（yyyyMMdd格式）
+     * @param maxRecords 最大记录数（-1表示全部）
+     * @param batchSize 批次大小
+     * @return 爬取结果信息
+     */
+    public String crawlAndSaveWithMultipleFields(
+            List<String> deviceNames,
+            List<String> applicantNames,
+            List<String> tradeNames,
+            String dateFrom,
+            String dateTo,
+            int maxRecords,
+            int batchSize) {
+        
+        System.out.println("开始使用多字段参数爬取FDA 510K数据...");
+        System.out.println("设备名称数量: " + (deviceNames != null ? deviceNames.size() : 0));
+        System.out.println("申请人名称数量: " + (applicantNames != null ? applicantNames.size() : 0));
+        System.out.println("商品名称数量: " + (tradeNames != null ? tradeNames.size() : 0));
+        System.out.println("日期范围: " + dateFrom + " - " + dateTo);
+        System.out.println("最大记录数: " + (maxRecords == -1 ? "所有数据" : maxRecords));
+        
+        int totalSaved = 0;
+        
+        // 1. 按设备名称搜索
+        if (deviceNames != null && !deviceNames.isEmpty()) {
+            for (String deviceName : deviceNames) {
+                if (deviceName == null || deviceName.trim().isEmpty()) continue;
+                
+                System.out.println("按设备名称搜索: " + deviceName);
+                
+                try {
+                    String result = crawlAndSaveByDeviceName(deviceName.trim(), maxRecords, batchSize, dateFrom, dateTo);
+                    totalSaved += extractSavedCount(result);
+                    System.out.println("设备名称搜索结果: " + result);
+                    Thread.sleep(1000); // 延迟避免请求过快
+                } catch (Exception e) {
+                    System.err.println("设备名称 '" + deviceName + "' 搜索失败: " + e.getMessage());
+                }
+            }
+        }
+        
+        // 2. 按申请人名称搜索
+        if (applicantNames != null && !applicantNames.isEmpty()) {
+            for (String applicant : applicantNames) {
+                if (applicant == null || applicant.trim().isEmpty()) continue;
+                
+                System.out.println("按申请人名称搜索: " + applicant);
+                
+                try {
+                    String result = crawlAndSaveByApplicant(applicant.trim(), maxRecords, batchSize, dateFrom, dateTo);
+                    totalSaved += extractSavedCount(result);
+                    System.out.println("申请人名称搜索结果: " + result);
+                    Thread.sleep(1000);
+                } catch (Exception e) {
+                    System.err.println("申请人名称 '" + applicant + "' 搜索失败: " + e.getMessage());
+                }
+            }
+        }
+        
+        // 3. 按商品名称搜索
+        if (tradeNames != null && !tradeNames.isEmpty()) {
+            for (String tradeName : tradeNames) {
+                if (tradeName == null || tradeName.trim().isEmpty()) continue;
+                
+                System.out.println("按商品名称搜索: " + tradeName);
+                
+                try {
+                    String result = crawlAndSaveByTradeName(tradeName.trim(), maxRecords, batchSize, dateFrom, dateTo);
+                    totalSaved += extractSavedCount(result);
+                    System.out.println("商品名称搜索结果: " + result);
+                    Thread.sleep(1000);
+                } catch (Exception e) {
+                    System.err.println("商品名称 '" + tradeName + "' 搜索失败: " + e.getMessage());
+                }
+            }
+        }
+        
+        String finalResult = String.format(
+            "多字段510K数据爬取完成，总保存: %d 条记录", totalSaved);
+        System.out.println(finalResult);
+        
+        return finalResult;
+    }
+    
+    /**
+     * 从结果字符串中提取保存的记录数
+     */
+    private int extractSavedCount(String result) {
+        if (result == null || result.isEmpty()) return 0;
+        
+        try {
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("(?:保存|新增|入库)[:：]?\\s*(\\d+)\\s*条");
+            java.util.regex.Matcher matcher = pattern.matcher(result);
+            if (matcher.find()) {
+                return Integer.parseInt(matcher.group(1));
+            }
+        } catch (Exception e) {
+            // 忽略解析错误
+        }
+        
+        return 0;
+    }
+
 }

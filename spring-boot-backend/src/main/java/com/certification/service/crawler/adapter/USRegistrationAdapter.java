@@ -48,31 +48,22 @@ public class USRegistrationAdapter implements ICrawlerExecutor {
         CrawlerResult result = new CrawlerResult().markStart();
         
         try {
+            // 从fieldKeywords中提取参数（V2模式-多字段模式）
             Map<String, List<String>> fieldKeywords = params.getFieldKeywords();
             
             List<String> manufacturerNames = fieldKeywords.getOrDefault("manufacturerNames", new ArrayList<>());
             List<String> deviceNames = fieldKeywords.getOrDefault("deviceNames", new ArrayList<>());
             List<String> proprietaryNames = fieldKeywords.getOrDefault("proprietaryNames", new ArrayList<>());
             
-            List<String> allKeywords = new ArrayList<>();
-            allKeywords.addAll(manufacturerNames);
-            allKeywords.addAll(deviceNames);
-            allKeywords.addAll(proprietaryNames);
-            
-            if (allKeywords.isEmpty() && params.getKeywords() != null) {
-                allKeywords = params.getKeywords();
-            }
-            
-            if (allKeywords.isEmpty()) {
-                allKeywords = List.of("medical");
-            }
-            
-            String resultMsg = crawler.crawlAndSaveWithKeywords(
-                allKeywords,
-                params.getMaxRecords() != null ? params.getMaxRecords() : -1,
-                params.getBatchSize() != null ? params.getBatchSize() : 100,
+            // 调用新的多字段爬虫方法
+            String resultMsg = crawler.crawlAndSaveWithMultipleFields(
+                manufacturerNames,
+                deviceNames,
+                proprietaryNames,
                 params.getDateFrom(),
-                params.getDateTo()
+                params.getDateTo(),
+                params.getMaxRecords() != null ? params.getMaxRecords() : 100,
+                params.getBatchSize() != null ? params.getBatchSize() : 20
             );
             
             result.markEnd();

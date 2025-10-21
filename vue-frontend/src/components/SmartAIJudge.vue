@@ -1,11 +1,11 @@
 <template>
   <div class="smart-ai-judge">
     <!-- 配置卡片 -->
-    <a-card title="🤖 智能AI判断（黑名单优先）" class="config-card">
+    <a-card title="🤖 智能AI判断" class="config-card">
       <template #extra>
         <a-space>
-          <a-tag color="green">黑名单优先，节省成本</a-tag>
           <a-tag color="blue">{{ blacklistKeywords.length }} 个黑名单</a-tag>
+          <a-tag color="green">{{ whitelistKeywords.length }} 个白名单</a-tag>
         </a-space>
       </template>
 
@@ -19,6 +19,8 @@
                 <a-select-option value="US">美国</a-select-option>
                 <a-select-option value="EU">欧盟</a-select-option>
                 <a-select-option value="KR">韩国</a-select-option>
+                <a-select-option value="TW">台湾</a-select-option>
+                <a-select-option value="JP">日本</a-select-option>
               </a-select>
             </a-form-item>
           </a-col>
@@ -90,19 +92,19 @@
                 添加黑名单关键词
               </a-button>
             </div>
-            
+
             <!-- 黑名单关键词列表 -->
             <div v-if="blacklistKeywords.length > 0" class="keywords-list">
-              <div 
-                v-for="(keyword, index) in blacklistKeywords" 
+              <div
+                v-for="(keyword, index) in blacklistKeywords"
                 :key="index"
                 class="keyword-item"
               >
                 <span class="keyword-number">{{ index + 1 }}.</span>
                 <span class="keyword-name">{{ keyword }}</span>
-                <a-button 
-                  type="text" 
-                  danger 
+                <a-button
+                  type="text"
+                  danger
                   size="small"
                   @click="removeBlacklist(keyword)"
                   class="delete-btn"
@@ -111,22 +113,80 @@
                 </a-button>
               </div>
             </div>
-            
+
             <!-- 空状态提示 -->
             <div v-else class="empty-state">
               <span class="empty-text">暂无黑名单关键词</span>
             </div>
           </div>
+        </a-form-item>
+
+        <!-- 白名单关键词管理 -->
+        <a-form-item label="白名单关键词（该名单中的制造商不加入黑名单）">
+          <div class="whitelist-keywords-container">
+            <!-- 添加关键词输入框 -->
+            <div class="add-keyword-section">
+              <a-input
+                v-if="showAddWhitelist"
+                ref="whitelistInputRef"
+                v-model:value="newWhitelist"
+                size="small"
+                style="width: 300px"
+                @blur="addWhitelist"
+                @keyup.enter="addWhitelist"
+                placeholder="输入白名单关键词（制造商名称）"
+              />
+              <a-button v-else type="dashed" size="small" @click="showAddWhitelist = true" style="border-color: #52c41a; color: #52c41a;">
+                <PlusOutlined />
+                添加白名单关键词
+              </a-button>
+              <a-button
+                v-if="whitelistKeywords.length > 0"
+                type="primary"
+                size="small"
+                @click="showReJudgeModal"
+                style="margin-left: 8px;"
+              >
+                重新判断白名单数据
+              </a-button>
+            </div>
+
+            <!-- 白名单关键词列表 -->
+            <div v-if="whitelistKeywords.length > 0" class="keywords-list whitelist-list">
+              <div
+                v-for="(keyword, index) in whitelistKeywords"
+                :key="index"
+                class="keyword-item whitelist-item"
+              >
+                <span class="keyword-number">{{ index + 1 }}.</span>
+                <span class="keyword-name">{{ keyword }}</span>
+                <a-button
+                  type="text"
+                  danger
+                  size="small"
+                  @click="removeWhitelist(keyword)"
+                  class="delete-btn"
+                >
+                  <DeleteOutlined />
+                </a-button>
+              </div>
+            </div>
+
+            <!-- 空状态提示 -->
+            <div v-else class="empty-state whitelist-empty">
+              <span class="empty-text">暂无白名单关键词</span>
+            </div>
+          </div>
           <div style="margin-top: 8px">
             <a-alert
-              message="黑名单说明"
-              description="包含黑名单关键词的数据将直接标记为低风险，无需消耗AI调用。黑名单会自动学习（低风险数据的制造商自动加入）。"
-              type="info"
+              message="白名单说明"
+              description="白名单制造商的产品将始终进行AI判断（即使匹配黑名单），且判断为不相关时也不会被加入黑名单。用于保护重要制造商免受误伤。"
+              type="success"
               show-icon
               closable
             />
           </div>
-          
+
           <!-- 数据量警告 -->
           <div v-if="config.limit > 20 || config.judgeMode === 'all'" style="margin-top: 8px">
             <a-alert
@@ -198,7 +258,7 @@
           <a-col :span="6">
             <div style="text-align: center; padding: 16px; background: #fff7e6; border-radius: 8px; border: 1px solid #ffd591;">
               <div style="font-size: 28px; font-weight: 600; color: #fa8c16; margin-bottom: 4px;">{{ resultData.aiKept || 0 }}</div>
-              <div style="font-size: 13px; color: #d46b08;">🔥 AI保留</div>
+              <div style="font-size: 13px; color: #d46b08;">🔥 AI高风险</div>
             </div>
           </a-col>
           <a-col :span="6">
@@ -221,13 +281,62 @@
 
         <!-- 标签页展示详细结果 -->
         <h4 style="margin: 20px 0 16px 0;">📋 详细处理结果 (共 {{ (resultData.auditItems || []).length }} 条)</h4>
-        
+
         <a-tabs v-if="(resultData.auditItems || []).length > 0" type="card">
+          <!-- 白名单匹配标签页 -->
+          <a-tab-pane
+            v-if="(resultData.auditItems || []).filter(item => item.whitelistMatched).length > 0"
+            key="whitelist"
+            :tab="`✅ 白名单保护 (${(resultData.auditItems || []).filter(item => item.whitelistMatched).length})`"
+          >
+            <div style="max-height: 400px; overflow-y: auto;">
+              <table style="width: 100%; border-collapse: collapse; border: 1px solid #e8e8e8;">
+                <thead style="position: sticky; top: 0; background: #f6ffed; z-index: 1;">
+                  <tr>
+                    <th style="padding: 10px; text-align: left; border-bottom: 1px solid #b7eb8f; font-size: 12px;">数据类型</th>
+                    <th style="padding: 10px; text-align: left; border-bottom: 1px solid #b7eb8f; font-size: 12px;">设备名称</th>
+                    <th style="padding: 10px; text-align: left; border-bottom: 1px solid #b7eb8f; font-size: 12px;">制造商</th>
+                    <th style="padding: 10px; text-align: left; border-bottom: 1px solid #b7eb8f; font-size: 12px;">匹配关键词</th>
+                    <th style="padding: 10px; text-align: left; border-bottom: 1px solid #b7eb8f; font-size: 12px;">AI判断</th>
+                    <th style="padding: 10px; text-align: left; border-bottom: 1px solid #b7eb8f; font-size: 12px;">置信度</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="(item, index) in (resultData.auditItems || []).filter(item => item.whitelistMatched)"
+                    :key="item.id || index"
+                    :style="{ background: index % 2 === 0 ? '#fafafa' : 'white' }"
+                  >
+                    <td style="padding: 8px 10px; border-bottom: 1px solid #f0f0f0; font-size: 12px;">
+                      <a-tag color="green" style="font-size: 10px;">{{ item.entityType || '-' }}</a-tag>
+                    </td>
+                    <td style="padding: 8px 10px; border-bottom: 1px solid #f0f0f0; font-size: 12px;">{{ item.deviceName || '-' }}</td>
+                    <td style="padding: 8px 10px; border-bottom: 1px solid #f0f0f0; font-size: 12px;">{{ item.manufacturer || '-' }}</td>
+                    <td style="padding: 8px 10px; border-bottom: 1px solid #f0f0f0; font-size: 12px;">
+                      <a-tag v-if="item.matchedWhitelistKeyword" color="green" style="font-size: 10px;">{{ item.matchedWhitelistKeyword }}</a-tag>
+                      <span v-else>-</span>
+                    </td>
+                    <td style="padding: 8px 10px; border-bottom: 1px solid #f0f0f0; font-size: 12px;">
+                      <a-tag v-if="item.relatedToSkinDevice" color="orange" style="font-size: 10px;">高风险</a-tag>
+                      <a-tag v-else color="blue" style="font-size: 10px;">低风险</a-tag>
+                    </td>
+                    <td style="padding: 8px 10px; border-bottom: 1px solid #f0f0f0; font-size: 12px;">
+                      <a-tag v-if="item.confidence" :color="item.relatedToSkinDevice ? 'orange' : 'blue'" style="font-size: 10px; font-weight: 600;">
+                        {{ Math.round(item.confidence * 100) }}%
+                      </a-tag>
+                      <span v-else>-</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </a-tab-pane>
+
           <!-- 黑名单过滤标签页 -->
-          <a-tab-pane 
-            v-if="(resultData.auditItems || []).filter(item => item.blacklistMatched).length > 0"
+          <a-tab-pane
+            v-if="(resultData.auditItems || []).filter(item => item.blacklistMatched && !item.whitelistMatched).length > 0"
             key="blacklist"
-            :tab="`🛡️ 黑名单过滤 (${(resultData.auditItems || []).filter(item => item.blacklistMatched).length})`"
+            :tab="`🛡️ 黑名单过滤 (${(resultData.auditItems || []).filter(item => item.blacklistMatched && !item.whitelistMatched).length})`"
           >
             <div style="max-height: 400px; overflow-y: auto;">
               <table style="width: 100%; border-collapse: collapse; border: 1px solid #e8e8e8;">
@@ -413,6 +522,12 @@ const showAddBlacklist = ref(false)
 const newBlacklist = ref('')
 const blacklistInputRef = ref()
 
+// 白名单相关
+const whitelistKeywords = ref<string[]>([])
+const showAddWhitelist = ref(false)
+const newWhitelist = ref('')
+const whitelistInputRef = ref()
+
 const judging = ref(false)
 const progress = ref(0)
 const progressText = ref('')
@@ -504,48 +619,212 @@ const resetConfig = () => {
 
 const loadBlacklist = async () => {
   try {
-    const response = await request.get('/device-data/ai-judge/blacklist-keywords')
-    // 响应拦截器已返回response.data
-    if (response && response.success && response.data) {
-      blacklistKeywords.value = response.data
+    const response = await request.get('/device-match-keywords/blacklist')
+    if (response && Array.isArray(response)) {
+      blacklistKeywords.value = response.map((item: any) => item.keyword)
     }
   } catch (error) {
     console.error('加载黑名单失败:', error)
   }
 }
 
-const addBlacklist = () => {
+const addBlacklist = async () => {
   if (newBlacklist.value.trim()) {
     if (!blacklistKeywords.value.includes(newBlacklist.value.trim())) {
-      blacklistKeywords.value.push(newBlacklist.value.trim())
-      // 立即保存到后端
-      saveBlacklistToBackend()
+      try {
+        await request.post('/device-match-keywords/add', {
+          keyword: newBlacklist.value.trim(),
+          keywordType: 'BLACKLIST'
+        })
+        blacklistKeywords.value.push(newBlacklist.value.trim())
+        message.success('添加黑名单关键词成功')
+      } catch (error) {
+        message.error('添加黑名单关键词失败')
+      }
     }
     newBlacklist.value = ''
   }
   showAddBlacklist.value = false
 }
 
-const removeBlacklist = (keyword: string) => {
-  const index = blacklistKeywords.value.indexOf(keyword)
-  if (index > -1) {
-    blacklistKeywords.value.splice(index, 1)
-    saveBlacklistToBackend()
-  }
-}
-
-const saveBlacklistToBackend = async () => {
+const removeBlacklist = async (keyword: string) => {
   try {
-    // 这里可以调用后端API保存黑名单
-    // 暂时只保存在内存中
+    // 找到对应的ID并删除
+    const response = await request.get('/device-match-keywords/blacklist')
+    const item = response.find((k: any) => k.keyword === keyword)
+    if (item) {
+      await request.delete(`/device-match-keywords/delete/${item.id}`)
+      const index = blacklistKeywords.value.indexOf(keyword)
+      if (index > -1) {
+        blacklistKeywords.value.splice(index, 1)
+      }
+      message.success('删除黑名单关键词成功')
+    }
   } catch (error) {
-    console.error('保存黑名单失败:', error)
+    message.error('删除黑名单关键词失败')
   }
 }
 
-// 组件挂载时加载黑名单
+// 白名单相关方法
+const loadWhitelist = async () => {
+  try {
+    const response = await request.get('/device-match-keywords/whitelist')
+    if (response && Array.isArray(response)) {
+      whitelistKeywords.value = response.map((item: any) => item.keyword)
+    }
+  } catch (error) {
+    console.error('加载白名单失败:', error)
+  }
+}
+
+const addWhitelist = async () => {
+  if (newWhitelist.value.trim()) {
+    // 先重新加载白名单，确保检查是基于最新数据
+    await loadWhitelist()
+
+    if (!whitelistKeywords.value.includes(newWhitelist.value.trim())) {
+      try {
+        // 保存关键词值，避免后续被清空
+        const keywordToAdd = newWhitelist.value.trim()
+        
+        const response = await request.post('/device-match-keywords/add', {
+          keyword: keywordToAdd,
+          keywordType: 'whitelist'  // 使用小写值，与数据库一致
+        })
+
+        whitelistKeywords.value.push(keywordToAdd)
+
+        // 检查是否从黑名单移除了
+        if (response?.removedFromBlacklist) {
+          message.success('添加白名单成功！已自动从黑名单中移除该关键词', 3)
+          // 同时刷新黑名单显示
+          await loadBlacklist()
+          emit('judgeCompleted')
+        } else {
+          message.success(response?.message || '添加白名单关键词成功')
+        }
+
+        // 询问是否重新判断该制造商的数据
+        Modal.confirm({
+          title: '是否重新判断该制造商的数据？',
+          content: `已将 "${keywordToAdd}" 添加到白名单。是否立即重新判断该制造商的所有历史数据？`,
+          okText: '立即重新判断',
+          cancelText: '稍后处理',
+          onOk: async () => {
+            await reJudgeManufacturer(keywordToAdd)  // 使用保存的值
+          }
+        })
+      } catch (error: any) {
+        console.error('添加白名单关键词失败，详细错误:', error)
+        console.error('错误响应数据:', error?.response?.data)
+        console.error('请求配置:', {
+          url: error?.config?.url,
+          method: error?.config?.method,
+          data: error?.config?.data
+        })
+        const errorMsg = error?.response?.data?.message || error?.response?.data?.error || error?.message || '添加白名单关键词失败'
+        message.error(errorMsg)
+      }
+    } else {
+      message.warning('该关键词已在白名单中')
+    }
+    newWhitelist.value = ''
+  }
+  showAddWhitelist.value = false
+}
+
+const removeWhitelist = async (keyword: string) => {
+  try {
+    // 找到对应的ID并删除
+    const response = await request.get('/device-match-keywords/whitelist')
+    const item = response.find((k: any) => k.keyword === keyword)
+    if (item) {
+      await request.delete(`/device-match-keywords/delete/${item.id}`)
+      const index = whitelistKeywords.value.indexOf(keyword)
+      if (index > -1) {
+        whitelistKeywords.value.splice(index, 1)
+      }
+      message.success('删除白名单关键词成功')
+    }
+  } catch (error) {
+    message.error('删除白名单关键词失败')
+  }
+}
+
+// 重新判断白名单制造商数据
+const reJudgeManufacturer = async (manufacturer: string) => {
+  try {
+    progress.value = 10
+    progressText.value = `正在重新判断 ${manufacturer} 的数据...`
+    judging.value = true
+
+    const response = await aiRequest.post(`/ai/smart-audit/rejudge-whitelist-manufacturer`, null, {
+      params: { manufacturer }
+    })
+
+    progress.value = 100
+    progressText.value = '重新判断完成！'
+
+    if (response && response.success) {
+      message.success(response.message || '重新判断完成')
+      showExecutionResult(response)
+
+      // 触发父组件刷新数据
+      emit('judgeCompleted')
+    }
+
+    setTimeout(() => {
+      progress.value = 0
+      progressText.value = ''
+    }, 1000)
+  } catch (error: any) {
+    message.error(error.response?.data?.message || '重新判断失败')
+    progress.value = 0
+    progressText.value = ''
+  } finally {
+    judging.value = false
+  }
+}
+
+// 显示重新判断模态框
+const showReJudgeModal = () => {
+  if (whitelistKeywords.value.length === 0) {
+    message.warning('请先添加白名单关键词')
+    return
+  }
+
+  Modal.confirm({
+    title: '选择要重新判断的制造商',
+    content: h('div', [
+      h('p', '选择一个白名单制造商，系统将重新判断该制造商的所有历史数据：'),
+      h('a-select', {
+        style: { width: '100%', marginTop: '12px' },
+        placeholder: '选择制造商',
+        onChange: (value: string) => {
+          (Modal.confirm as any).selectedManufacturer = value
+        }
+      }, whitelistKeywords.value.map(keyword =>
+        h('a-select-option', { value: keyword }, keyword)
+      ))
+    ]),
+    okText: '开始重新判断',
+    cancelText: '取消',
+    onOk: async () => {
+      const selected = (Modal.confirm as any).selectedManufacturer
+      if (selected) {
+        await reJudgeManufacturer(selected)
+      } else {
+        message.warning('请选择制造商')
+        return Promise.reject()
+      }
+    }
+  })
+}
+
+// 组件挂载时加载黑名单和白名单
 onMounted(() => {
   loadBlacklist()
+  loadWhitelist()
 })
 
 // 暴露方法
@@ -650,5 +929,26 @@ defineExpose({
 
 .empty-text {
   font-size: 14px;
+}
+
+/* 白名单关键词样式 */
+.whitelist-keywords-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.whitelist-list {
+  border-color: #b7eb8f;
+  background-color: #f6ffed;
+}
+
+.whitelist-item:hover {
+  background-color: #e6f7e0;
+}
+
+.whitelist-empty {
+  border-color: #b7eb8f;
+  background-color: #f6ffed;
 }
 </style>

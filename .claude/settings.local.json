@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//d/Project/AAArenew/**)",
+      "Bash(curl:*)",
+      "Bash(mvn clean compile:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(while read f)",
+      "Bash(do echo \"=== $f ===\")",
+      "Bash(done)",
+      "Bash(npm run type-check:*)",
+      "Bash(npm run build:*)",
+      "Bash(jps:*)",
+      "Bash(taskkill:*)",
+      "Bash(mvn clean:*)",
+      "Bash(mvn compile:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

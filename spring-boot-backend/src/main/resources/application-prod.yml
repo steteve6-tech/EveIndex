@@ -1,0 +1,266 @@
+# 生产环境配置文件
+# 使用方式: java -jar app.jar --spring.profiles.active=prod
+
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: certification-monitor
+
+  # 数据库配置 - 使用环境变量
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DATABASE_URL:jdbc:mysql://mysql:3306/common_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&autoReconnect=true&failOverReadOnly=false&maxReconnects=3&initialTimeout=2&connectTimeout=30000&socketTimeout=60000&useServerPrepStmts=true&cachePrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048}
+    username: ${DATABASE_USERNAME:cert_user}
+    password: ${DATABASE_PASSWORD}  # 必须从环境变量读取
+
+    # Druid连接池配置
+    druid:
+      initial-size: 10
+      min-idle: 5
+      max-active: 50
+      max-wait: 120000
+      time-between-eviction-runs-millis: 30000
+      min-evictable-idle-time-millis: 600000
+      max-evictable-idle-time-millis: 1800000
+      validation-query: SELECT 1 FROM DUAL
+      validation-query-timeout: 10
+      test-while-idle: true
+      test-on-borrow: true
+      test-on-return: false
+      remove-abandoned: true
+      remove-abandoned-timeout: 300
+      log-abandoned: true
+      pool-prepared-statements: true
+      max-pool-prepared-statement-per-connection-size: 20
+      filters: stat,wall,slf4j
+      connection-properties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=5000
+
+      # Druid监控配置 - 生产环境
+      web-stat-filter:
+        enabled: true
+        url-pattern: /*
+        exclusions: "*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*"
+
+      stat-view-servlet:
+        enabled: ${DRUID_MONITOR_ENABLED:true}
+        url-pattern: /druid/*
+        # 生产环境应配置具体IP白名单
+        allow: ${DRUID_ALLOW_IP:127.0.0.1}
+        deny: ${DRUID_DENY_IP:}
+        reset-enable: false
+        login-username: ${DRUID_USERNAME:admin}
+        login-password: ${DRUID_PASSWORD}  # 必须从环境变量读取
+
+  # Redis配置 - 生产环境启用
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+
+  # 邮件配置
+  mail:
+    host: ${MAIL_HOST:smtp.qq.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: none  # 生产环境必须设置为none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: false
+        show_sql: false
+    open-in-view: false
+
+# 日志配置 - 生产环境
+logging:
+  level:
+    com.certification: ${LOG_LEVEL:INFO}  # 生产环境使用INFO级别
+    org.springframework.web: WARN
+    org.hibernate: WARN
+    com.alibaba.druid: INFO
+    root: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{50} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{50} - %msg%n"
+  file:
+    name: certification-monitor.log
+    path: ${LOG_PATH:./logs/}
+    # 日志文件轮转配置
+    max-size: 100MB
+    max-history: 30
+    total-size-cap: 10GB
+
+# 管理端点配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized  # 生产环境仅授权用户可见详情
+  health:
+    mail:
+      enabled: false
+
+# Knife4j配置 - 生产环境
+knife4j:
+  enable: ${SWAGGER_ENABLED:false}  # 生产环境默认关闭Swagger
+  setting:
+    language: zh-CN
+
+# 应用自定义配置
+app:
+  # CORS配置 - 生产环境
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://yourdomain.com}  # 必须配置生产域名
+    allowed-methods: "GET,POST,PUT,DELETE,OPTIONS,PATCH"
+    allowed-headers: "*"
+    max-age: 3600
+
+  # 数据抓取配置
+  scraper:
+    user-agent: "CertificationMonitor/1.0"
+    timeout: 30000
+    retry-count: 3
+
+  # 缓存配置
+  cache:
+    ttl: 3600
+    max-size: 1000
+
+# 风险计算配置
+risk:
+  calculation:
+    decay-factor: 0.5
+    max-score: 20.0
+    relevance-threshold: 0.7
+    enable-detailed-logging: false
+
+  risk:
+    high-threshold: 0.7
+    medium-threshold: 0.4
+    low-threshold: 0.2
+
+  # 通知配置
+  notification:
+    slack:
+      enabled: ${SLACK_ENABLED:false}
+      webhook-url: ${SLACK_WEBHOOK_URL:}
+    email:
+      enabled: ${EMAIL_NOTIFICATION_ENABLED:false}
+      smtp-host: ${MAIL_HOST:}
+      smtp-port: ${MAIL_PORT:587}
+      username: ${MAIL_USERNAME:}
+      password: ${MAIL_PASSWORD:}
+      from: ${MAIL_FROM:}
+      to: ${MAIL_TO:}
+
+  # 可视化配置
+  visualization:
+    chart:
+      width: 800
+      height: 600
+      theme: default
+    export:
+      excel-path: "./exports/"
+      chart-path: "./charts/"
+      max-rows: 10000
+
+# 火山引擎AI配置
+volc:
+  ai:
+    api-key: ${ARK_API_KEY}  # 必须从环境变量读取
+    model-id: ${ARK_MODEL_ID:bot-20250915145921-rspmk}
+    api-url: ${ARK_API_URL:https://open.volcengineapi.com}
+
+# 火山引擎翻译服务配置
+volcengine:
+  translate:
+    access-key: ${VOLCENGINE_ACCESS_KEY}  # 必须从环境变量读取
+    secret-key: ${VOLCENGINE_SECRET_KEY}  # 必须从环境变量读取
+    region: ${VOLCENGINE_REGION:cn-north-1}
+    api-url: ${VOLCENGINE_API_URL:https://translate.volcengineapi.com}
+
+# Medcert爬虫统一配置
+medcert:
+  crawler:
+    retry:
+      max-attempts: 3
+      delay-seconds: 5
+      delay-milliseconds: 5000
+
+    timeout:
+      wait-timeout-seconds: 60
+      page-load-timeout-seconds: 120
+      http-timeout-milliseconds: 60000
+
+    batch:
+      save-size: 100
+      small-save-size: 50
+
+    crawl:
+      default-max-pages: 0
+      default-batch-size: 100
+      records-per-page: 100
+      api-limits:
+        us510k-max-per-page: 100
+        us-recall-max-per-page: 1000
+        us-customs-case-max-per-page: 10
+        us-event-max-per-page: 500
+        eu-custom-case-max-per-page: 20
+        eu-guidance-max-per-page: 50
+        eu-recall-max-per-page: 100
+        eu-registration-max-per-page: 100
+
+# OpenAI API配置
+openai:
+  api:
+    key: ${OPENAI_API_KEY}  # 必须从环境变量读取
+    model: ${OPENAI_MODEL:gpt-4o}
+    base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+    timeout: ${OPENAI_TIMEOUT:60}
+
+# AI智能审核配置
+ai:
+  classification:
+    enabled: ${AI_CLASSIFICATION_ENABLED:true}
+    batch-size: 50
+    confidence-threshold: 0.8
+    enable-cache: true
+    cache-ttl: 86400
+    daily-limit: 1000
+
+# 设备数据爬虫配置
+crawler:
+  device:
+    default-batch-size: 50
+    default-max-records: 200
+    enable-auto-ai: ${CRAWLER_ENABLE_AUTO_AI:true}
+    ai-judge-async: true

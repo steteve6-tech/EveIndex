@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 /**
  * AI智能审核服务
  * 自动筛选高风险数据中的测肤仪设备
- * 支持4种数据类型：注册记录、申请记录、召回记录、不良事件
  */
 @Slf4j
 @Service
@@ -84,7 +83,7 @@ public class AISmartAuditService {
             result.setEndTime(new Date());
             result.setSuccess(true);
             result.setMessage(String.format(
-                "预览完成：将保留%d条，将降级%d条",
+                "预览完成：将设置为高风险%d条，将降级为低风险%d条",
                 result.getKeptCount(),
                 result.getDowngradedCount()
             ));
@@ -119,9 +118,10 @@ public class AISmartAuditService {
             for (AuditItem item : auditItems) {
                 try {
                     if (item.isRelatedToSkinDevice()) {
-                        // 是测肤仪 - 保留高风险，不做任何操作
+                        // 是测肤仪 - 设置为高风险
+                        updateRiskLevelById(item, "HIGH", "AI判断：" + item.getReason());
                         result.incrementKept();
-                        log.debug("保留高风险: {} - {}", item.getId(), item.getReason());
+                        log.debug("设置为高风险: {} - {}", item.getId(), item.getReason());
                     } else {
                         // 不是测肤仪 - 执行降级和添加黑名单
                         executeDowngradeAndBlacklistById(item);
@@ -138,7 +138,7 @@ public class AISmartAuditService {
             result.setEndTime(new Date());
             result.setSuccess(true);
             result.setMessage(String.format(
-                "执行完成：保留%d条，降级%d条，失败%d条",
+                "执行完成：设置为高风险%d条，降级为低风险%d条，失败%d条",
                 result.getKeptCount(),
                 result.getDowngradedCount(),
                 result.getFailedCount()
@@ -218,7 +218,7 @@ public class AISmartAuditService {
             result.setEndTime(new Date());
             result.setSuccess(true);
             result.setMessage(String.format(
-                "预览完成：将保留%d条，将降级%d条",
+                "预览完成：将设置为高风险%d条，将降级为低风险%d条",
                 result.getKeptCount(),
                 result.getDowngradedCount()
             ));
@@ -506,9 +506,9 @@ public class AISmartAuditService {
                 result.addAuditItem(auditItem);
                 
                 if (auditItem.isRelatedToSkinDevice()) {
-                    // 是测肤仪 - 保留高风险
+                    // 是测肤仪 - 标记为高风险
                     result.incrementKept();
-                    log.debug("保留高风险: {} - {}", auditItem.getId(), auditItem.getReason());
+                    log.debug("标记为高风险: {} - {}", auditItem.getId(), auditItem.getReason());
                 } else {
                     // 不是测肤仪 - 降级并添加黑名单
                     executeDowngradeAndBlacklist(data, entityType, auditItem);
@@ -547,11 +547,18 @@ public class AISmartAuditService {
         // 2. 降级为低风险
         updateRiskLevel(data, auditItem.getEntityType(), "LOW", "AI智能审核：" + auditItem.getReason());
         
-        // 3. 添加黑名单关键词
+        // 3. 添加黑名单关键词（但要检查白名单保护）
         for (String keyword : auditItem.getBlacklistKeywords()) {
             try {
+                // 白名单保护：如果关键词在白名单中，跳过添加到黑名单
+                String whitelistMatch = deviceMatchKeywordsService.checkWhitelistMatch(keyword);
+                if (whitelistMatch != null) {
+                    log.info("制造商在白名单中，跳过添加黑名单: {} (白名单关键词: {})", keyword, whitelistMatch);
+                    continue;
+                }
+
                 if (!isKeywordExists(keyword)) {
-                    addBlacklistKeyword(keyword, 
+                    addBlacklistKeyword(keyword,
                         String.format("AI自动添加 [%s]: %s", auditItem.getEntityType(), auditItem.getDeviceName()));
                     log.info("添加黑名单关键词: {} (来源: {})", keyword, auditItem.getDeviceName());
                 }
@@ -780,15 +787,22 @@ public class AISmartAuditService {
     protected void executeDowngradeAndBlacklist(Object data, String entityType, AuditItem auditItem) {
         // 1. 降级为低风险
         updateRiskLevel(data, entityType, "LOW", "AI智能审核：" + auditItem.getReason());
-        
+
         // 2. 提取关键字段添加到黑名单
         List<String> blacklistKeywords = extractBlacklistKeywords(data, entityType, auditItem);
-        
+
         for (String keyword : blacklistKeywords) {
             try {
+                // 白名单保护：如果关键词在白名单中，跳过添加到黑名单
+                String whitelistMatch = deviceMatchKeywordsService.checkWhitelistMatch(keyword);
+                if (whitelistMatch != null) {
+                    log.info("制造商在白名单中，跳过添加黑名单: {} (白名单关键词: {})", keyword, whitelistMatch);
+                    continue;
+                }
+
                 // 检查是否已存在
                 if (!isKeywordExists(keyword)) {
-                    addBlacklistKeyword(keyword, 
+                    addBlacklistKeyword(keyword,
                         String.format("AI自动添加 [%s]: %s", entityType, auditItem.getDeviceName()));
                     auditItem.addBlacklistKeyword(keyword);
                     log.info("添加黑名单关键词: {} (来源: {})", keyword, auditItem.getDeviceName());
@@ -1015,7 +1029,7 @@ public class AISmartAuditService {
             result.setEndTime(new Date());
             result.setSuccess(true);
             result.setMessage(String.format(
-                "预览完成：黑名单过滤%d条，AI判断%d条（保留%d条，降级%d条）",
+                "预览完成：黑名单过滤%d条，AI判断%d条（高风险%d条，低风险%d条）",
                 result.getBlacklistFiltered(),
                 result.getAiJudged(),
                 result.getAiKept(),
@@ -1062,17 +1076,56 @@ public class AISmartAuditService {
             try {
                 // 提取设备信息
                 Map<String, Object> deviceData = extractDeviceData(data, entityType);
-                
+
+                // 白名单预检查（优先级最高）
+                String matchedWhitelist = deviceMatchKeywordsService.checkWhitelistMatchMultiple(
+                    (String) deviceData.get("deviceName"),
+                    (String) deviceData.get("manufacturer"),
+                    (String) deviceData.get("description")
+                );
+
                 // 黑名单预检查
                 String matchedBlacklist = deviceMatchKeywordsService.checkBlacklistMatchMultiple(
                     (String) deviceData.get("deviceName"),
                     (String) deviceData.get("manufacturer"),
                     (String) deviceData.get("description")
                 );
-                
+
                 AuditItem item;
-                if (matchedBlacklist != null) {
-                    // 匹配黑名单 - 直接标记为低风险，跳过AI判断
+                if (matchedWhitelist != null) {
+                    // 匹配白名单 - 强制AI判断（优先级最高，即使匹配黑名单也要判断）
+                    item = auditSingleData(data, entityType);
+                    item.setWhitelistMatched(true);
+                    item.setMatchedWhitelistKeyword(matchedWhitelist);
+                    item.setBlacklistMatched(false);
+
+                    if (item.isRelatedToSkinDevice()) {
+                        // AI判断为相关 - 将设置为高风险
+                        result.incrementAiKept();
+                        log.debug("白名单制造商，AI判断为高风险: {} - {}", item.getId(), item.getReason());
+                    } else {
+                        // AI判断为不相关 - 将降级为低风险
+                        result.incrementAiDowngraded();
+
+                        // 提取制造商和品牌作为建议的黑名单（但因为在白名单中不会真正添加）
+                        String manufacturer = (String) deviceData.get("manufacturer");
+                        if (manufacturer != null && !manufacturer.trim().isEmpty()) {
+                            item.addSuggestedBlacklist(manufacturer);
+                        }
+
+                        log.debug("白名单制造商，AI判断降级: {} - {}, 将不添加黑名单",
+                            item.getId(), item.getReason());
+                    }
+
+                    // 避免API速率限制
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                } else if (matchedBlacklist != null) {
+                    // 匹配黑名单且不在白名单 - 直接标记为低风险，跳过AI判断
                     item = new AuditItem();
                     item.setEntityType(entityType);
                     item.setId((Long) deviceData.get("id"));
@@ -1099,9 +1152,9 @@ public class AISmartAuditService {
                     item.setBlacklistMatched(false);
                     
                     if (item.isRelatedToSkinDevice()) {
-                        // AI判断为相关
+                        // AI判断为相关 - 将设置为高风险
                         result.incrementAiKept();
-                        log.debug("AI判断保留: {} - {}", item.getId(), item.getReason());
+                        log.debug("AI判断为高风险: {} - {}", item.getId(), item.getReason());
                     } else {
                         // AI判断为不相关 - 提取建议的黑名单关键词
                         result.incrementAiDowngraded();
@@ -1155,12 +1208,12 @@ public class AISmartAuditService {
             for (AuditItem item : auditItems) {
                 try {
                     if (item.getBlacklistMatched()) {
-                        // 黑名单匹配的数据 - 直接降级
+                        // 黑名单匹配的数据 - 直接降级为低风险
                         updateRiskLevelById(item, "LOW", "黑名单匹配: " + item.getMatchedBlacklistKeyword());
                         result.incrementBlacklistFiltered();
                     } else if (item.isRelatedToSkinDevice()) {
-                        // AI判断为相关 - 保持高风险
-                        updateRemarkById(item, String.format(
+                        // AI判断为相关 - 设置为高风险
+                        updateRiskLevelById(item, "HIGH", String.format(
                             "AI判断: 与测肤仪相关\n置信度: %.0f%%\n原因: %s\n分类: %s",
                             item.getConfidence() * 100,
                             item.getReason(),
@@ -1168,7 +1221,7 @@ public class AISmartAuditService {
                         ));
                         result.incrementAiKept();
                     } else {
-                        // AI判断为不相关 - 降级
+                        // AI判断为不相关 - 降级为低风险
                         updateRiskLevelById(item, "LOW", String.format(
                             "AI判断: 非测肤仪设备\n置信度: %.0f%%\n原因: %s",
                             item.getConfidence() * 100,
@@ -1184,17 +1237,33 @@ public class AISmartAuditService {
                 }
             }
             
-            // 2. 批量添加新的黑名单关键词
+            // 2. 批量添加新的黑名单关键词（带白名单保护）
             int blacklistAdded = 0;
             if (newBlacklistKeywords != null && !newBlacklistKeywords.isEmpty()) {
-                blacklistAdded = deviceMatchKeywordsService.smartAddBlacklistKeywords(newBlacklistKeywords);
-                log.info("新增黑名单关键词: {} 个", blacklistAdded);
+                // 过滤掉在白名单中的关键词
+                List<String> filteredKeywords = new ArrayList<>();
+                for (String keyword : newBlacklistKeywords) {
+                    String whitelistMatch = deviceMatchKeywordsService.checkWhitelistMatch(keyword);
+                    if (whitelistMatch != null) {
+                        log.info("关键词在白名单中，跳过添加黑名单: {} (白名单关键词: {})", keyword, whitelistMatch);
+                    } else {
+                        filteredKeywords.add(keyword);
+                    }
+                }
+
+                if (!filteredKeywords.isEmpty()) {
+                    blacklistAdded = deviceMatchKeywordsService.smartAddBlacklistKeywords(filteredKeywords);
+                    log.info("新增黑名单关键词: {} 个（已过滤白名单 {} 个）", blacklistAdded,
+                            newBlacklistKeywords.size() - filteredKeywords.size());
+                } else {
+                    log.info("所有关键词都在白名单中，未添加黑名单");
+                }
             }
             
             result.setEndTime(new Date());
             result.setSuccess(true);
             result.setMessage(String.format(
-                "执行完成：黑名单过滤%d条，AI保留%d条，AI降级%d条，新增黑名单%d个",
+                "执行完成：黑名单过滤%d条，AI判断为高风险%d条，AI降级为低风险%d条，新增黑名单%d个",
                 result.getBlacklistFiltered(),
                 result.getAiKept(),
                 result.getAiDowngraded(),
@@ -1219,7 +1288,7 @@ public class AISmartAuditService {
     private void updateRiskLevelById(AuditItem item, String riskLevel, String remark) {
         String entityType = item.getEntityType();
         Long id = item.getId();
-        
+
         switch (entityType) {
             case "Device510K":
                 Device510K device510K = device510KRepository.findById(id).orElse(null);
@@ -1227,47 +1296,232 @@ public class AISmartAuditService {
                     device510K.setRiskLevel(RiskLevel.valueOf(riskLevel));
                     device510K.setRemark(remark);
                     device510KRepository.save(device510K);
+                    log.info("更新510K记录: id={}, riskLevel={}", id, riskLevel);
                 }
                 break;
-                
+
             case "DeviceRegistrationRecord":
                 DeviceRegistrationRecord registration = registrationRecordRepository.findById(id).orElse(null);
                 if (registration != null) {
                     registration.setRiskLevel(RiskLevel.valueOf(riskLevel));
                     registration.setRemark(remark);
                     registrationRecordRepository.save(registration);
+                    log.info("更新设备注册记录: id={}, riskLevel={}", id, riskLevel);
                 }
                 break;
-                
+
             case "DeviceRecallRecord":
                 DeviceRecallRecord recall = recallRecordRepository.findById(id).orElse(null);
                 if (recall != null) {
                     recall.setRiskLevel(RiskLevel.valueOf(riskLevel));
                     recall.setRemark(remark);
                     recallRecordRepository.save(recall);
+                    log.info("更新设备召回记录: id={}, riskLevel={}", id, riskLevel);
                 }
                 break;
-                
+
             case "DeviceEventReport":
                 DeviceEventReport event = eventReportRepository.findById(id).orElse(null);
                 if (event != null) {
                     event.setRiskLevel(RiskLevel.valueOf(riskLevel));
                     event.setRemark(remark);
                     eventReportRepository.save(event);
+                    log.info("更新设备事件报告: id={}, riskLevel={}", id, riskLevel);
+                }
+                break;
+
+            case "GuidanceDocument":
+                GuidanceDocument document = guidanceDocumentRepository.findById(id).orElse(null);
+                if (document != null) {
+                    document.setRiskLevel(RiskLevel.valueOf(riskLevel));
+                    document.setRemark(remark);
+                    guidanceDocumentRepository.save(document);
+                    log.info("更新指导文档: id={}, riskLevel={}, remark={}", id, riskLevel, remark);
+                }
+                break;
+
+            case "CustomsCase":
+                CustomsCase customsCase = customsCaseRepository.findById(id).orElse(null);
+                if (customsCase != null) {
+                    customsCase.setRiskLevel(RiskLevel.valueOf(riskLevel));
+                    customsCase.setRemark(remark);
+                    customsCaseRepository.save(customsCase);
+                    log.info("更新海关案例: id={}, riskLevel={}, remark={}", id, riskLevel, remark);
                 }
                 break;
         }
-        
-        log.debug("更新数据: entityType={}, id={}, riskLevel={}", entityType, id, riskLevel);
+
+        log.debug("更新数据完成: entityType={}, id={}, riskLevel={}", entityType, id, riskLevel);
     }
     
+    /**
+     * 重新判断白名单制造商的所有相关数据
+     * 用于添加白名单后，重新审核该制造商的所有产品
+     *
+     * @param manufacturer 制造商名称（白名单关键词）
+     * @return 审核结果
+     */
+    @Transactional
+    public SmartAuditResult reJudgeWhitelistManufacturerData(String manufacturer) {
+        log.info("开始重新判断白名单制造商数据: manufacturer={}", manufacturer);
+
+        SmartAuditResult result = new SmartAuditResult();
+        result.setStartTime(new Date());
+        result.setPreviewMode(false);
+
+        try {
+            // 1. 验证制造商是否在白名单中
+            String whitelistMatch = deviceMatchKeywordsService.checkWhitelistMatch(manufacturer);
+            if (whitelistMatch == null) {
+                result.setSuccess(false);
+                result.setMessage("制造商不在白名单中: " + manufacturer);
+                log.warn("制造商不在白名单中: {}", manufacturer);
+                return result;
+            }
+
+            // 2. 在所有实体类型中查找该制造商的数据
+            List<String> entityTypes = Arrays.asList("Device510K", "DeviceRegistrationRecord",
+                                                     "DeviceRecallRecord", "DeviceEventReport",
+                                                     "GuidanceDocument", "CustomsCase");
+
+            for (String entityType : entityTypes) {
+                reJudgeManufacturerByType(entityType, manufacturer, result);
+            }
+
+            result.setEndTime(new Date());
+            result.setSuccess(true);
+            result.setMessage(String.format(
+                "重新判断完成：AI判断为高风险%d条，AI降级为低风险%d条，失败%d条",
+                result.getAiKept(),
+                result.getAiDowngraded(),
+                result.getFailedCount()
+            ));
+
+            log.info("重新判断白名单制造商数据完成: {}", result.getMessage());
+
+        } catch (Exception e) {
+            log.error("重新判断白名单制造商数据失败", e);
+            result.setSuccess(false);
+            result.setMessage("重新判断失败: " + e.getMessage());
+            result.setEndTime(new Date());
+        }
+
+        return result;
+    }
+
+    /**
+     * 按类型重新判断制造商的数据
+     */
+    private void reJudgeManufacturerByType(String entityType, String manufacturer, SmartAuditResult result) {
+        List<?> dataList = getDataByManufacturer(entityType, manufacturer);
+
+        if (dataList == null || dataList.isEmpty()) {
+            log.debug("没有找到{}类型的制造商数据: {}", entityType, manufacturer);
+            return;
+        }
+
+        log.info("开始重新判断 {} 条 {} 制造商数据: {}", dataList.size(), entityType, manufacturer);
+
+        for (Object data : dataList) {
+            try {
+                // AI判断
+                AuditItem item = auditSingleData(data, entityType);
+                item.setWhitelistMatched(true);
+                item.setMatchedWhitelistKeyword(manufacturer);
+
+                if (item.isRelatedToSkinDevice()) {
+                    // AI判断为相关 - 设置为高风险
+                    updateRiskLevelById(item, "HIGH", String.format(
+                        "白名单制造商重新判断\\nAI判断: 与测肤仪相关\\n置信度: %.0f%%\\n原因: %s\\n分类: %s",
+                        item.getConfidence() * 100,
+                        item.getReason(),
+                        item.getCategory()
+                    ));
+                    result.incrementAiKept();
+                    log.debug("白名单制造商，重新判断为高风险: {} - {}", item.getId(), item.getReason());
+                } else {
+                    // AI判断为不相关 - 降级为低风险（但不添加黑名单）
+                    updateRiskLevelById(item, "LOW", String.format(
+                        "白名单制造商重新判断\\nAI判断: 非测肤仪设备\\n置信度: %.0f%%\\n原因: %s",
+                        item.getConfidence() * 100,
+                        item.getReason()
+                    ));
+                    result.incrementAiDowngraded();
+                    log.debug("白名单制造商，重新判断降级: {} - {}", item.getId(), item.getReason());
+                }
+
+                result.addAuditItem(item);
+
+            } catch (Exception e) {
+                log.error("重新判断单条数据失败: {}", data, e);
+                result.incrementFailed();
+            }
+
+            // 避免API速率限制
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+    }
+
+    /**
+     * 按制造商获取数据
+     * 优化版本：限制返回数量，避免加载所有数据导致性能问题
+     */
+    private List<?> getDataByManufacturer(String entityType, String manufacturer) {
+        String lowerManufacturer = manufacturer.toLowerCase();
+        // 限制最多返回1000条数据，避免内存溢出
+        final int MAX_RESULTS = 1000;
+
+        switch (entityType) {
+            case "DeviceRegistrationRecord":
+                return registrationRecordRepository.findAll(PageRequest.of(0, MAX_RESULTS)).stream()
+                    .filter(r -> r.getManufacturerName() != null &&
+                                r.getManufacturerName().toLowerCase().contains(lowerManufacturer))
+                    .collect(Collectors.toList());
+
+            case "Device510K":
+                return device510KRepository.findAll(PageRequest.of(0, MAX_RESULTS)).stream()
+                    .filter(d -> d.getApplicant() != null &&
+                                d.getApplicant().toLowerCase().contains(lowerManufacturer))
+                    .collect(Collectors.toList());
+
+            case "DeviceRecallRecord":
+                return recallRecordRepository.findAll(PageRequest.of(0, MAX_RESULTS)).stream()
+                    .filter(r -> r.getRecallingFirm() != null &&
+                                r.getRecallingFirm().toLowerCase().contains(lowerManufacturer))
+                    .collect(Collectors.toList());
+
+            case "DeviceEventReport":
+                return eventReportRepository.findAll(PageRequest.of(0, MAX_RESULTS)).stream()
+                    .filter(e -> e.getManufacturerName() != null &&
+                                e.getManufacturerName().toLowerCase().contains(lowerManufacturer))
+                    .collect(Collectors.toList());
+
+            case "GuidanceDocument":
+                // GuidanceDocument通常没有制造商字段，返回空列表
+                return new ArrayList<>();
+
+            case "CustomsCase":
+                // CustomsCase通常没有制造商字段，返回空列表
+                return new ArrayList<>();
+
+            default:
+                log.warn("不支持的实体类型: {}", entityType);
+                return new ArrayList<>();
+        }
+    }
+
     /**
      * 仅更新备注（保持原风险等级）
      */
     private void updateRemarkById(AuditItem item, String remark) {
         String entityType = item.getEntityType();
         Long id = item.getId();
-        
+
         switch (entityType) {
             case "Device510K":
                 Device510K device510K = device510KRepository.findById(id).orElse(null);
@@ -1276,7 +1530,7 @@ public class AISmartAuditService {
                     device510KRepository.save(device510K);
                 }
                 break;
-                
+
             case "DeviceRegistrationRecord":
                 DeviceRegistrationRecord registration = registrationRecordRepository.findById(id).orElse(null);
                 if (registration != null) {
@@ -1284,7 +1538,7 @@ public class AISmartAuditService {
                     registrationRecordRepository.save(registration);
                 }
                 break;
-                
+
             case "DeviceRecallRecord":
                 DeviceRecallRecord recall = recallRecordRepository.findById(id).orElse(null);
                 if (recall != null) {
@@ -1292,7 +1546,7 @@ public class AISmartAuditService {
                     recallRecordRepository.save(recall);
                 }
                 break;
-                
+
             case "DeviceEventReport":
                 DeviceEventReport event = eventReportRepository.findById(id).orElse(null);
                 if (event != null) {
@@ -1300,8 +1554,24 @@ public class AISmartAuditService {
                     eventReportRepository.save(event);
                 }
                 break;
+
+            case "GuidanceDocument":
+                GuidanceDocument document = guidanceDocumentRepository.findById(id).orElse(null);
+                if (document != null) {
+                    document.setRemark(remark);
+                    guidanceDocumentRepository.save(document);
+                }
+                break;
+
+            case "CustomsCase":
+                CustomsCase customsCase = customsCaseRepository.findById(id).orElse(null);
+                if (customsCase != null) {
+                    customsCase.setRemark(remark);
+                    customsCaseRepository.save(customsCase);
+                }
+                break;
         }
-        
+
         log.debug("更新备注: entityType={}, id={}", entityType, id);
     }
 }

@@ -226,7 +226,6 @@ public class UnifiedCrawlerServiceImpl implements UnifiedCrawlerService {
         task.setCrawlerName(request.getCrawlerName());
         task.setCountryCode(request.getCountryCode());
         task.setTaskType(request.getTaskType());
-        task.setParamsVersion(request.getParamsVersion());
         task.setParameters(request.getParameters());
         task.setCronExpression(request.getCronExpression());
         task.setDescription(request.getDescription());
@@ -400,8 +399,8 @@ public class UnifiedCrawlerServiceImpl implements UnifiedCrawlerService {
         String countryCode = getCountryCodeFromCrawlerName(crawlerName);
         String crawlerType = getCrawlerTypeFromCrawlerName(crawlerName);
         String description = getDescriptionFromCrawlerName(crawlerName);
-        
-        CrawlerInfo crawlerInfo = new CrawlerInfo(crawlerName, displayName, countryCode, crawlerType, description, "v2");
+
+        CrawlerInfo crawlerInfo = new CrawlerInfo(crawlerName, displayName, countryCode, crawlerType, description);
         
         // 获取状态
         CrawlerStatus status = getCrawlerStatus(crawlerName);
@@ -432,9 +431,8 @@ public class UnifiedCrawlerServiceImpl implements UnifiedCrawlerService {
             // 创建临时任务对象用于解析
             UnifiedTaskConfig tempTask = new UnifiedTaskConfig();
             tempTask.setParameters(parametersToUse);
-            tempTask.setParamsVersion(task.getParamsVersion());
             tempTask.setKeywords(task.getKeywords());
-            
+
             return parseTaskParameters(tempTask);
             
         } catch (Exception e) {
@@ -448,37 +446,46 @@ public class UnifiedCrawlerServiceImpl implements UnifiedCrawlerService {
      */
     private CrawlerParams parseTaskParameters(UnifiedTaskConfig task) {
         CrawlerParams params = new CrawlerParams();
-        
+
         try {
-            if ("v2".equals(task.getParamsVersion())) {
-                // V2参数格式
+            if (task.getParameters() != null && !task.getParameters().trim().isEmpty()) {
                 Map<String, Object> paramMap = objectMapper.readValue(task.getParameters(), new TypeReference<Map<String, Object>>() {});
-                
+
                 // 处理fieldKeywords
                 if (paramMap.containsKey("fieldKeywords")) {
                     @SuppressWarnings("unchecked")
                     Map<String, List<String>> fieldKeywords = (Map<String, List<String>>) paramMap.get("fieldKeywords");
                     params.setFieldKeywords(fieldKeywords);
                 }
-                
+
                 // 处理maxRecords
                 if (paramMap.containsKey("maxRecords")) {
                     params.setMaxRecords((Integer) paramMap.get("maxRecords"));
                 }
-                
-            } else {
-                // V1参数格式
-                if (task.getKeywords() != null && !task.getKeywords().isEmpty()) {
-                    List<String> keywords = objectMapper.readValue(task.getKeywords(), new TypeReference<List<String>>() {});
-                    params.setKeywords(keywords);
+
+                // 处理batchSize
+                if (paramMap.containsKey("batchSize")) {
+                    params.setBatchSize((Integer) paramMap.get("batchSize"));
                 }
+
+                // 处理日期范围
+                if (paramMap.containsKey("dateFrom")) {
+                    params.setDateFrom((String) paramMap.get("dateFrom"));
+                }
+                if (paramMap.containsKey("dateTo")) {
+                    params.setDateTo((String) paramMap.get("dateTo"));
+                }
+            } else if (task.getKeywords() != null && !task.getKeywords().isEmpty()) {
+                // 向后兼容：使用keywords字段
+                List<String> keywords = objectMapper.readValue(task.getKeywords(), new TypeReference<List<String>>() {});
+                params.setKeywords(keywords);
             }
-            
+
         } catch (Exception e) {
             log.error("解析任务参数失败: {}", task.getId(), e);
             throw new RuntimeException("解析任务参数失败: " + e.getMessage(), e);
         }
-        
+
         return params;
     }
     
@@ -573,7 +580,6 @@ public class UnifiedCrawlerServiceImpl implements UnifiedCrawlerService {
         
         UnifiedTaskConfig preset = getPreset(crawlerName);
         preset.setParameters(parameters);
-        preset.setParamsVersion("v2");
         preset.setUpdatedAt(LocalDateTime.now());
         
         UnifiedTaskConfig saved = taskConfigRepository.save(preset);
@@ -619,7 +625,6 @@ public class UnifiedCrawlerServiceImpl implements UnifiedCrawlerService {
         preset.setCrawlerName(crawlerName);
         preset.setCountryCode(getCountryCodeFromCrawlerName(crawlerName));
         preset.setTaskType("PRESET");
-        preset.setParamsVersion("v2");
         preset.setEnabled(true);
         preset.setPriority(5);
         

@@ -1,5 +1,7 @@
 package com.certification.entity.common;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -36,7 +38,7 @@ public class DeviceMatchKeywords {
     private String keyword;
 
     @Schema(description = "关键词类型")
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = KeywordTypeConverter.class)
     @Column(name = "keyword_type", nullable = false)
     private KeywordType keywordType = KeywordType.NORMAL;
 
@@ -59,7 +61,8 @@ public class DeviceMatchKeywords {
      */
     public enum KeywordType {
         NORMAL("normal", "普通关键词"),
-        BLACKLIST("blacklist", "黑名单关键词");
+        BLACKLIST("blacklist", "黑名单关键词"),
+        WHITELIST("whitelist", "白名单关键词");
 
         private final String code;
         private final String description;
@@ -75,6 +78,40 @@ public class DeviceMatchKeywords {
 
         public String getDescription() {
             return description;
+        }
+
+        /**
+         * Jackson 序列化时使用小写的 code 值（与数据库一致）
+         */
+        @JsonValue
+        public String toValue() {
+            return this.code;
+        }
+
+        /**
+         * Jackson 反序列化时支持多种格式
+         */
+        @JsonCreator
+        public static KeywordType fromValue(String value) {
+            if (value == null) {
+                return null;
+            }
+            
+            // 先尝试直接匹配枚举名称（不区分大小写）
+            for (KeywordType type : KeywordType.values()) {
+                if (type.name().equalsIgnoreCase(value)) {
+                    return type;
+                }
+            }
+            
+            // 再尝试匹配 code 值
+            for (KeywordType type : KeywordType.values()) {
+                if (type.code.equalsIgnoreCase(value)) {
+                    return type;
+                }
+            }
+            
+            throw new IllegalArgumentException("未知的关键词类型: " + value);
         }
     }
 }

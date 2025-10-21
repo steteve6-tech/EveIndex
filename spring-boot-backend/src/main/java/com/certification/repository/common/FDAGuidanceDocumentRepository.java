@@ -71,8 +71,10 @@ public interface FDAGuidanceDocumentRepository extends JpaRepository<GuidanceDoc
 
     /**
      * 根据关键词搜索（忽略大小写）
+     * 注意：keywords字段是TEXT类型，需要使用CAST转换
      */
-    List<GuidanceDocument> findByKeywordsContainingIgnoreCase(String keywords);
+    @Query("SELECT d FROM GuidanceDocument d WHERE LOWER(CAST(d.keywords AS string)) LIKE LOWER(CONCAT('%', :keywords, '%'))")
+    List<GuidanceDocument> findByKeywordsContainingIgnoreCase(@Param("keywords") String keywords);
 
     /**
      * 根据标题模糊查询
@@ -114,4 +116,19 @@ public interface FDAGuidanceDocumentRepository extends JpaRepository<GuidanceDoc
            "d.documentType LIKE %:keyword%) " +
            "AND (:countryCode IS NULL OR d.jdCountry = :countryCode)")
     org.springframework.data.domain.Page<GuidanceDocument> findByKeywordAndCountry(@Param("keyword") String keyword, @Param("countryCode") String countryCode, org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * 根据风险等级查找记录
+     */
+    List<GuidanceDocument> findByRiskLevel(com.certification.entity.common.CertNewsData.RiskLevel riskLevel);
+
+    /**
+     * 根据风险等级查找记录（分页）
+     */
+    org.springframework.data.domain.Page<GuidanceDocument> findByRiskLevel(com.certification.entity.common.CertNewsData.RiskLevel riskLevel, org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * 统计指定风险等级的记录数量
+     */
+    long countByRiskLevel(com.certification.entity.common.CertNewsData.RiskLevel riskLevel);
 }

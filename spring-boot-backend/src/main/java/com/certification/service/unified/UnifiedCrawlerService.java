@@ -103,22 +103,20 @@ public interface UnifiedCrawlerService {
         private String countryCode;
         private String crawlerType;
         private String description;
-        private String version;
         private boolean available;
         private CrawlerStatus status;
         private CrawlerSchema schema;
-        
+
         // 构造器、getter、setter
         public CrawlerInfo() {}
-        
-        public CrawlerInfo(String crawlerName, String displayName, String countryCode, 
-                          String crawlerType, String description, String version) {
+
+        public CrawlerInfo(String crawlerName, String displayName, String countryCode,
+                          String crawlerType, String description) {
             this.crawlerName = crawlerName;
             this.displayName = displayName;
             this.countryCode = countryCode;
             this.crawlerType = crawlerType;
             this.description = description;
-            this.version = version;
             this.available = true;
             this.status = new CrawlerStatus();
         }
@@ -138,10 +136,7 @@ public interface UnifiedCrawlerService {
         
         public String getDescription() { return description; }
         public void setDescription(String description) { this.description = description; }
-        
-        public String getVersion() { return version; }
-        public void setVersion(String version) { this.version = version; }
-        
+
         public boolean isAvailable() { return available; }
         public void setAvailable(boolean available) { this.available = available; }
         
@@ -247,7 +242,6 @@ public interface UnifiedCrawlerService {
         private String crawlerName;
         private String countryCode;
         private String taskType;
-        private String paramsVersion; // v1 or v2
         private String parameters; // JSON格式
         private String cronExpression;
         private String description;
@@ -269,10 +263,7 @@ public interface UnifiedCrawlerService {
         
         public String getTaskType() { return taskType; }
         public void setTaskType(String taskType) { this.taskType = taskType; }
-        
-        public String getParamsVersion() { return paramsVersion; }
-        public void setParamsVersion(String paramsVersion) { this.paramsVersion = paramsVersion; }
-        
+
         public String getParameters() { return parameters; }
         public void setParameters(String parameters) { this.parameters = parameters; }
         

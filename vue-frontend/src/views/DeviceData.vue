@@ -34,70 +34,112 @@
                   <a-row :gutter="16">
                     <!-- 美国数据统计 -->
                     <a-col :span="4">
-                      <a-statistic
-                          title="召回记录"
-                          :value="stats.recallCount"
-                          :value-style="{ color: '#ff4d4f' }"
-                      >
-                        <template #prefix>
-                          <WarningOutlined/>
-                        </template>
-                      </a-statistic>
+                      <div class="stat-card">
+                        <a-statistic
+                            title="召回记录"
+                            :value="stats.recallCount"
+                            :value-style="{ color: '#ff4d4f' }"
+                        >
+                          <template #prefix>
+                            <WarningOutlined/>
+                          </template>
+                        </a-statistic>
+                        <div class="risk-level-tags">
+                          <a-tag color="red" style="margin: 2px;">高: {{ riskLevelStats['召回记录']?.['高风险'] || 0 }}</a-tag>
+                          <a-tag color="orange" style="margin: 2px;">中: {{ riskLevelStats['召回记录']?.['中风险'] || 0 }}</a-tag>
+                          <a-tag color="green" style="margin: 2px;">低: {{ riskLevelStats['召回记录']?.['低风险'] || 0 }}</a-tag>
+                        </div>
+                      </div>
                     </a-col>
                     <a-col :span="4">
-                      <a-statistic
-                          title="申请记录"
-                          :value="stats.device510KCount"
-                          :value-style="{ color: '#1890ff' }"
-                      >
-                        <template #prefix>
-                          <ExperimentOutlined/>
-                        </template>
-                      </a-statistic>
+                      <div class="stat-card">
+                        <a-statistic
+                            title="申请记录"
+                            :value="stats.device510KCount"
+                            :value-style="{ color: '#1890ff' }"
+                        >
+                          <template #prefix>
+                            <ExperimentOutlined/>
+                          </template>
+                        </a-statistic>
+                        <div class="risk-level-tags">
+                          <a-tag color="red" style="margin: 2px;">高: {{ riskLevelStats['申请记录']?.['高风险'] || 0 }}</a-tag>
+                          <a-tag color="orange" style="margin: 2px;">中: {{ riskLevelStats['申请记录']?.['中风险'] || 0 }}</a-tag>
+                          <a-tag color="green" style="margin: 2px;">低: {{ riskLevelStats['申请记录']?.['低风险'] || 0 }}</a-tag>
+                        </div>
+                      </div>
                     </a-col>
                     <a-col :span="4">
-                      <a-statistic
-                          title="事件报告"
-                          :value="stats.eventReportCount"
-                          :value-style="{ color: '#faad14' }"
-                      >
-                        <template #prefix>
-                          <AlertOutlined/>
-                        </template>
-                      </a-statistic>
+                      <div class="stat-card">
+                        <a-statistic
+                            title="事件报告"
+                            :value="stats.eventReportCount"
+                            :value-style="{ color: '#faad14' }"
+                        >
+                          <template #prefix>
+                            <AlertOutlined/>
+                          </template>
+                        </a-statistic>
+                        <div class="risk-level-tags">
+                          <a-tag color="red" style="margin: 2px;">高: {{ riskLevelStats['事件报告']?.['高风险'] || 0 }}</a-tag>
+                          <a-tag color="orange" style="margin: 2px;">中: {{ riskLevelStats['事件报告']?.['中风险'] || 0 }}</a-tag>
+                          <a-tag color="green" style="margin: 2px;">低: {{ riskLevelStats['事件报告']?.['低风险'] || 0 }}</a-tag>
+                        </div>
+                      </div>
                     </a-col>
                     <a-col :span="4">
-                      <a-statistic
-                          title="注册记录"
-                          :value="stats.registrationCount"
-                          :value-style="{ color: '#52c41a' }"
-                      >
-                        <template #prefix>
-                          <FileTextOutlined/>
-                        </template>
-                      </a-statistic>
+                      <div class="stat-card">
+                        <a-statistic
+                            title="注册记录"
+                            :value="stats.registrationCount"
+                            :value-style="{ color: '#52c41a' }"
+                        >
+                          <template #prefix>
+                            <FileTextOutlined/>
+                          </template>
+                        </a-statistic>
+                        <div class="risk-level-tags">
+                          <a-tag color="red" style="margin: 2px;">高: {{ riskLevelStats['注册记录']?.['高风险'] || 0 }}</a-tag>
+                          <a-tag color="orange" style="margin: 2px;">中: {{ riskLevelStats['注册记录']?.['中风险'] || 0 }}</a-tag>
+                          <a-tag color="green" style="margin: 2px;">低: {{ riskLevelStats['注册记录']?.['低风险'] || 0 }}</a-tag>
+                        </div>
+                      </div>
                     </a-col>
                     <a-col :span="4">
-                      <a-statistic
-                          title="指导文档"
-                          :value="stats.guidanceCount"
-                          :value-style="{ color: '#722ed1' }"
-                      >
-                        <template #prefix>
-                          <BookOutlined/>
-                        </template>
-                      </a-statistic>
+                      <div class="stat-card">
+                        <a-statistic
+                            title="指导文档"
+                            :value="stats.guidanceCount"
+                            :value-style="{ color: '#722ed1' }"
+                        >
+                          <template #prefix>
+                            <BookOutlined/>
+                          </template>
+                        </a-statistic>
+                        <div class="risk-level-tags">
+                          <a-tag color="red" style="margin: 2px;">高: {{ riskLevelStats['指导文档']?.['高风险'] || 0 }}</a-tag>
+                          <a-tag color="orange" style="margin: 2px;">中: {{ riskLevelStats['指导文档']?.['中风险'] || 0 }}</a-tag>
+                          <a-tag color="green" style="margin: 2px;">低: {{ riskLevelStats['指导文档']?.['低风险'] || 0 }}</a-tag>
+                        </div>
+                      </div>
                     </a-col>
                     <a-col :span="4">
-                      <a-statistic
-                          title="海关案例"
-                          :value="stats.customsCount"
-                          :value-style="{ color: '#13c2c2' }"
-                      >
-                        <template #prefix>
-                          <GlobalOutlined/>
-                        </template>
-                      </a-statistic>
+                      <div class="stat-card">
+                        <a-statistic
+                            title="海关案例"
+                            :value="stats.customsCount"
+                            :value-style="{ color: '#13c2c2' }"
+                        >
+                          <template #prefix>
+                            <GlobalOutlined/>
+                          </template>
+                        </a-statistic>
+                        <div class="risk-level-tags">
+                          <a-tag color="red" style="margin: 2px;">高: {{ riskLevelStats['海关案例']?.['高风险'] || 0 }}</a-tag>
+                          <a-tag color="orange" style="margin: 2px;">中: {{ riskLevelStats['海关案例']?.['中风险'] || 0 }}</a-tag>
+                          <a-tag color="green" style="margin: 2px;">低: {{ riskLevelStats['海关案例']?.['低风险'] || 0 }}</a-tag>
+                        </div>
+                      </div>
                     </a-col>
                   </a-row>
                 </a-card>
@@ -105,28 +147,40 @@
 
 
 
-              <a-row :gutter="16">
-                <a-col :span="12" v-for="(countryData, countryCode) in countryDataStats" :key="countryCode">
-                  <a-card class="country-stat-card" size="small" :title="getCountryDisplayName(countryCode)">
-                    <div class="country-data-overview">
-                      <a-row :gutter="8">
-                        <a-col :span="8" v-for="(count, dataType) in countryData" :key="dataType">
-                          <div class="data-type-item">
-                            <div class="data-type-label">{{ dataType }}</div>
-                            <div class="data-type-count" :style="{ color: getDataTypeColorByChineseName(dataType) }">
-                              {{ count }}
-                            </div>
-                          </div>
-                        </a-col>
-                      </a-row>
-                      <div class="country-total">
-                        <span class="total-label">总计：</span>
-                        <span class="total-count">{{ getCountryTotal(countryData) }}</span>
+              <!-- 横向滚动的国家统计容器 -->
+              <div class="country-stats-scroll-container">
+                <div class="country-stats-scroll-wrapper">
+                  <div 
+                    v-for="(countryData, countryCode) in countryDataStats" 
+                    :key="countryCode" 
+                    class="country-stat-card-wrapper"
+                  >
+                    <div class="country-stat-card-modern">
+                      <!-- 国家头部 -->
+                      <div class="country-header">
+                        <div class="country-name">{{ getCountryDisplayName(countryCode) }}</div>
+                        <div class="country-total-badge">
+                          {{ getCountryTotal(countryData) }}
+                        </div>
+                      </div>
+                      
+                      <!-- 数据类型列表 -->
+                      <div class="country-data-list">
+                        <div 
+                          v-for="(count, dataType) in countryData" 
+                          :key="dataType"
+                          class="data-item"
+                        >
+                          <span class="data-label">{{ dataType }}</span>
+                          <span class="data-value" :style="{ color: getDataTypeColorByChineseName(dataType) }">
+                            {{ count }}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </a-card>
-                </a-col>
-              </a-row>
+                  </div>
+                </div>
+              </div>
             </a-card>
           </div>
 
@@ -245,51 +299,64 @@
                         
                         <a-form-item label="黑名单关键词">
                           <div class="blacklist-keywords-list-container">
-                            <!-- 添加关键词输入框 -->
-                            <div class="add-keyword-section">
-                              <a-input
-                                  v-if="showBlacklistKeywordInput"
-                                  ref="blacklistKeywordInputRef"
-                                  v-model:value="newBlacklistKeyword"
-                                  size="small"
-                                  style="width: 300px;"
-                                  @blur="addBlacklistKeyword"
-                                  @keyup.enter="addBlacklistKeyword"
-                                  placeholder="输入黑名单关键词后按回车"
-                              />
-                              <a-button v-else type="dashed" size="small" @click="showBlacklistKeywordInput = true">
-                                <PlusOutlined/>
-                                添加黑名单关键词
-                              </a-button>
+                            <!-- 操作栏 -->
+                            <div class="blacklist-toolbar">
+                              <!-- 添加关键词输入框 -->
+                              <div class="add-keyword-section">
+                                <a-input
+                                    v-if="showBlacklistKeywordInput"
+                                    ref="blacklistKeywordInputRef"
+                                    v-model:value="newBlacklistKeyword"
+                                    size="small"
+                                    style="width: 300px;"
+                                    @blur="addBlacklistKeyword"
+                                    @keyup.enter="addBlacklistKeyword"
+                                    placeholder="输入黑名单关键词后按回车"
+                                />
+                                <a-button v-else type="dashed" size="small" @click="showBlacklistKeywordInput = true">
+                                  <PlusOutlined/>
+                                  添加黑名单关键词
+                                </a-button>
+                              </div>
+                              
+                              <!-- 统计信息 -->
+                              <div class="blacklist-stats">
+                                <a-tag color="red">总计: {{ unifiedConfig.blacklistKeywords.length }} 个</a-tag>
+                              </div>
                             </div>
                             
-                            <!-- 黑名单关键词列表 -->
-                            <a-list
+                            <!-- 黑名单关键词表格 -->
+                            <a-table
                                 v-if="unifiedConfig.blacklistKeywords.length > 0"
-                                :data-source="unifiedConfig.blacklistKeywords"
-                                :bordered="true"
+                                :columns="blacklistKeywordsColumns"
+                                :data-source="paginatedBlacklistKeywords"
+                                :pagination="{
+                                  current: blacklistPagination.current,
+                                  pageSize: blacklistPagination.pageSize,
+                                  total: unifiedConfig.blacklistKeywords.length,
+                                  showSizeChanger: true,
+                                  showQuickJumper: true,
+                                  pageSizeOptions: blacklistPagination.pageSizeOptions,
+                                  showTotal: (total) => `共 ${total} 个关键词`
+                                }"
+                                @change="({current, pageSize}) => handleBlacklistPaginationChange(current, pageSize)"
                                 size="small"
-                                class="blacklist-keywords-list"
+                                class="blacklist-keywords-table"
+                                :scroll="{ y: 400 }"
                             >
-                              <template #renderItem="{ item, index }">
-                                <a-list-item>
-                                  <template #actions>
-                                    <a-button 
-                                        type="link" 
-                                        danger 
-                                        size="small"
-                                        @click="removeBlacklistKeyword(index)"
-                                    >
-                                      删除
-                                    </a-button>
-                                  </template>
-                                  <div class="blacklist-keyword-item">
-                                    <span class="keyword-index">{{ index + 1 }}.</span>
-                                    <span class="keyword-text">{{ item }}</span>
-                                  </div>
-                                </a-list-item>
+                              <template #bodyCell="{ column, record }">
+                                <template v-if="column.key === 'action'">
+                                  <a-button 
+                                      type="link" 
+                                      danger 
+                                      size="small"
+                                      @click="removeBlacklistKeyword(record.originalIndex)"
+                                  >
+                                    删除
+                                  </a-button>
+                                </template>
                               </template>
-                            </a-list>
+                            </a-table>
                             
                             <!-- 空状态提示 -->
                             <a-empty 
@@ -550,6 +617,15 @@
                           <a-select-option value="EU">欧盟</a-select-option>
                         </a-select>
                       </a-form-item>
+                      <a-form-item label="风险等级">
+                        <a-select v-model:value="recallSearchForm.riskLevel" placeholder="选择风险等级"
+                                  style="width: 120px">
+                          <a-select-option value="">全部</a-select-option>
+                          <a-select-option value="HIGH">高风险</a-select-option>
+                          <a-select-option value="MEDIUM">中风险</a-select-option>
+                          <a-select-option value="LOW">低风险</a-select-option>
+                        </a-select>
+                      </a-form-item>
                       <a-form-item>
                         <a-button type="primary" @click="searchRecallRecords" :loading="recallLoading">
                           搜索
@@ -594,6 +670,15 @@
                           <a-select-option value="US">美国</a-select-option>
                           <a-select-option value="CN">中国</a-select-option>
                           <a-select-option value="EU">欧盟</a-select-option>
+                        </a-select>
+                      </a-form-item>
+                      <a-form-item label="风险等级">
+                        <a-select v-model:value="device510KSearchForm.riskLevel" placeholder="选择风险等级"
+                                  style="width: 120px">
+                          <a-select-option value="">全部</a-select-option>
+                          <a-select-option value="HIGH">高风险</a-select-option>
+                          <a-select-option value="MEDIUM">中风险</a-select-option>
+                          <a-select-option value="LOW">低风险</a-select-option>
                         </a-select>
                       </a-form-item>
                       <a-form-item>
@@ -641,6 +726,15 @@
                           <a-select-option value="EU">欧盟</a-select-option>
                         </a-select>
                       </a-form-item>
+                      <a-form-item label="风险等级">
+                        <a-select v-model:value="eventSearchForm.riskLevel" placeholder="选择风险等级"
+                                  style="width: 120px">
+                          <a-select-option value="">全部</a-select-option>
+                          <a-select-option value="HIGH">高风险</a-select-option>
+                          <a-select-option value="MEDIUM">中风险</a-select-option>
+                          <a-select-option value="LOW">低风险</a-select-option>
+                        </a-select>
+                      </a-form-item>
                       <a-form-item>
                         <a-button type="primary" @click="searchEventReports" :loading="eventLoading">
                           搜索
@@ -684,6 +778,15 @@
                           <a-select-option value="US">美国</a-select-option>
                           <a-select-option value="CN">中国</a-select-option>
                           <a-select-option value="EU">欧盟</a-select-option>
+                        </a-select>
+                      </a-form-item>
+                      <a-form-item label="风险等级">
+                        <a-select v-model:value="registrationSearchForm.riskLevel" placeholder="选择风险等级"
+                                  style="width: 120px">
+                          <a-select-option value="">全部</a-select-option>
+                          <a-select-option value="HIGH">高风险</a-select-option>
+                          <a-select-option value="MEDIUM">中风险</a-select-option>
+                          <a-select-option value="LOW">低风险</a-select-option>
                         </a-select>
                       </a-form-item>
                       <a-form-item>
@@ -731,6 +834,15 @@
                           <a-select-option value="EU">欧盟</a-select-option>
                         </a-select>
                       </a-form-item>
+                      <a-form-item label="风险等级">
+                        <a-select v-model:value="guidanceSearchForm.riskLevel" placeholder="选择风险等级"
+                                  style="width: 120px">
+                          <a-select-option value="">全部</a-select-option>
+                          <a-select-option value="HIGH">高风险</a-select-option>
+                          <a-select-option value="MEDIUM">中风险</a-select-option>
+                          <a-select-option value="LOW">低风险</a-select-option>
+                        </a-select>
+                      </a-form-item>
                       <a-form-item>
                         <a-button type="primary" @click="searchGuidanceDocuments" :loading="guidanceLoading">
                           搜索
@@ -774,6 +886,15 @@
                           <a-select-option value="US">美国</a-select-option>
                           <a-select-option value="CN">中国</a-select-option>
                           <a-select-option value="EU">欧盟</a-select-option>
+                        </a-select>
+                      </a-form-item>
+                      <a-form-item label="风险等级">
+                        <a-select v-model:value="customsSearchForm.riskLevel" placeholder="选择风险等级"
+                                  style="width: 120px">
+                          <a-select-option value="">全部</a-select-option>
+                          <a-select-option value="HIGH">高风险</a-select-option>
+                          <a-select-option value="MEDIUM">中风险</a-select-option>
+                          <a-select-option value="LOW">低风险</a-select-option>
                         </a-select>
                       </a-form-item>
                       <a-form-item>
@@ -1348,7 +1469,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import {ref, reactive, onMounted, h} from 'vue'
+import {ref, reactive, onMounted, h, computed} from 'vue'
 import {message, Modal} from 'ant-design-vue'
 import {
   WarningOutlined,
@@ -1367,6 +1488,7 @@ import {
   searchDeviceDataByKeywords,
   getDeviceDataOverview,
   getDeviceDataByCountry,
+  getDeviceDataByRiskLevel,
   getDevice510KRecords,
   getDeviceRecallRecords,
   getDeviceEventReports,
@@ -1415,6 +1537,16 @@ const stats = reactive({
   customsCount: 0
 })
 
+// 风险等级统计数据
+const riskLevelStats = ref<Record<string, Record<string, number>>>({
+  '召回记录': { '高风险': 0, '中风险': 0, '低风险': 0 },
+  '申请记录': { '高风险': 0, '中风险': 0, '低风险': 0 },
+  '事件报告': { '高风险': 0, '中风险': 0, '低风险': 0 },
+  '注册记录': { '高风险': 0, '中风险': 0, '低风险': 0 },
+  '指导文档': { '高风险': 0, '中风险': 0, '低风险': 0 },
+  '海关案例': { '高风险': 0, '中风险': 0, '低风险': 0 }
+})
+
 // 加载统计数据
 const loadStatistics = async () => {
   try {
@@ -1434,6 +1566,18 @@ const loadStatistics = async () => {
     } else {
       console.warn('⚠️ 统计数据响应格式不正确:', overviewResponse)
     }
+    
+    // 加载风险等级统计
+    console.log('🔄 开始加载风险等级统计数据...')
+    const riskLevelResponse = await getDeviceDataByRiskLevel()
+    console.log('📊 风险等级统计响应:', riskLevelResponse)
+    
+    if (riskLevelResponse && riskLevelResponse.success && riskLevelResponse.data) {
+      riskLevelStats.value = riskLevelResponse.data
+      console.log('✅ 风险等级统计数据加载成功:', riskLevelStats.value)
+    } else {
+      console.warn('⚠️ 风险等级统计响应格式不正确:', riskLevelResponse)
+    }
   } catch (error) {
     console.error('❌ 加载统计数据失败:', error)
   }
@@ -1451,7 +1595,8 @@ const recallPagination = reactive({
 })
 const recallSearchForm = reactive({
   keyword: '',
-  countryCode: ''
+  countryCode: '',
+  riskLevel: ''
 })
 
 // 510K设备相关
@@ -1466,7 +1611,8 @@ const device510KPagination = reactive({
 })
 const device510KSearchForm = reactive({
   keyword: '',
-  countryCode: ''
+  countryCode: '',
+  riskLevel: ''
 })
 
 // 事件报告相关
@@ -1481,7 +1627,8 @@ const eventPagination = reactive({
 })
 const eventSearchForm = reactive({
   keyword: '',
-  countryCode: ''
+  countryCode: '',
+  riskLevel: ''
 })
 
 // 注册记录相关
@@ -1496,7 +1643,8 @@ const registrationPagination = reactive({
 })
 const registrationSearchForm = reactive({
   keyword: '',
-  countryCode: ''
+  countryCode: '',
+  riskLevel: ''
 })
 
 // 指导文档相关
@@ -1511,7 +1659,8 @@ const guidancePagination = reactive({
 })
 const guidanceSearchForm = reactive({
   keyword: '',
-  countryCode: ''
+  countryCode: '',
+  riskLevel: ''
 })
 
 // 海关案例相关
@@ -1526,7 +1675,8 @@ const customsPagination = reactive({
 })
 const customsSearchForm = reactive({
   keyword: '',
-  countryCode: ''
+  countryCode: '',
+  riskLevel: ''
 })
 
 // 统一关键词搜索相关
@@ -1574,6 +1724,57 @@ const unifiedResultActiveTab = ref('Device510K')
 const showBlacklistKeywordInput = ref(false)
 const newBlacklistKeyword = ref('')
 const blacklistKeywordInputRef = ref()
+
+// 黑名单分页状态
+const blacklistPagination = reactive({
+  current: 1,
+  pageSize: 20,
+  total: 0,
+  showSizeChanger: true,
+  showQuickJumper: true,
+  pageSizeOptions: ['10', '20', '50', '100']
+})
+
+// 计算当前页显示的黑名单关键词
+const paginatedBlacklistKeywords = computed(() => {
+  const start = (blacklistPagination.current - 1) * blacklistPagination.pageSize
+  const end = start + blacklistPagination.pageSize
+  return unifiedConfig.blacklistKeywords.slice(start, end).map((keyword, index) => ({
+    key: start + index,
+    index: start + index + 1,
+    keyword: keyword,
+    originalIndex: start + index
+  }))
+})
+
+// 黑名单关键词表格列定义
+const blacklistKeywordsColumns = [
+  {
+    title: '序号',
+    dataIndex: 'index',
+    key: 'index',
+    width: 80,
+    align: 'center'
+  },
+  {
+    title: '关键词',
+    dataIndex: 'keyword',
+    key: 'keyword',
+    ellipsis: true
+  },
+  {
+    title: '操作',
+    key: 'action',
+    width: 100,
+    align: 'center'
+  }
+]
+
+// 处理黑名单分页变化
+const handleBlacklistPaginationChange = (page: number, pageSize: number) => {
+  blacklistPagination.current = page
+  blacklistPagination.pageSize = pageSize
+}
 
 // 表格列定义
 const recallColumns = [
@@ -2165,35 +2366,36 @@ const searchCustomsCases = async () => {
 
 // 重置搜索
 const resetRecallSearch = () => {
-  Object.assign(recallSearchForm, {keyword: '', countryCode: ''})
+  Object.assign(recallSearchForm, {keyword: '', countryCode: '', riskLevel: ''})
   searchRecallRecords()
 }
 
 const resetDevice510KSearch = () => {
-  Object.assign(device510KSearchForm, {keyword: '', countryCode: ''})
+  Object.assign(device510KSearchForm, {keyword: '', countryCode: '', riskLevel: ''})
   searchDevice510KRecords()
 }
 
 const resetEventSearch = () => {
-  Object.assign(eventSearchForm, {keyword: '', countryCode: ''})
+  Object.assign(eventSearchForm, {keyword: '', countryCode: '', riskLevel: ''})
   searchEventReports()
 }
 
 const resetRegistrationSearch = () => {
   Object.assign(registrationSearchForm, {
     keyword: '',
-    countryCode: ''
+    countryCode: '',
+    riskLevel: ''
   })
   searchRegistrationRecords()
 }
 
 const resetGuidanceSearch = () => {
-  Object.assign(guidanceSearchForm, {keyword: '', countryCode: ''})
+  Object.assign(guidanceSearchForm, {keyword: '', countryCode: '', riskLevel: ''})
   searchGuidanceDocuments()
 }
 
 const resetCustomsSearch = () => {
-  Object.assign(customsSearchForm, {keyword: '', countryCode: ''})
+  Object.assign(customsSearchForm, {keyword: '', countryCode: '', riskLevel: ''})
   searchCustomsCases()
 }
 
@@ -2239,6 +2441,17 @@ const addBlacklistKeyword = () => {
 
 const removeBlacklistKeyword = (index: number) => {
   unifiedConfig.blacklistKeywords.splice(index, 1)
+  
+  // 更新分页总数
+  blacklistPagination.total = unifiedConfig.blacklistKeywords.length
+  
+  // 如果当前页没有数据了，跳转到上一页
+  const totalPages = Math.ceil(unifiedConfig.blacklistKeywords.length / blacklistPagination.pageSize)
+  if (blacklistPagination.current > totalPages && totalPages > 0) {
+    blacklistPagination.current = totalPages
+  }
+  
+  message.success('黑名单关键词已删除')
 }
 
 const saveUnifiedKeywords = async () => {
@@ -4149,6 +4362,27 @@ onMounted(async () => {
   font-weight: bold;
 }
 
+/* 统计卡片和风险等级标签样式 */
+.stat-card {
+  text-align: center;
+}
+
+.risk-level-tags {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.risk-level-tags .ant-tag {
+  font-size: 12px;
+  padding: 2px 8px;
+  margin: 2px;
+}
+
 /* 各国数据统计简洁显示样式 */
 .country-stats-summary {
   margin-top: 16px;
@@ -4168,7 +4402,7 @@ onMounted(async () => {
   border-color: #d9d9d9;
 }
 
-.country-name {
+.country-name-summary {
   font-size: 14px;
   font-weight: 500;
   color: #333;
@@ -4192,65 +4426,132 @@ onMounted(async () => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.country-stat-card {
-  transition: all 0.3s ease;
+/* 横向滚动的国家统计容器 */
+.country-stats-scroll-container {
+  width: 100%;
+  overflow: hidden;
+  margin-top: 16px;
   margin-bottom: 16px;
 }
 
-.country-stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.country-data-overview {
+.country-stats-scroll-wrapper {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
   padding: 8px 0;
+  scroll-behavior: smooth;
+  
+  /* 美化滚动条 */
+  scrollbar-width: thin;
+  scrollbar-color: #d9d9d9 #f0f0f0;
 }
 
-.data-type-item {
-  text-align: center;
-  padding: 8px 4px;
+/* Webkit浏览器滚动条样式 */
+.country-stats-scroll-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.country-stats-scroll-wrapper::-webkit-scrollbar-track {
+  background: #f0f0f0;
   border-radius: 4px;
-  background: #f8f9fa;
-  margin-bottom: 8px;
+}
+
+.country-stats-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 4px;
+  transition: background 0.3s;
+}
+
+.country-stats-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #bfbfbf;
+}
+
+.country-stat-card-wrapper {
+  flex: 0 0 auto;
+  width: 320px;
+  min-width: 320px;
+}
+
+/* 现代简洁的国家卡片样式 */
+.country-stat-card-modern {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e8e8e8;
   transition: all 0.3s ease;
+  height: 100%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-.data-type-item:hover {
-  background: #e9ecef;
-  transform: scale(1.02);
+.country-stat-card-modern:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: #1890ff;
 }
 
-.data-type-label {
-  font-size: 12px;
-  color: #666;
-  margin-bottom: 4px;
-  font-weight: 500;
+/* 国家头部样式 */
+.country-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f0f0f0;
 }
 
-.data-type-count {
-  font-size: 18px;
+.country-name {
+  font-size: 16px;
   font-weight: 600;
-  line-height: 1;
+  color: #262626;
+  letter-spacing: 0.5px;
 }
 
-.country-total {
-  margin-top: 12px;
-  padding-top: 8px;
-  border-top: 1px solid #e8e8e8;
-  text-align: center;
-}
-
-.total-label {
+.country-total-badge {
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
   font-size: 14px;
-  color: #666;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(24, 144, 255, 0.3);
+}
+
+/* 数据列表样式 */
+.country-data-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.data-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.data-item:hover {
+  background: #fafafa;
+  border-color: #d9d9d9;
+  transform: translateX(4px);
+}
+
+.data-label {
+  font-size: 13px;
+  color: #595959;
   font-weight: 500;
 }
 
-.total-count {
-  font-size: 20px;
+.data-value {
+  font-size: 16px;
   font-weight: 600;
-  color: #1890ff;
-  margin-left: 8px;
+  min-width: 40px;
+  text-align: right;
 }
 
 /* 详情模态框样式 */
@@ -4287,44 +4588,43 @@ onMounted(async () => {
   gap: 12px;
 }
 
+.blacklist-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
+}
+
 .add-keyword-section {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.blacklist-keywords-list {
-  max-height: 300px;
-  overflow-y: auto;
-  border-radius: 6px;
-}
-
-.blacklist-keywords-list :deep(.ant-list-item) {
-  padding: 8px 16px;
-  transition: background-color 0.2s;
-}
-
-.blacklist-keywords-list :deep(.ant-list-item:hover) {
-  background-color: #fff2f0;
-}
-
-.blacklist-keyword-item {
+.blacklist-stats {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1;
 }
 
-.blacklist-keyword-item .keyword-index {
-  color: #999;
-  font-size: 12px;
-  min-width: 30px;
+.blacklist-keywords-table {
+  margin-top: 8px;
 }
 
-.blacklist-keyword-item .keyword-text {
-  color: #cf1322;
-  font-weight: 500;
-  word-break: break-all;
+.blacklist-keywords-table :deep(.ant-table-thead > tr > th) {
+  background: #fff2f0;
+  font-weight: 600;
+}
+
+.blacklist-keywords-table :deep(.ant-table-tbody > tr:hover > td) {
+  background-color: #fff2f0;
+}
+
+.blacklist-keywords-table :deep(.ant-table-cell) {
+  padding: 8px 16px;
 }
 
 .blacklist-description {

@@ -3,7 +3,6 @@ package com.certification.crawler.countrydata.us;
 import com.certification.config.MedcertCrawlerConfig;
 import com.certification.entity.common.DeviceRegistrationRecord;
 import com.certification.entity.common.CrawlerCheckpoint;
-import com.certification.exception.AllDataDuplicateException;
 import com.certification.repository.common.DeviceRegistrationRecordRepository;
 import com.certification.repository.common.CrawlerCheckpointRepository;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -430,6 +429,117 @@ public class US_registration {
      */
     public String crawlAndSaveWithKeywords(List<String> inputKeywords, int maxRecords, int batchSize) {
         return crawlAndSaveWithKeywords(inputKeywords, maxRecords, batchSize, null, null);
+    }
+    
+    /**
+     * 基于多字段参数爬取Registration数据（新的统一方法）⭐
+     * 支持：manufacturerNames, deviceNames, proprietaryNames, dateFrom/dateTo
+     * 
+     * @param manufacturerNames 制造商名称列表
+     * @param deviceNames 设备名称列表
+     * @param proprietaryNames 专有名称列表
+     * @param dateFrom 起始日期（yyyyMMdd格式）
+     * @param dateTo 结束日期（yyyyMMdd格式）
+     * @param maxRecords 最大记录数（-1表示全部）
+     * @param batchSize 批次大小
+     * @return 爬取结果信息
+     */
+    public String crawlAndSaveWithMultipleFields(
+            List<String> manufacturerNames,
+            List<String> deviceNames,
+            List<String> proprietaryNames,
+            String dateFrom,
+            String dateTo,
+            int maxRecords,
+            int batchSize) {
+        
+        System.out.println("开始使用多字段参数爬取FDA Registration数据...");
+        System.out.println("制造商名称数量: " + (manufacturerNames != null ? manufacturerNames.size() : 0));
+        System.out.println("设备名称数量: " + (deviceNames != null ? deviceNames.size() : 0));
+        System.out.println("专有名称数量: " + (proprietaryNames != null ? proprietaryNames.size() : 0));
+        System.out.println("日期范围: " + dateFrom + " - " + dateTo);
+        System.out.println("最大记录数: " + (maxRecords == -1 ? "所有数据" : maxRecords));
+        
+        int totalSaved = 0;
+        
+        // 1. 按制造商名称搜索
+        if (manufacturerNames != null && !manufacturerNames.isEmpty()) {
+            for (String manufacturer : manufacturerNames) {
+                if (manufacturer == null || manufacturer.trim().isEmpty()) continue;
+                
+                System.out.println("按制造商名称搜索: " + manufacturer);
+                
+                try {
+                    String result = crawlAndSaveByManufacturerName(manufacturer, maxRecords, batchSize, dateFrom, dateTo);
+                    totalSaved += extractSavedCount(result);
+                    System.out.println("制造商名称搜索结果: " + result);
+                    Thread.sleep(1000);
+                } catch (Exception e) {
+                    System.err.println("制造商名称 '" + manufacturer + "' 搜索失败: " + e.getMessage());
+                }
+            }
+        }
+        
+        // 2. 按设备名称搜索
+        if (deviceNames != null && !deviceNames.isEmpty()) {
+            for (String deviceName : deviceNames) {
+                if (deviceName == null || deviceName.trim().isEmpty()) continue;
+                
+                System.out.println("按设备名称搜索: " + deviceName);
+                
+                try {
+                    String result = crawlAndSaveByDeviceName(deviceName, maxRecords, batchSize, dateFrom, dateTo);
+                    totalSaved += extractSavedCount(result);
+                    System.out.println("设备名称搜索结果: " + result);
+                    Thread.sleep(1000);
+                } catch (Exception e) {
+                    System.err.println("设备名称 '" + deviceName + "' 搜索失败: " + e.getMessage());
+                }
+            }
+        }
+        
+        // 3. 按专有名称搜索
+        if (proprietaryNames != null && !proprietaryNames.isEmpty()) {
+            for (String proprietaryName : proprietaryNames) {
+                if (proprietaryName == null || proprietaryName.trim().isEmpty()) continue;
+                
+                System.out.println("按专有名称搜索: " + proprietaryName);
+                
+                try {
+                    String result = crawlAndSaveByProprietaryName(proprietaryName, maxRecords, batchSize, dateFrom, dateTo);
+                    totalSaved += extractSavedCount(result);
+                    System.out.println("专有名称搜索结果: " + result);
+                    Thread.sleep(1000);
+                } catch (Exception e) {
+                    System.err.println("专有名称 '" + proprietaryName + "' 搜索失败: " + e.getMessage());
+                }
+            }
+        }
+        
+        String finalResult = String.format(
+            "多字段Registration数据爬取完成，总保存: %d 条记录", totalSaved);
+        System.out.println(finalResult);
+        
+        return finalResult;
+    }
+    
+    /**
+     * 从结果字符串中提取保存的记录数
+     */
+    private int extractSavedCount(String result) {
+        if (result == null || result.isEmpty()) return 0;
+        
+        try {
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("(?:保存|新增|入库)[:：]?\\s*(\\d+)\\s*条");
+            java.util.regex.Matcher matcher = pattern.matcher(result);
+            if (matcher.find()) {
+                return Integer.parseInt(matcher.group(1));
+            }
+        } catch (Exception e) {
+            // 忽略解析错误
+        }
+        
+        return 0;
     }
 
     /**

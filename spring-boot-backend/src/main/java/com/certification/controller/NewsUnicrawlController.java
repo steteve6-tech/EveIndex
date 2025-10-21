@@ -19,7 +19,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/crawlers")
+@RequestMapping("/crawlers")
 @CrossOrigin(originPatterns = "*")
 @Tag(name = "认证新闻爬虫管理", description = "统一管理北测、SGS、UL三个爬虫的接口")
 public class NewsUnicrawlController {

@@ -13,9 +13,9 @@ spring:
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/common_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&failOverReadOnly=false&maxReconnects=3&initialTimeout=2&connectTimeout=30000&socketTimeout=60000&useServerPrepStmts=true&cachePrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048
-    username: root
-    password: 2020
+    url: ${DATABASE_URL:jdbc:mysql://localhost:3306/common_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&failOverReadOnly=false&maxReconnects=3&initialTimeout=2&connectTimeout=30000&socketTimeout=60000&useServerPrepStmts=true&cachePrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048}
+    username: ${DATABASE_USERNAME:root}
+    password: ${DATABASE_PASSWORD:dev123}
     
     # Druid连接池配置
     druid:
@@ -57,18 +57,18 @@ spring:
         exclusions: "*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*"
       # 配置DruidStatViewServlet
       stat-view-servlet:
-        enabled: true
+        enabled: ${DRUID_MONITOR_ENABLED:true}
         url-pattern: /druid/*
         # IP白名单(没有配置或者为空，则允许所有访问)
-        allow: 127.0.0.1
+        allow: ${DRUID_ALLOW_IP:127.0.0.1}
         # IP黑名单 (存在共同时，deny优先于allow)
-        deny: 
+        deny: ${DRUID_DENY_IP:}
         # 禁用HTML页面上的"Reset All"功能
         reset-enable: false
         # 登录名
-        login-username: admin
+        login-username: ${DRUID_USERNAME:admin}
         # 登录密码
-        login-password: 123456
+        login-password: ${DRUID_PASSWORD:admin123}
   
   # Redis配置 - 暂时禁用
   # data:
@@ -248,63 +248,24 @@ risk:
 # 火山引擎AI配置
 volc:
   ai:
-    api-key: ${ARK_API_KEY:}  # 优先从环境变量获取
-    model-id: "bot-20250915145921-rspmk"    # 模型ID
-    api-url: "https://open.volcengineapi.com" # API基础地址
+    api-key: ${ARK_API_KEY:}  # 从环境变量获取，不设置默认值
+    model-id: ${ARK_MODEL_ID:bot-20250915145921-rspmk}
+    api-url: ${ARK_API_URL:https://open.volcengineapi.com}
 
 # 火山引擎翻译服务配置
 volcengine:
   translate:
-    access-key: ${VOLCENGINE_ACCESS_KEY:}  # 从环境变量获取，为空时不设置默认值
-    secret-key: ${VOLCENGINE_SECRET_KEY:}  # 从环境变量获取，为空时不设置默认值
-    region: cn-north-1                     # 服务区域
-    api-url: https://translate.volcengineapi.com  # 翻译API地址
-
-# Medcert爬虫统一配置
-medcert:
-  crawler:
-    # 重试机制配置
-    retry:
-      max-attempts: 3        # 最大重试次数
-      delay-seconds: 5       # 重试延迟时间（秒）
-      delay-milliseconds: 5000  # 重试延迟时间（毫秒）
-    
-    # 超时配置
-    timeout:
-      wait-timeout-seconds: 60      # 等待超时时间（秒），增加以支持大量数据爬取
-      page-load-timeout-seconds: 120 # 页面加载超时时间（秒），增加以支持大量数据爬取
-      http-timeout-milliseconds: 60000  # HTTP请求超时时间（毫秒），增加以支持大量数据爬取
-    
-    # 批量保存配置
-    batch:
-      save-size: 100         # 批量保存大小，增加以提高效率
-      small-save-size: 50    # 小批量保存大小（用于某些特殊场景）
-    
-    # 爬取参数配置
-    crawl:
-      default-max-pages: 0   # 默认最大页数，0表示爬取所有数据
-      default-batch-size: 100 # 默认批次大小，增加以提高效率
-      records-per-page: 100  # 每页记录数（用于计算maxRecords）
-      api-limits:
-        # 美国爬虫API限制
-        us510k-max-per-page: 100        # US_510K API每页最大记录数
-        us-recall-max-per-page: 1000    # US_recall_api每页最大记录数
-        us-customs-case-max-per-page: 10 # US_CustomsCase每页最大记录数
-        us-event-max-per-page: 500      # US_event每页最大记录数
-        # 欧盟爬虫API限制
-        eu-custom-case-max-per-page: 20      # EU_CustomCase每页最大记录数
-        eu-guidance-max-per-page: 50         # EU_Guidance每页最大记录数
-        eu-recall-max-per-page: 100          # EU_Recall每页最大记录数
-        eu-registration-max-per-page: 100    # EU_Registration每页最大记录数
+    access-key: ${VOLCENGINE_ACCESS_KEY:}  # 从环境变量获取，不设置默认值
+    secret-key: ${VOLCENGINE_SECRET_KEY:}  # 从环境变量获取，不设置默认值
+    region: ${VOLCENGINE_REGION:cn-beijing}
 
 # OpenAI API配置（用于AI智能审核功能）
 openai:
   api:
-    key: # 从环境变量获取OpenAI API Key
-    model: gpt-4o     # 使用GPT-3.5-turbo模型（成本较低，准确率90%+）
-    # model: gpt-4           # 如需更高准确率可切换到GPT-4（成本较高，准确率95%+）
-    base-url: https://chat-api.ss5.xyz/v1  # OpenAI API基础URL（支持代理地址）
-    timeout: 60              # API超时时间（秒）
+    key: ${OPENAI_API_KEY:}  # 从环境变量获取，不设置默认值
+    model: ${OPENAI_MODEL:gpt-4o}
+    base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}  # OpenAI API基础URL
+    timeout: ${OPENAI_TIMEOUT:60}
     
 # AI智能审核配置
 ai:
@@ -315,11 +276,3 @@ ai:
     enable-cache: true             # 是否启用缓存（避免重复判断相同设备）
     cache-ttl: 86400               # 缓存过期时间（秒），默认24小时
     daily-limit: 1000              # 每日调用限制（避免超支）
-
-# 设备数据爬虫配置
-crawler:
-  device:
-    default-batch-size: 50        # 默认批次大小
-    default-max-records: 200      # 默认最大记录数
-    enable-auto-ai: true          # 是否启用爬取后自动AI判断
-    ai-judge-async: true          # 是否异步执行AI判断（true=不阻塞爬虫）

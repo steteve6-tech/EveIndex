@@ -19,7 +19,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/ai/smart-audit")
+@RequestMapping("/ai/smart-audit")
 public class AISmartAuditController {
     
     @Autowired
@@ -151,7 +151,7 @@ public class AISmartAuditController {
                 "totalDowngraded", 0,
                 "lastAuditTime", ""
             );
-            
+
             return ResponseEntity.ok(Map.of(
                 "success", true,
                 "statistics", stats
@@ -160,6 +160,55 @@ public class AISmartAuditController {
             return ResponseEntity.status(500).body(Map.of(
                 "success", false,
                 "message", e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * 重新判断白名单制造商的所有相关数据
+     * 用于添加白名单后，重新审核该制造商的所有产品
+     *
+     * @param manufacturer 制造商名称（白名单关键词）
+     * @return 审核结果
+     */
+    @PostMapping("/rejudge-whitelist-manufacturer")
+    public ResponseEntity<?> reJudgeWhitelistManufacturer(@RequestParam String manufacturer) {
+        log.info("收到重新判断白名单制造商请求: manufacturer={}", manufacturer);
+
+        try {
+            // 参数验证
+            if (manufacturer == null || manufacturer.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "制造商名称不能为空"
+                ));
+            }
+
+            // 重新判断
+            SmartAuditResult result = smartAuditService.reJudgeWhitelistManufacturerData(manufacturer);
+
+            // 构建响应
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", result.isSuccess());
+            response.put("message", result.getMessage());
+            response.put("statistics", Map.of(
+                "total", result.getTotal(),
+                "aiKept", result.getAiKept(),
+                "aiDowngraded", result.getAiDowngraded(),
+                "failed", result.getFailedCount()
+            ));
+            response.put("details", result.getAuditItems());
+            response.put("duration", result.getDuration());
+
+            log.info("重新判断白名单制造商完成: {}", result.getMessage());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("重新判断白名单制造商失败", e);
+            return ResponseEntity.status(500).body(Map.of(
+                "success", false,
+                "message", "重新判断失败: " + e.getMessage()
             ));
         }
     }

@@ -936,6 +936,101 @@ public class US_event_api {
     }
 
     /**
+     * 基于多字段参数爬取Event数据（新的统一方法）⭐
+     * 支持：brandNames, manufacturerNames, genericNames, dateFrom/dateTo
+     * 
+     * @param brandNames 品牌名称列表
+     * @param manufacturerNames 制造商名称列表
+     * @param genericNames 通用名称列表
+     * @param dateFrom 起始日期（yyyyMMdd格式）
+     * @param dateTo 结束日期（yyyyMMdd格式）
+     * @param maxRecords 最大记录数（-1表示全部）
+     * @param batchSize 批次大小
+     * @return 爬取结果信息
+     */
+    public String crawlAndSaveWithMultipleFields(
+            List<String> brandNames,
+            List<String> manufacturerNames,
+            List<String> genericNames,
+            String dateFrom,
+            String dateTo,
+            int maxRecords,
+            int batchSize) {
+        
+        System.out.println("开始使用多字段参数爬取FDA Event数据...");
+        System.out.println("品牌名称数量: " + (brandNames != null ? brandNames.size() : 0));
+        System.out.println("制造商名称数量: " + (manufacturerNames != null ? manufacturerNames.size() : 0));
+        System.out.println("通用名称数量: " + (genericNames != null ? genericNames.size() : 0));
+        System.out.println("日期范围: " + dateFrom + " - " + dateTo);
+        System.out.println("最大记录数: " + (maxRecords == -1 ? "所有数据" : maxRecords));
+        
+        int totalSaved = 0;
+        
+        // 1. 按品牌名称搜索
+        if (brandNames != null && !brandNames.isEmpty()) {
+            for (String brandName : brandNames) {
+                if (brandName == null || brandName.trim().isEmpty()) continue;
+                
+                System.out.println("按品牌名称搜索: " + brandName);
+                String searchQuery = "device.brand_name:" + brandName.trim();
+                
+                try {
+                    String result = crawlAndSaveDeviceEvent(searchQuery, maxRecords, batchSize, dateFrom, dateTo);
+                    totalSaved += extractSavedCount(result);
+                    System.out.println("品牌名称搜索结果: " + result);
+                    Thread.sleep(1000);
+                } catch (Exception e) {
+                    System.err.println("品牌名称 '" + brandName + "' 搜索失败: " + e.getMessage());
+                }
+            }
+        }
+        
+        // 2. 按制造商名称搜索
+        if (manufacturerNames != null && !manufacturerNames.isEmpty()) {
+            for (String manufacturer : manufacturerNames) {
+                if (manufacturer == null || manufacturer.trim().isEmpty()) continue;
+                
+                System.out.println("按制造商名称搜索: " + manufacturer);
+                String searchQuery = "device.manufacturer_name:" + manufacturer.trim();
+                
+                try {
+                    String result = crawlAndSaveDeviceEvent(searchQuery, maxRecords, batchSize, dateFrom, dateTo);
+                    totalSaved += extractSavedCount(result);
+                    System.out.println("制造商名称搜索结果: " + result);
+                    Thread.sleep(1000);
+                } catch (Exception e) {
+                    System.err.println("制造商名称 '" + manufacturer + "' 搜索失败: " + e.getMessage());
+                }
+            }
+        }
+        
+        // 3. 按通用名称搜索
+        if (genericNames != null && !genericNames.isEmpty()) {
+            for (String genericName : genericNames) {
+                if (genericName == null || genericName.trim().isEmpty()) continue;
+                
+                System.out.println("按通用名称搜索: " + genericName);
+                String searchQuery = "device.generic_name:" + genericName.trim();
+                
+                try {
+                    String result = crawlAndSaveDeviceEvent(searchQuery, maxRecords, batchSize, dateFrom, dateTo);
+                    totalSaved += extractSavedCount(result);
+                    System.out.println("通用名称搜索结果: " + result);
+                    Thread.sleep(1000);
+                } catch (Exception e) {
+                    System.err.println("通用名称 '" + genericName + "' 搜索失败: " + e.getMessage());
+                }
+            }
+        }
+        
+        String finalResult = String.format(
+            "多字段Event数据爬取完成，总保存: %d 条记录", totalSaved);
+        System.out.println(finalResult);
+        
+        return finalResult;
+    }
+
+    /**
      * 关闭HTTP客户端
      */
     public void close() throws IOException {

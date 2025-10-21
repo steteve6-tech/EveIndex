@@ -8,22 +8,22 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 爬虫执行参数统一封装（V2版本 - 支持多字段参数）
- * 用于屏蔽不同爬虫的参数差异
+ * 爬虫执行参数统一封装
+ * 用于屏蔽不同爬虫的参数差异，支持多字段参数
  */
 @Data
 @Accessors(chain = true)
 public class CrawlerParams {
 
     /**
-     * 关键词列表（向后兼容，V1版本使用）
+     * 关键词列表（保留用于向后兼容）
      */
     private List<String> keywords;
-    
+
     /**
-     * 多字段参数配置（V2版本）
+     * 多字段参数配置
      * Map<字段名, 关键词列表>
-     * 
+     *
      * 示例：
      * {
      *   "manufacturerNames": ["Abbott", "Medtronic"],
@@ -137,24 +137,24 @@ public class CrawlerParams {
      * 验证参数是否有效
      */
     public boolean isValid() {
-        // V2版本：检查多字段参数或V1版本关键词
-        if ((fieldKeywords != null && !fieldKeywords.isEmpty()) || 
+        // 检查多字段参数、关键词或搜索词
+        if ((fieldKeywords != null && !fieldKeywords.isEmpty()) ||
             (keywords != null && !keywords.isEmpty()) ||
             (searchTerm != null && !searchTerm.trim().isEmpty())) {
-            
+
             // 批次大小必须大于0
             if (batchSize != null && batchSize <= 0) {
                 return false;
             }
-            
+
             return true;
         }
-        
+
         return false;
     }
 
     /**
-     * 获取关键词数量（V1版本兼容）
+     * 获取关键词数量
      */
     public int getKeywordCount() {
         if (keywords != null && !keywords.isEmpty()) {
@@ -190,7 +190,7 @@ public class CrawlerParams {
     }
     
     /**
-     * 是否使用V2多字段模式
+     * 是否使用多字段模式
      */
     public boolean isMultiFieldMode() {
         return fieldKeywords != null && !fieldKeywords.isEmpty();
